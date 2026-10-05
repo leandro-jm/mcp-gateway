@@ -11,7 +11,7 @@ ARG VITE_ENV_LABEL=PROD
 ENV VITE_ENV_LABEL=$VITE_ENV_LABEL
 RUN pnpm --filter @mcp-gateway/admin-ui build
 
-FROM nginx:1.29-alpine AS runtime
+FROM nginx:1.31-alpine AS runtime
 ENV GATEWAY_URL=http://gateway:4000
 COPY docker/admin-ui/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY docker/admin-ui/security-headers.conf /etc/nginx/snippets/security-headers.conf
