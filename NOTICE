@@ -1,0 +1,13 @@
+mcp-gateway
+Copyright 2026 Leandro Martins
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product includes third-party software distributed in its build artifacts
+(Docker images and the Admin UI bundle). Each component keeps its own license;
+see the corresponding package in node_modules for the full text.
+
+- IBM Plex Sans and IBM Plex Mono fonts, bundled in the Admin UI
+  (via @fontsource/ibm-plex-sans and @fontsource/ibm-plex-mono).
+  Copyright 2019 IBM Corp. Licensed under the SIL Open Font License, Version 1.1
+  (https://openfontlicense.org).

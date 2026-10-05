@@ -1,0 +1,44 @@
+
+
+  █ THRESHOLDS 
+
+    http_req_duration{scenario:gateway}
+    ✓ 'p(95)<100' p(95)=5.62ms
+
+    http_req_duration{scenario:upstream}
+    ✓ 'p(95)<1000' p(95)=1.07ms
+
+    http_req_failed{scenario:gateway}
+    ✓ 'rate<0.01' rate=0.00%
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 24002   184.631055/s
+    checks_succeeded...: 100.00% 24002 out of 24002
+    checks_failed......: 0.00%   0 out of 24002
+
+    ✓ gateway 200
+    ✓ upstream 200
+
+    HTTP
+    http_req_duration..............: avg=1.88ms   min=167.7µs  med=1.47ms   p(90)=3.63ms   p(95)=4.54ms p(99)=7.44ms max=80.74ms
+      { expected_response:true }...: avg=1.88ms   min=167.7µs  med=1.47ms   p(90)=3.63ms   p(95)=4.54ms p(99)=7.44ms max=80.74ms
+      { scenario:gateway }.........: avg=3.12ms   min=1.08ms   med=2.72ms   p(90)=4.53ms   p(95)=5.62ms p(99)=9.44ms max=80.74ms
+      { scenario:upstream }........: avg=650.11µs min=167.7µs  med=646.08µs p(90)=952.33µs p(95)=1.07ms p(99)=1.44ms max=10.22ms
+    http_req_failed................: 0.00%  0 out of 24002
+      { scenario:gateway }.........: 0.00%  0 out of 12001
+    http_reqs......................: 24002  184.631055/s
+
+    EXECUTION
+    iteration_duration.............: avg=2.05ms   min=201.83µs med=1.63ms   p(90)=3.84ms   p(95)=4.79ms p(99)=7.74ms max=81.89ms
+    iterations.....................: 24002  184.631055/s
+    vus............................: 1      min=0          max=3  
+    vus_max........................: 100    min=100        max=100
+
+    NETWORK
+    data_received..................: 18 MB  141 kB/s
+    data_sent......................: 6.0 MB 46 kB/s
+
+
+

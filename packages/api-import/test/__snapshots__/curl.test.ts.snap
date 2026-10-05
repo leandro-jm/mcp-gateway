@@ -1,0 +1,90 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`cURL import > generates tools through the regular pipeline (snapshot) 1`] = `
+[
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "readOnlyHint": false,
+    },
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "marcacao_id": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "marcacao_id",
+      ],
+      "type": "object",
+    },
+    "name": "rh_marcacoes_delete",
+    "operationKey": "DELETE /marcacoes/{marcacao_id}",
+  },
+  {
+    "annotations": {
+      "readOnlyHint": true,
+    },
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "ativo": {
+          "type": "boolean",
+        },
+        "size": {
+          "type": "integer",
+        },
+        "unidade_id": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "rh_colaboradores_list",
+    "operationKey": "GET /colaboradores",
+  },
+  {
+    "annotations": {
+      "readOnlyHint": true,
+    },
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "colaborador_id": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "colaborador_id",
+      ],
+      "type": "object",
+    },
+    "name": "rh_colaboradores_get",
+    "operationKey": "GET /colaboradores/{colaborador_id}",
+  },
+  {
+    "annotations": {
+      "readOnlyHint": false,
+    },
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "colaborador_id": {
+          "type": "string",
+        },
+        "data_hora": {
+          "format": "date-time",
+          "type": "string",
+        },
+        "tipo": {
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "rh_marcacoes_create",
+    "operationKey": "POST /marcacoes",
+  },
+]
+`;

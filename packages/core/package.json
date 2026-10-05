@@ -1,0 +1,23 @@
+{
+  "name": "@mcp-gateway/core",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "author": "Leandro Martins (https://github.com/leandro-jm)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leandro-jm/mcp-gateway.git",
+    "directory": "packages/core"
+  },
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@mcp-gateway/i18n": "workspace:*",
+    "zod": "^4.6.5"
+  }
+}

@@ -1,0 +1,245 @@
+/** OpenAPI 3.1 spec of the fake HR upstream (domain fixture: descriptions stay in Portuguese). */
+export function rhOpenApiSpec(serverUrl = 'http://localhost'): Record<string, unknown> {
+  return {
+    openapi: '3.1.0',
+    info: {
+      title: 'RH Fake API',
+      version: '1.0.0',
+      description: 'API fictícia de RH usada nos testes do gateway.',
+    },
+    servers: [{ url: serverUrl }],
+    security: [{ oauth2: [] }],
+    tags: [{ name: 'colaboradores' }, { name: 'escalas' }, { name: 'marcacoes' }],
+    paths: {
+      '/colaboradores': {
+        get: {
+          operationId: 'listColaboradores',
+          tags: ['colaboradores'],
+          summary: 'Lista colaboradores',
+          description:
+            'Retorna a lista **paginada** de colaboradores. Permite filtrar por <b>unidade</b> e por nome.',
+          parameters: [
+            { name: 'unidade_id', in: 'query', schema: { type: 'string' }, description: 'Filtra pela unidade' },
+            { name: 'nome', in: 'query', schema: { type: 'string' }, description: 'Busca parcial por nome' },
+            { name: 'ativo', in: 'query', schema: { type: 'boolean' } },
+            { name: 'page', in: 'query', schema: { type: 'integer', minimum: 1, default: 1 } },
+            { name: 'size', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 50000, default: 50 } },
+          ],
+          responses: {
+            '200': {
+              description: 'Página de colaboradores',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    required: ['items', 'total'],
+                    properties: {
+                      items: { type: 'array', items: { $ref: '#/components/schemas/Colaborador' } },
+                      total: { type: 'integer' },
+                      page: { type: 'integer' },
+                      size: { type: 'integer' },
+                    },
+                  },
+                },
+              },
+            },
+            '401': { $ref: '#/components/responses/Unauthorized' },
+          },
+        },
+      },
+      '/colaboradores/{id}': {
+        get: {
+          operationId: 'getColaborador',
+          tags: ['colaboradores'],
+          summary: 'Busca um colaborador pelo id',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          responses: {
+            '200': {
+              description: 'Colaborador',
+              content: { 'application/json': { schema: { $ref: '#/components/schemas/Colaborador' } } },
+            },
+            '404': { $ref: '#/components/responses/NotFound' },
+          },
+        },
+      },
+      '/escalas': {
+        get: {
+          operationId: 'listEscalas',
+          tags: ['escalas'],
+          summary: 'Lista escalas de trabalho',
+          parameters: [
+            {
+              name: 'colaborador',
+              in: 'query',
+              schema: { type: 'string' },
+              description: 'Retorna apenas a escala do colaborador informado',
+            },
+          ],
+          responses: {
+            '200': {
+              description: 'Escalas',
+              content: {
+                'application/json': {
+                  schema: { type: 'array', items: { $ref: '#/components/schemas/Escala' } },
+                },
+              },
+            },
+          },
+        },
+      },
+      '/marcacoes': {
+        get: {
+          operationId: 'listMarcacoes',
+          tags: ['marcacoes'],
+          summary: 'Lista marcações de ponto',
+          parameters: [
+            { name: 'colaborador', in: 'query', schema: { type: 'string' } },
+            { name: 'desde', in: 'query', schema: { type: 'string', format: 'date' } },
+            { name: 'limit', in: 'query', schema: { type: 'integer', default: 100 } },
+          ],
+          responses: {
+            '200': {
+              description: 'Marcações',
+              content: {
+                'application/json': {
+                  schema: { type: 'array', items: { $ref: '#/components/schemas/Marcacao' } },
+                },
+              },
+            },
+          },
+        },
+        post: {
+          operationId: 'createMarcacao',
+          tags: ['marcacoes'],
+          summary: 'Registra uma marcação de ponto',
+          description: 'Registra uma marcação de entrada ou saída para o colaborador.',
+          parameters: [
+            {
+              name: 'X-Request-Id',
+              in: 'header',
+              schema: { type: 'string' },
+              description: 'Id de idempotência opcional',
+            },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': { schema: { $ref: '#/components/schemas/NovaMarcacao' } },
+            },
+          },
+          responses: {
+            '201': {
+              description: 'Marcação criada',
+              content: { 'application/json': { schema: { $ref: '#/components/schemas/Marcacao' } } },
+            },
+            '400': { $ref: '#/components/responses/BadRequest' },
+          },
+        },
+      },
+      '/marcacoes/{id}': {
+        delete: {
+          operationId: 'deleteMarcacao',
+          tags: ['marcacoes'],
+          summary: 'Remove uma marcação',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          responses: {
+            '204': { description: 'Removida' },
+            '404': { $ref: '#/components/responses/NotFound' },
+          },
+        },
+      },
+    },
+    components: {
+      securitySchemes: {
+        oauth2: {
+          type: 'oauth2',
+          flows: { clientCredentials: { tokenUrl: '/oauth/token', scopes: {} } },
+        },
+        apiKey: { type: 'apiKey', in: 'header', name: 'X-API-Key' },
+      },
+      responses: {
+        Unauthorized: {
+          description: 'Não autenticado',
+          content: { 'application/json': { schema: { $ref: '#/components/schemas/Erro' } } },
+        },
+        NotFound: {
+          description: 'Não encontrado',
+          content: { 'application/json': { schema: { $ref: '#/components/schemas/Erro' } } },
+        },
+        BadRequest: {
+          description: 'Requisição inválida',
+          content: { 'application/json': { schema: { $ref: '#/components/schemas/Erro' } } },
+        },
+      },
+      schemas: {
+        Erro: {
+          type: 'object',
+          properties: { code: { type: 'string' }, message: { type: 'string' } },
+        },
+        Endereco: {
+          type: 'object',
+          properties: {
+            logradouro: { type: 'string' },
+            cidade: { type: 'string' },
+            uf: { type: 'string' },
+            cep: { type: 'string' },
+          },
+        },
+        Colaborador: {
+          type: 'object',
+          required: ['id', 'nome'],
+          properties: {
+            id: { type: 'string', readOnly: true },
+            matricula: { type: 'string' },
+            nome: { type: 'string' },
+            cpf: { type: 'string' },
+            pis: { type: 'string' },
+            email: { type: 'string', format: 'email' },
+            telefone: { type: 'string' },
+            salario: { type: 'number' },
+            data_nascimento: { type: 'string', format: 'date' },
+            endereco: { $ref: '#/components/schemas/Endereco' },
+            cargo: { type: 'string' },
+            unidade_id: { type: 'string' },
+            escala_id: { type: 'string' },
+            ativo: { type: 'boolean' },
+          },
+        },
+        Escala: {
+          type: 'object',
+          required: ['id', 'nome'],
+          properties: {
+            id: { type: 'string' },
+            nome: { type: 'string' },
+            inicio: { type: 'string' },
+            fim: { type: 'string' },
+            dias: { type: 'array', items: { type: 'string' } },
+          },
+        },
+        Marcacao: {
+          type: 'object',
+          required: ['id', 'colaborador_id', 'data_hora', 'tipo'],
+          properties: {
+            id: { type: 'string', readOnly: true },
+            colaborador_id: { type: 'string' },
+            data_hora: { type: 'string', format: 'date-time' },
+            tipo: { type: 'string', enum: ['entrada', 'saida'] },
+            origem: { type: ['string', 'null'] },
+          },
+        },
+        NovaMarcacao: {
+          type: 'object',
+          required: ['colaborador_id', 'data_hora', 'tipo'],
+          properties: {
+            id: { type: 'string', readOnly: true },
+            colaborador_id: { type: 'string' },
+            cpf: { type: 'string', description: 'CPF do colaborador (opcional, para conferência)' },
+            data_hora: { type: 'string', format: 'date-time' },
+            tipo: { type: 'string', enum: ['entrada', 'saida'] },
+            origem: { type: 'string', default: 'api' },
+          },
+        },
+      },
+    },
+  };
+}

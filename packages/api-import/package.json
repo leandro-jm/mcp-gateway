@@ -1,0 +1,30 @@
+{
+  "name": "@mcp-gateway/api-import",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "author": "Leandro Martins (https://github.com/leandro-jm)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leandro-jm/mcp-gateway.git",
+    "directory": "packages/api-import"
+  },
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@mcp-gateway/core": "workspace:*",
+    "@mcp-gateway/i18n": "workspace:*",
+    "@mcp-gateway/openapi-toolgen": "workspace:*",
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@mcp-gateway/testkit": "workspace:*",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
+  }
+}

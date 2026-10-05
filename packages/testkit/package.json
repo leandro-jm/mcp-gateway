@@ -1,0 +1,24 @@
+{
+  "name": "@mcp-gateway/testkit",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "author": "Leandro Martins (https://github.com/leandro-jm)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leandro-jm/mcp-gateway.git",
+    "directory": "packages/testkit"
+  },
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "fake-upstream": "tsx bin/fake-upstream.ts"
+  },
+  "dependencies": {
+    "fastify": "^5.12.5",
+    "testcontainers": "^12.2.0"
+  }
+}

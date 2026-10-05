@@ -1,0 +1,621 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`tool generation > snapshot of the tools generated from the HR spec 1`] = `
+[
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "readOnlyHint": false,
+    },
+    "description": "Remove uma marcação.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "rh_marcacao_delete",
+    "operationKey": "DELETE /marcacoes/{id}",
+    "operationRef": {
+      "mapping": {
+        "params": [
+          {
+            "field": "id",
+            "in": "path",
+            "name": "id",
+          },
+        ],
+        "response": {},
+      },
+      "method": "DELETE",
+      "operationId": "deleteMarcacao",
+      "path": "/marcacoes/{id}",
+    },
+    "outputSchema": null,
+    "specHash": "140727fc4cd05cd9a00df219bd5d4f7bf482a852491ef82b34b6c07f872b4593",
+    "tags": [
+      "marcacoes",
+    ],
+    "title": "Remove uma marcação",
+  },
+  {
+    "annotations": {
+      "readOnlyHint": true,
+    },
+    "description": "Lista colaboradores. Retorna a lista paginada de colaboradores. Permite filtrar por unidade e por nome.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "ativo": {
+          "type": "boolean",
+        },
+        "nome": {
+          "description": "Busca parcial por nome",
+          "type": "string",
+        },
+        "page": {
+          "default": 1,
+          "minimum": 1,
+          "type": "integer",
+        },
+        "size": {
+          "default": 50,
+          "maximum": 50000,
+          "minimum": 1,
+          "type": "integer",
+        },
+        "unidade_id": {
+          "description": "Filtra pela unidade",
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "rh_colaboradores_list",
+    "operationKey": "GET /colaboradores",
+    "operationRef": {
+      "mapping": {
+        "params": [
+          {
+            "field": "unidade_id",
+            "in": "query",
+            "name": "unidade_id",
+          },
+          {
+            "field": "nome",
+            "in": "query",
+            "name": "nome",
+          },
+          {
+            "field": "ativo",
+            "in": "query",
+            "name": "ativo",
+          },
+          {
+            "field": "page",
+            "in": "query",
+            "name": "page",
+          },
+          {
+            "field": "size",
+            "in": "query",
+            "name": "size",
+          },
+        ],
+        "response": {
+          "contentType": "application/json",
+        },
+      },
+      "method": "GET",
+      "operationId": "listColaboradores",
+      "path": "/colaboradores",
+    },
+    "outputSchema": {
+      "properties": {
+        "items": {
+          "items": {
+            "properties": {
+              "ativo": {
+                "type": "boolean",
+              },
+              "cargo": {
+                "type": "string",
+              },
+              "cpf": {
+                "type": "string",
+              },
+              "data_nascimento": {
+                "format": "date",
+                "type": "string",
+              },
+              "email": {
+                "format": "email",
+                "type": "string",
+              },
+              "endereco": {
+                "properties": {
+                  "cep": {
+                    "type": "string",
+                  },
+                  "cidade": {
+                    "type": "string",
+                  },
+                  "logradouro": {
+                    "type": "string",
+                  },
+                  "uf": {
+                    "type": "string",
+                  },
+                },
+                "type": "object",
+              },
+              "escala_id": {
+                "type": "string",
+              },
+              "id": {
+                "readOnly": true,
+                "type": "string",
+              },
+              "matricula": {
+                "type": "string",
+              },
+              "nome": {
+                "type": "string",
+              },
+              "pis": {
+                "type": "string",
+              },
+              "salario": {
+                "type": "number",
+              },
+              "telefone": {
+                "type": "string",
+              },
+              "unidade_id": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "id",
+              "nome",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "page": {
+          "type": "integer",
+        },
+        "size": {
+          "type": "integer",
+        },
+        "total": {
+          "type": "integer",
+        },
+      },
+      "required": [
+        "items",
+        "total",
+      ],
+      "type": "object",
+    },
+    "specHash": "bf5b4e5bcb68bde41e4bcf9260927a599843c4cf472a83dc7c12c2bebb4e2552",
+    "tags": [
+      "colaboradores",
+    ],
+    "title": "Lista colaboradores",
+  },
+  {
+    "annotations": {
+      "readOnlyHint": true,
+    },
+    "description": "Busca um colaborador pelo id.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+      ],
+      "type": "object",
+    },
+    "name": "rh_colaborador_get",
+    "operationKey": "GET /colaboradores/{id}",
+    "operationRef": {
+      "mapping": {
+        "params": [
+          {
+            "field": "id",
+            "in": "path",
+            "name": "id",
+          },
+        ],
+        "response": {
+          "contentType": "application/json",
+        },
+      },
+      "method": "GET",
+      "operationId": "getColaborador",
+      "path": "/colaboradores/{id}",
+    },
+    "outputSchema": {
+      "properties": {
+        "ativo": {
+          "type": "boolean",
+        },
+        "cargo": {
+          "type": "string",
+        },
+        "cpf": {
+          "type": "string",
+        },
+        "data_nascimento": {
+          "format": "date",
+          "type": "string",
+        },
+        "email": {
+          "format": "email",
+          "type": "string",
+        },
+        "endereco": {
+          "properties": {
+            "cep": {
+              "type": "string",
+            },
+            "cidade": {
+              "type": "string",
+            },
+            "logradouro": {
+              "type": "string",
+            },
+            "uf": {
+              "type": "string",
+            },
+          },
+          "type": "object",
+        },
+        "escala_id": {
+          "type": "string",
+        },
+        "id": {
+          "readOnly": true,
+          "type": "string",
+        },
+        "matricula": {
+          "type": "string",
+        },
+        "nome": {
+          "type": "string",
+        },
+        "pis": {
+          "type": "string",
+        },
+        "salario": {
+          "type": "number",
+        },
+        "telefone": {
+          "type": "string",
+        },
+        "unidade_id": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+        "nome",
+      ],
+      "type": "object",
+    },
+    "specHash": "f0eea5025e3ad1c22ff15d4711f17d802d2bc4b82acb74f74c005a85271b5dbe",
+    "tags": [
+      "colaboradores",
+    ],
+    "title": "Busca um colaborador pelo id",
+  },
+  {
+    "annotations": {
+      "readOnlyHint": true,
+    },
+    "description": "Lista escalas de trabalho.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "colaborador": {
+          "description": "Retorna apenas a escala do colaborador informado",
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "name": "rh_escalas_list",
+    "operationKey": "GET /escalas",
+    "operationRef": {
+      "mapping": {
+        "params": [
+          {
+            "field": "colaborador",
+            "in": "query",
+            "name": "colaborador",
+          },
+        ],
+        "response": {
+          "contentType": "application/json",
+          "wrap": "items",
+        },
+      },
+      "method": "GET",
+      "operationId": "listEscalas",
+      "path": "/escalas",
+    },
+    "outputSchema": {
+      "properties": {
+        "items": {
+          "items": {
+            "properties": {
+              "dias": {
+                "items": {
+                  "type": "string",
+                },
+                "type": "array",
+              },
+              "fim": {
+                "type": "string",
+              },
+              "id": {
+                "type": "string",
+              },
+              "inicio": {
+                "type": "string",
+              },
+              "nome": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "id",
+              "nome",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+      },
+      "required": [
+        "items",
+      ],
+      "type": "object",
+    },
+    "specHash": "dd6b800b4e4117565ecfb5c93a45d82d23466ef227abbc33299d147c6b78eb5a",
+    "tags": [
+      "escalas",
+    ],
+    "title": "Lista escalas de trabalho",
+  },
+  {
+    "annotations": {
+      "readOnlyHint": true,
+    },
+    "description": "Lista marcações de ponto.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "colaborador": {
+          "type": "string",
+        },
+        "desde": {
+          "format": "date",
+          "type": "string",
+        },
+        "limit": {
+          "default": 100,
+          "type": "integer",
+        },
+      },
+      "type": "object",
+    },
+    "name": "rh_marcacoes_list",
+    "operationKey": "GET /marcacoes",
+    "operationRef": {
+      "mapping": {
+        "params": [
+          {
+            "field": "colaborador",
+            "in": "query",
+            "name": "colaborador",
+          },
+          {
+            "field": "desde",
+            "in": "query",
+            "name": "desde",
+          },
+          {
+            "field": "limit",
+            "in": "query",
+            "name": "limit",
+          },
+        ],
+        "response": {
+          "contentType": "application/json",
+          "wrap": "items",
+        },
+      },
+      "method": "GET",
+      "operationId": "listMarcacoes",
+      "path": "/marcacoes",
+    },
+    "outputSchema": {
+      "properties": {
+        "items": {
+          "items": {
+            "properties": {
+              "colaborador_id": {
+                "type": "string",
+              },
+              "data_hora": {
+                "format": "date-time",
+                "type": "string",
+              },
+              "id": {
+                "readOnly": true,
+                "type": "string",
+              },
+              "origem": {
+                "type": [
+                  "string",
+                  "null",
+                ],
+              },
+              "tipo": {
+                "enum": [
+                  "entrada",
+                  "saida",
+                ],
+                "type": "string",
+              },
+            },
+            "required": [
+              "id",
+              "colaborador_id",
+              "data_hora",
+              "tipo",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+      },
+      "required": [
+        "items",
+      ],
+      "type": "object",
+    },
+    "specHash": "948d364bcc2f47a5a1df79548daa15522bd56d9f37b66e599b139374a42272d5",
+    "tags": [
+      "marcacoes",
+    ],
+    "title": "Lista marcações de ponto",
+  },
+  {
+    "annotations": {
+      "readOnlyHint": false,
+    },
+    "description": "Registra uma marcação de ponto. Registra uma marcação de entrada ou saída para o colaborador.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "colaborador_id": {
+          "type": "string",
+        },
+        "cpf": {
+          "description": "CPF do colaborador (opcional, para conferência)",
+          "type": "string",
+        },
+        "data_hora": {
+          "format": "date-time",
+          "type": "string",
+        },
+        "origem": {
+          "default": "api",
+          "type": "string",
+        },
+        "tipo": {
+          "enum": [
+            "entrada",
+            "saida",
+          ],
+          "type": "string",
+        },
+        "x_request_id": {
+          "description": "Id de idempotência opcional",
+          "type": "string",
+        },
+      },
+      "required": [
+        "colaborador_id",
+        "data_hora",
+        "tipo",
+      ],
+      "type": "object",
+    },
+    "name": "rh_marcacao_create",
+    "operationKey": "POST /marcacoes",
+    "operationRef": {
+      "mapping": {
+        "body": {
+          "contentType": "application/json",
+          "fields": [
+            "colaborador_id",
+            "cpf",
+            "data_hora",
+            "tipo",
+            "origem",
+          ],
+          "mode": "flatten",
+        },
+        "params": [
+          {
+            "field": "x_request_id",
+            "in": "header",
+            "name": "X-Request-Id",
+          },
+        ],
+        "response": {
+          "contentType": "application/json",
+        },
+      },
+      "method": "POST",
+      "operationId": "createMarcacao",
+      "path": "/marcacoes",
+    },
+    "outputSchema": {
+      "properties": {
+        "colaborador_id": {
+          "type": "string",
+        },
+        "data_hora": {
+          "format": "date-time",
+          "type": "string",
+        },
+        "id": {
+          "readOnly": true,
+          "type": "string",
+        },
+        "origem": {
+          "type": [
+            "string",
+            "null",
+          ],
+        },
+        "tipo": {
+          "enum": [
+            "entrada",
+            "saida",
+          ],
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+        "colaborador_id",
+        "data_hora",
+        "tipo",
+      ],
+      "type": "object",
+    },
+    "specHash": "b4d62042b96511b93c5826e1c19284979190e986f01139175ceeda68981f41ea",
+    "tags": [
+      "marcacoes",
+    ],
+    "title": "Registra uma marcação de ponto",
+  },
+]
+`;

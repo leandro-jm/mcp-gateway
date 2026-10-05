@@ -1,0 +1,49 @@
+name: Bug report
+description: Something does not work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report! **Security issues must not be reported here**; see SECURITY.md.
+        Never paste real tokens, credentials or personal data.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. pnpm dev:infra && pnpm dev
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: 0.1.0 / sha-abc1234
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      multiple: true
+      options: [gateway (MCP data plane), Admin API, Admin UI, crawler / import, deployment / Docker, docs]
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Node version, deployment method (dev, Docker, compose), MCP client.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant log lines (redact anything sensitive).
+      render: text

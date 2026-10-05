@@ -1,0 +1,159 @@
+/*
+ * Theme tokens (ADR-005). Dark is the default (reference design); light applies when the
+ * user picks "Light" (data-theme="light") or picks "System" and the OS is in light mode.
+ */
+:root {
+  color-scheme: dark;
+  --bg: #0a0a0a;
+  --surface: #111111;
+  --surface-2: #161616;
+  --surface-3: #1c1c1c;
+  --border: #262626;
+  --border-strong: #333333;
+  --text: #ededed;
+  --text-2: #8f8f8f;
+  --text-3: #5c5c5c;
+  --accent: #ff8a1f;
+  --accent-dim: rgba(255, 138, 31, 0.12);
+  --accent-border: rgba(255, 138, 31, 0.4);
+  --success: #22c55e;
+  --success-dim: rgba(34, 197, 94, 0.12);
+  --success-border: rgba(34, 197, 94, 0.35);
+  --success-text: #a7f0bf;
+  --danger: #ef4444;
+  --danger-dim: rgba(239, 68, 68, 0.12);
+  --danger-border: rgba(239, 68, 68, 0.4);
+  --danger-text: #f8b4b4;
+  --warning: #f5a524;
+  --warning-dim: rgba(245, 165, 36, 0.12);
+  --warning-border: rgba(245, 165, 36, 0.35);
+  --warning-text: #f7d58e;
+  --info: #60a5fa;
+
+  --primary-bg: #ffffff;
+  --primary-fg: #000000;
+  --primary-hover: #e6e6e6;
+  --backdrop: rgba(0, 0, 0, 0.55);
+  --active-line: rgba(255, 255, 255, 0.03);
+  --selection: rgba(255, 138, 31, 0.2);
+  --code-key: #ededed;
+  --code-literal: #c9c9c9;
+  --art-1: #cfcfcf;
+  --art-2: #9a9a9a;
+  --art-3: #7a7a7a;
+  /* chart series (ADR-018) */
+  --chart-1: #ff8a1f;
+  --chart-2: #60a5fa;
+  --chart-3: #22c55e;
+  --chart-4: #c084fc;
+  --chart-5: #f5a524;
+  --chart-6: #8f8f8f;
+  --chart-grid: #262626;
+
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  --radius: 2px;
+  --topbar-h: 62px;
+  --sidebar-w: 296px;
+  --gutter: 32px;
+}
+
+/* Light palette: same language (1px borders, mono, orange accent), AA contrast on white. */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: #f7f7f7;
+  --surface-2: #f0f0f0;
+  --surface-3: #e9e9e9;
+  --border: #e3e3e3;
+  --border-strong: #cfcfcf;
+  --text: #111111;
+  --text-2: #666666;
+  --text-3: #9a9a9a;
+  --accent: #c25700;
+  --accent-dim: rgba(232, 112, 10, 0.1);
+  --accent-border: rgba(194, 87, 0, 0.4);
+  --success: #15803d;
+  --success-dim: rgba(21, 128, 61, 0.08);
+  --success-border: rgba(21, 128, 61, 0.35);
+  --success-text: #166534;
+  --danger: #dc2626;
+  --danger-dim: rgba(220, 38, 38, 0.07);
+  --danger-border: rgba(220, 38, 38, 0.35);
+  --danger-text: #991b1b;
+  --warning: #b45309;
+  --warning-dim: rgba(180, 83, 9, 0.08);
+  --warning-border: rgba(180, 83, 9, 0.35);
+  --warning-text: #92400e;
+  --info: #2563eb;
+
+  --primary-bg: #111111;
+  --primary-fg: #ffffff;
+  --primary-hover: #2b2b2b;
+  --backdrop: rgba(0, 0, 0, 0.25);
+  --active-line: rgba(0, 0, 0, 0.035);
+  --selection: rgba(232, 112, 10, 0.18);
+  --code-key: #111111;
+  --code-literal: #444444;
+  --art-1: #5a5a5a;
+  --art-2: #8a8a8a;
+  --art-3: #a8a8a8;
+  --chart-1: #c25700;
+  --chart-2: #2563eb;
+  --chart-3: #15803d;
+  --chart-4: #7e22ce;
+  --chart-5: #b45309;
+  --chart-6: #666666;
+  --chart-grid: #e3e3e3;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+    --bg: #ffffff;
+    --surface: #f7f7f7;
+    --surface-2: #f0f0f0;
+    --surface-3: #e9e9e9;
+    --border: #e3e3e3;
+    --border-strong: #cfcfcf;
+    --text: #111111;
+    --text-2: #666666;
+    --text-3: #9a9a9a;
+    --accent: #c25700;
+    --accent-dim: rgba(232, 112, 10, 0.1);
+    --accent-border: rgba(194, 87, 0, 0.4);
+    --success: #15803d;
+    --success-dim: rgba(21, 128, 61, 0.08);
+    --success-border: rgba(21, 128, 61, 0.35);
+    --success-text: #166534;
+    --danger: #dc2626;
+    --danger-dim: rgba(220, 38, 38, 0.07);
+    --danger-border: rgba(220, 38, 38, 0.35);
+    --danger-text: #991b1b;
+    --warning: #b45309;
+    --warning-dim: rgba(180, 83, 9, 0.08);
+    --warning-border: rgba(180, 83, 9, 0.35);
+    --warning-text: #92400e;
+    --info: #2563eb;
+  
+    --primary-bg: #111111;
+    --primary-fg: #ffffff;
+    --primary-hover: #2b2b2b;
+    --backdrop: rgba(0, 0, 0, 0.25);
+    --active-line: rgba(0, 0, 0, 0.035);
+    --selection: rgba(232, 112, 10, 0.18);
+    --code-key: #111111;
+    --code-literal: #444444;
+    --art-1: #5a5a5a;
+    --art-2: #8a8a8a;
+    --art-3: #a8a8a8;
+    --chart-1: #c25700;
+    --chart-2: #2563eb;
+    --chart-3: #15803d;
+    --chart-4: #7e22ce;
+    --chart-5: #b45309;
+    --chart-6: #666666;
+    --chart-grid: #e3e3e3;
+  }
+}

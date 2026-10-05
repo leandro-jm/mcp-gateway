@@ -1,0 +1,203 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "RH Fake API",
+    "version": "1.0.0",
+    "description": "API fictícia de RH usada nos testes do gateway."
+  },
+  "host": "localhost",
+  "basePath": "/",
+  "schemes": ["http"],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+  "security": [{ "oauth2": [] }],
+  "tags": [{ "name": "colaboradores" }, { "name": "escalas" }, { "name": "marcacoes" }],
+  "paths": {
+    "/colaboradores": {
+      "get": {
+        "operationId": "listColaboradores",
+        "tags": ["colaboradores"],
+        "summary": "Lista colaboradores",
+        "description": "Retorna a lista **paginada** de colaboradores. Permite filtrar por <b>unidade</b> e por nome.",
+        "parameters": [
+          { "name": "unidade_id", "in": "query", "type": "string", "description": "Filtra pela unidade" },
+          { "name": "nome", "in": "query", "type": "string", "description": "Busca parcial por nome" },
+          { "name": "ativo", "in": "query", "type": "boolean" },
+          { "name": "page", "in": "query", "type": "integer", "minimum": 1, "default": 1 },
+          { "name": "size", "in": "query", "type": "integer", "minimum": 1, "maximum": 50000, "default": 50 }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de colaboradores",
+            "schema": {
+              "type": "object",
+              "required": ["items", "total"],
+              "properties": {
+                "items": { "type": "array", "items": { "$ref": "#/definitions/Colaborador" } },
+                "total": { "type": "integer" },
+                "page": { "type": "integer" },
+                "size": { "type": "integer" }
+              }
+            }
+          },
+          "401": { "$ref": "#/responses/Unauthorized" }
+        }
+      }
+    },
+    "/colaboradores/{id}": {
+      "get": {
+        "operationId": "getColaborador",
+        "tags": ["colaboradores"],
+        "summary": "Busca um colaborador pelo id",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "type": "string" }],
+        "responses": {
+          "200": { "description": "Colaborador", "schema": { "$ref": "#/definitions/Colaborador" } },
+          "404": { "$ref": "#/responses/NotFound" }
+        }
+      }
+    },
+    "/escalas": {
+      "get": {
+        "operationId": "listEscalas",
+        "tags": ["escalas"],
+        "summary": "Lista escalas de trabalho",
+        "parameters": [
+          {
+            "name": "colaborador",
+            "in": "query",
+            "type": "string",
+            "description": "Retorna apenas a escala do colaborador informado"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Escalas",
+            "schema": { "type": "array", "items": { "$ref": "#/definitions/Escala" } }
+          }
+        }
+      }
+    },
+    "/marcacoes": {
+      "get": {
+        "operationId": "listMarcacoes",
+        "tags": ["marcacoes"],
+        "summary": "Lista marcações de ponto",
+        "parameters": [
+          { "name": "colaborador", "in": "query", "type": "string" },
+          { "name": "desde", "in": "query", "type": "string", "format": "date" },
+          { "name": "limit", "in": "query", "type": "integer", "default": 100 }
+        ],
+        "responses": {
+          "200": {
+            "description": "Marcações",
+            "schema": { "type": "array", "items": { "$ref": "#/definitions/Marcacao" } }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createMarcacao",
+        "tags": ["marcacoes"],
+        "summary": "Registra uma marcação de ponto",
+        "description": "Registra uma marcação de entrada ou saída para o colaborador.",
+        "parameters": [
+          { "name": "X-Request-Id", "in": "header", "type": "string", "description": "Id de idempotência opcional" },
+          { "name": "body", "in": "body", "required": true, "schema": { "$ref": "#/definitions/NovaMarcacao" } }
+        ],
+        "responses": {
+          "201": { "description": "Marcação criada", "schema": { "$ref": "#/definitions/Marcacao" } },
+          "400": { "$ref": "#/responses/BadRequest" }
+        }
+      }
+    },
+    "/marcacoes/{id}": {
+      "delete": {
+        "operationId": "deleteMarcacao",
+        "tags": ["marcacoes"],
+        "summary": "Remove uma marcação",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "type": "string" }],
+        "responses": {
+          "204": { "description": "Removida" },
+          "404": { "$ref": "#/responses/NotFound" }
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "oauth2": { "type": "oauth2", "flow": "application", "tokenUrl": "/oauth/token", "scopes": {} },
+    "apiKey": { "type": "apiKey", "in": "header", "name": "X-API-Key" }
+  },
+  "responses": {
+    "Unauthorized": { "description": "Não autenticado", "schema": { "$ref": "#/definitions/Erro" } },
+    "NotFound": { "description": "Não encontrado", "schema": { "$ref": "#/definitions/Erro" } },
+    "BadRequest": { "description": "Requisição inválida", "schema": { "$ref": "#/definitions/Erro" } }
+  },
+  "definitions": {
+    "Erro": {
+      "type": "object",
+      "properties": { "code": { "type": "string" }, "message": { "type": "string" } }
+    },
+    "Endereco": {
+      "type": "object",
+      "properties": {
+        "logradouro": { "type": "string" },
+        "cidade": { "type": "string" },
+        "uf": { "type": "string" },
+        "cep": { "type": "string" }
+      }
+    },
+    "Colaborador": {
+      "type": "object",
+      "required": ["id", "nome"],
+      "properties": {
+        "id": { "type": "string", "readOnly": true },
+        "matricula": { "type": "string" },
+        "nome": { "type": "string" },
+        "cpf": { "type": "string" },
+        "pis": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "telefone": { "type": "string" },
+        "salario": { "type": "number" },
+        "data_nascimento": { "type": "string", "format": "date" },
+        "endereco": { "$ref": "#/definitions/Endereco" },
+        "cargo": { "type": "string" },
+        "unidade_id": { "type": "string" },
+        "escala_id": { "type": "string" },
+        "ativo": { "type": "boolean" }
+      }
+    },
+    "Escala": {
+      "type": "object",
+      "required": ["id", "nome"],
+      "properties": {
+        "id": { "type": "string" },
+        "nome": { "type": "string" },
+        "inicio": { "type": "string" },
+        "fim": { "type": "string" },
+        "dias": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "Marcacao": {
+      "type": "object",
+      "required": ["id", "colaborador_id", "data_hora", "tipo"],
+      "properties": {
+        "id": { "type": "string", "readOnly": true },
+        "colaborador_id": { "type": "string" },
+        "data_hora": { "type": "string", "format": "date-time" },
+        "tipo": { "type": "string", "enum": ["entrada", "saida"] },
+        "origem": { "type": "string", "x-nullable": true }
+      }
+    },
+    "NovaMarcacao": {
+      "type": "object",
+      "required": ["colaborador_id", "data_hora", "tipo"],
+      "properties": {
+        "id": { "type": "string", "readOnly": true },
+        "colaborador_id": { "type": "string" },
+        "cpf": { "type": "string", "description": "CPF do colaborador (opcional, para conferência)" },
+        "data_hora": { "type": "string", "format": "date-time" },
+        "tipo": { "type": "string", "enum": ["entrada", "saida"] },
+        "origem": { "type": "string", "default": "api" }
+      }
+    }
+  }
+}

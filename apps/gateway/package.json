@@ -1,0 +1,64 @@
+{
+  "name": "@mcp-gateway/gateway",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "author": "Leandro Martins (https://github.com/leandro-jm)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leandro-jm/mcp-gateway.git",
+    "directory": "apps/gateway"
+  },
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "dev": "tsx watch --env-file-if-exists=.env src/main.ts",
+    "start": "node dist/main.js",
+    "build": "tsup"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "@fastify/swagger": "^9.9.1",
+    "@mcp-gateway/api-import": "workspace:*",
+    "@mcp-gateway/artifacts": "workspace:*",
+    "@mcp-gateway/call-analytics": "workspace:*",
+    "@mcp-gateway/composer": "workspace:*",
+    "@mcp-gateway/composition": "workspace:*",
+    "@mcp-gateway/core": "workspace:*",
+    "@mcp-gateway/db": "workspace:*",
+    "@mcp-gateway/i18n": "workspace:*",
+    "@mcp-gateway/net": "workspace:*",
+    "@mcp-gateway/openapi-toolgen": "workspace:*",
+    "@mcp-gateway/policy": "workspace:*",
+    "@mcp-gateway/projection": "workspace:*",
+    "@mcp-gateway/redaction": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.32.0",
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/core": "^2.11.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.222.0",
+    "@opentelemetry/resources": "^2.11.0",
+    "@opentelemetry/sdk-trace-base": "^2.11.0",
+    "@opentelemetry/semantic-conventions": "^1.43.0",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "bullmq": "^6.3.11",
+    "drizzle-orm": "^0.45.3",
+    "fastify": "^5.12.5",
+    "fastify-plugin": "^6.0.0",
+    "fastify-type-provider-zod": "^7.0.0",
+    "ioredis": "^6.0.0",
+    "jsonata": "^2.2.2",
+    "openapi-types": "^12.1.3",
+    "pino": "^10.4.0",
+    "prom-client": "^15.1.3",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@apidevtools/swagger-parser": "^13.1.0",
+    "@mcp-gateway/testkit": "workspace:*"
+  }
+}

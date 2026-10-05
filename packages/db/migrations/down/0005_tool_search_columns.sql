@@ -1,0 +1,3 @@
+ALTER TABLE "tools" DROP COLUMN IF EXISTS "embedding_hash";
+ALTER TABLE "tools" DROP COLUMN IF EXISTS "search_text";
+ALTER TABLE "tools" DROP COLUMN IF EXISTS "tags";

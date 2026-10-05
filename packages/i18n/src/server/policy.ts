@@ -1,0 +1,47 @@
+import { defineMessages } from '../messages';
+
+/** Policy engine decisions and trace notes (`packages/policy`). */
+export const policy = defineMessages('policy', {
+  en: {
+    'policy.explicitDeny': 'denied by rule {rule} ({subjectType}:{subject} → {pattern})',
+    'policy.allowedByRule': 'allowed by rule {rule} ({subjectType}:{subject} → {pattern})',
+    'policy.destructiveRequiresExplicitAllow': '{tool} is destructive and requires an explicit allow by name or pattern',
+    'policy.defaultDeny': 'no rule allows this tool (default deny)',
+    'policy.outsideTimeWindow': 'outside the time window',
+    'policy.argsCheckedOnCall': 'args constraint evaluated on call',
+    'policy.constraintNotMet': 'constraint not met: {constraint}',
+    'policy.conditionsMet': 'conditions met',
+    'policy.invalidConditions': 'invalid conditions (rule ignored)',
+    'policy.genericAllowSkipsDestructive': 'generic allow does not cover a destructive tool',
+    'policy.invalidExpression': 'invalid expression: {expr}',
+    'policy.missingRightOperand': 'expression missing a right-hand operand: {expr}',
+  },
+  'pt-BR': {
+    'policy.explicitDeny': 'negado pela regra {rule} ({subjectType}:{subject} → {pattern})',
+    'policy.allowedByRule': 'permitido pela regra {rule} ({subjectType}:{subject} → {pattern})',
+    'policy.destructiveRequiresExplicitAllow': '{tool} é destrutiva e exige allow explícito por nome ou pattern',
+    'policy.defaultDeny': 'nenhuma regra permite esta tool (default deny)',
+    'policy.outsideTimeWindow': 'fora da janela de horário',
+    'policy.argsCheckedOnCall': 'restrição de args avaliada na chamada',
+    'policy.constraintNotMet': 'restrição não atendida: {constraint}',
+    'policy.conditionsMet': 'condições atendidas',
+    'policy.invalidConditions': 'condições inválidas (regra ignorada)',
+    'policy.genericAllowSkipsDestructive': 'allow genérico não cobre tool destrutiva',
+    'policy.invalidExpression': 'expressão inválida: {expr}',
+    'policy.missingRightOperand': 'expressão sem operando à direita: {expr}',
+  },
+  es: {
+    'policy.explicitDeny': 'denegado por la regla {rule} ({subjectType}:{subject} → {pattern})',
+    'policy.allowedByRule': 'permitido por la regla {rule} ({subjectType}:{subject} → {pattern})',
+    'policy.destructiveRequiresExplicitAllow': '{tool} es destructiva y requiere un allow explícito por nombre o pattern',
+    'policy.defaultDeny': 'ninguna regla permite esta tool (default deny)',
+    'policy.outsideTimeWindow': 'fuera de la ventana horaria',
+    'policy.argsCheckedOnCall': 'restricción de args evaluada en la llamada',
+    'policy.constraintNotMet': 'restricción no cumplida: {constraint}',
+    'policy.conditionsMet': 'condiciones cumplidas',
+    'policy.invalidConditions': 'condiciones inválidas (regla ignorada)',
+    'policy.genericAllowSkipsDestructive': 'un allow genérico no cubre una tool destructiva',
+    'policy.invalidExpression': 'expresión inválida: {expr}',
+    'policy.missingRightOperand': 'expresión sin operando a la derecha: {expr}',
+  },
+});

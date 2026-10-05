@@ -1,0 +1,60 @@
+{
+  "name": "mcp-gateway",
+  "version": "0.1.0",
+  "description": "Multi-tenant MCP gateway that exposes REST/OpenAPI APIs as governed MCP tools.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "gateway",
+    "openapi",
+    "ai-agents",
+    "llm-tools"
+  ],
+  "homepage": "https://github.com/leandro-jm/mcp-gateway#readme",
+  "bugs": {
+    "url": "https://github.com/leandro-jm/mcp-gateway/issues"
+  },
+  "license": "Apache-2.0",
+  "author": "Leandro Martins (https://github.com/leandro-jm)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leandro-jm/mcp-gateway.git"
+  },
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.5.1",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "check": "pnpm lint && pnpm typecheck",
+    "lint": "eslint .",
+    "typecheck": "pnpm -r --parallel typecheck && tsc -p examples",
+    "format": "prettier --write .",
+    "test": "vitest run --project unit",
+    "test:int": "vitest run --project integration",
+    "test:all": "vitest run",
+    "build": "pnpm -r build",
+    "dev": "pnpm --filter @mcp-gateway/gateway dev",
+    "dev:infra": "docker compose -f docker/docker-compose.dev.yml up -d --wait",
+    "dev:infra:down": "docker compose -f docker/docker-compose.dev.yml down",
+    "dev:upstream": "pnpm --filter @mcp-gateway/testkit fake-upstream",
+    "db:migrate": "pnpm --filter @mcp-gateway/db db:migrate",
+    "db:seed": "pnpm --filter @mcp-gateway/db db:seed",
+    "db:create-admin": "pnpm --filter @mcp-gateway/db db:create-admin",
+    "test:security": "vitest run --project integration apps/gateway/test/security"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@modelcontextprotocol/sdk": "^1.32.0",
+    "@types/node": "^22.20.5",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
+    "tsup": "^8.5.0",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.0",
+    "vitest": "^5.0.3"
+  }
+}

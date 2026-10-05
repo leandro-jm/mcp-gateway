@@ -1,0 +1,49 @@
+server {
+  listen 8080;
+  server_name _;
+  root /usr/share/nginx/html;
+
+  # Security headers live in a snippet included by every location: an `add_header` inside a
+  # location drops all the ones inherited from the server block.
+  include /etc/nginx/snippets/security-headers.conf;
+
+  # Natural-language composer (ADR-015): one generation may take up to 120 s on the gateway.
+  location = /admin/v1/composites/generate {
+    proxy_pass ${GATEWAY_URL};
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_buffering off;
+    proxy_read_timeout 150s;
+  }
+
+  # Same origin for the Admin API (no CORS); the gateway validates the token.
+  location ~ ^/(admin|mcp|sdk)(/|$) {
+    proxy_pass ${GATEWAY_URL};
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_buffering off;
+    proxy_read_timeout 120s;
+  }
+
+  location /assets/ {
+    expires 1y;
+    include /etc/nginx/snippets/security-headers.conf;
+    add_header Cache-Control "public, immutable";
+  }
+
+  # SPA: React Router routes
+  location / {
+    try_files $uri /index.html;
+    include /etc/nginx/snippets/security-headers.conf;
+    add_header Cache-Control "no-store";
+  }
+
+  location = /healthz {
+    access_log off;
+    return 200 "ok\n";
+  }
+}

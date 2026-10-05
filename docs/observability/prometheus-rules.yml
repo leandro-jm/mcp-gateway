@@ -1,0 +1,74 @@
+# Regras do Prometheus para o mcp-gateway (F15.10, ADR-016).
+# SLOs:
+#   - Disponibilidade do gateway: 99,5% das chamadas sem erro causado pelo próprio gateway
+#     (estágios internal, redaction, projection, artifact). Erros do upstream, negações e
+#     validação não consomem o orçamento.
+#   - Overhead: 95% das chamadas com overhead do gateway (latência total menos a do upstream)
+#     de até 25 ms (bucket 0.025 do histograma).
+# Alertas de burn rate em múltiplas janelas (SRE Workbook): página quando o orçamento queima
+# 14,4x mais rápido que o sustentável em 1h e 5m; ticket com 6x em 6h e 30m.
+groups:
+  - name: mcp-gateway-slo-recording
+    rules:
+      - record: slo:gateway_error_ratio:rate5m
+        expr: sum by (tenant) (rate(mcp_call_errors_total{stage=~"internal|redaction|projection|artifact"}[5m])) / clamp_min(sum by (tenant) (rate(mcp_tool_calls_total[5m])), 1e-9)
+      - record: slo:gateway_error_ratio:rate30m
+        expr: sum by (tenant) (rate(mcp_call_errors_total{stage=~"internal|redaction|projection|artifact"}[30m])) / clamp_min(sum by (tenant) (rate(mcp_tool_calls_total[30m])), 1e-9)
+      - record: slo:gateway_error_ratio:rate1h
+        expr: sum by (tenant) (rate(mcp_call_errors_total{stage=~"internal|redaction|projection|artifact"}[1h])) / clamp_min(sum by (tenant) (rate(mcp_tool_calls_total[1h])), 1e-9)
+      - record: slo:gateway_error_ratio:rate6h
+        expr: sum by (tenant) (rate(mcp_call_errors_total{stage=~"internal|redaction|projection|artifact"}[6h])) / clamp_min(sum by (tenant) (rate(mcp_tool_calls_total[6h])), 1e-9)
+      - record: slo:overhead_slow_ratio:rate5m
+        expr: 1 - (sum by (tenant) (rate(mcp_gateway_overhead_seconds_bucket{le="0.025"}[5m])) / clamp_min(sum by (tenant) (rate(mcp_gateway_overhead_seconds_count[5m])), 1e-9))
+      - record: slo:overhead_slow_ratio:rate30m
+        expr: 1 - (sum by (tenant) (rate(mcp_gateway_overhead_seconds_bucket{le="0.025"}[30m])) / clamp_min(sum by (tenant) (rate(mcp_gateway_overhead_seconds_count[30m])), 1e-9))
+      - record: slo:overhead_slow_ratio:rate1h
+        expr: 1 - (sum by (tenant) (rate(mcp_gateway_overhead_seconds_bucket{le="0.025"}[1h])) / clamp_min(sum by (tenant) (rate(mcp_gateway_overhead_seconds_count[1h])), 1e-9))
+      - record: slo:overhead_slow_ratio:rate6h
+        expr: 1 - (sum by (tenant) (rate(mcp_gateway_overhead_seconds_bucket{le="0.025"}[6h])) / clamp_min(sum by (tenant) (rate(mcp_gateway_overhead_seconds_count[6h])), 1e-9))
+
+  - name: mcp-gateway-slo-alerts
+    rules:
+      # disponibilidade: orçamento de erro = 0,5%
+      - alert: McpGatewayErrorBudgetFastBurn
+        expr: slo:gateway_error_ratio:rate1h > (14.4 * 0.005) and slo:gateway_error_ratio:rate5m > (14.4 * 0.005)
+        labels: { severity: page }
+        annotations:
+          summary: "Erros do gateway queimando o orçamento 14,4x (tenant {{ $labels.tenant }})"
+          description: "Falhas internas, de redaction, projeção ou artefato acima do SLO de 99,5% em 1h e 5m."
+      - alert: McpGatewayErrorBudgetSlowBurn
+        expr: slo:gateway_error_ratio:rate6h > (6 * 0.005) and slo:gateway_error_ratio:rate30m > (6 * 0.005)
+        labels: { severity: ticket }
+        annotations:
+          summary: "Erros do gateway queimando o orçamento 6x (tenant {{ $labels.tenant }})"
+      # overhead: orçamento = 5% das chamadas acima de 25 ms
+      - alert: McpGatewayOverheadFastBurn
+        expr: slo:overhead_slow_ratio:rate1h > (14.4 * 0.05) and slo:overhead_slow_ratio:rate5m > (14.4 * 0.05)
+        labels: { severity: page }
+        annotations:
+          summary: "Overhead do gateway acima de 25 ms em excesso (tenant {{ $labels.tenant }})"
+      - alert: McpGatewayOverheadSlowBurn
+        expr: slo:overhead_slow_ratio:rate6h > (6 * 0.05) and slo:overhead_slow_ratio:rate30m > (6 * 0.05)
+        labels: { severity: ticket }
+        annotations:
+          summary: "Overhead do gateway degradado (tenant {{ $labels.tenant }})"
+
+  - name: mcp-gateway-operational
+    rules:
+      - alert: McpCircuitOpen
+        expr: max by (tenant, source) (mcp_circuit_open) == 1
+        for: 2m
+        labels: { severity: ticket }
+        annotations:
+          summary: "Circuit breaker aberto para a source {{ $labels.source }} (tenant {{ $labels.tenant }})"
+      - alert: McpUpstreamErrorRate
+        expr: sum by (tenant, source) (rate(mcp_upstream_requests_total{status_class=~"5xx|error"}[10m])) / clamp_min(sum by (tenant, source) (rate(mcp_upstream_requests_total[10m])), 1e-9) > 0.2
+        for: 10m
+        labels: { severity: ticket }
+        annotations:
+          summary: "Mais de 20% de erros no upstream {{ $labels.source }} (tenant {{ $labels.tenant }})"
+      - alert: McpCallEventsDropped
+        expr: increase(mcp_call_events_dropped_total[15m]) > 0
+        labels: { severity: ticket }
+        annotations:
+          summary: "Eventos de analytics descartados ({{ $labels.reason }}): buffer cheio ou Postgres indisponível"

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
+    <script>
+      // Applies the saved theme before first paint (no flash). "System" does not set data-theme.
+      try {
+        var t = localStorage.getItem('mcp-gw:theme');
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+        // Last known UI language (the user's profile is the source of truth; see src/i18n/locale.ts).
+        var l = localStorage.getItem('mcp-gw:locale');
+        if (l === 'en' || l === 'pt-BR' || l === 'es') document.documentElement.lang = l;
+      } catch (e) {}
+    </script>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>MCP Gateway</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,1 @@
+ALTER TABLE "pii_tokens" ADD COLUMN "subjects" text[] DEFAULT '{}'::text[] NOT NULL;

@@ -1,0 +1,30 @@
+{
+  "name": "@mcp-gateway/openapi-toolgen",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "author": "Leandro Martins (https://github.com/leandro-jm)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leandro-jm/mcp-gateway.git",
+    "directory": "packages/openapi-toolgen"
+  },
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@apidevtools/swagger-parser": "^13.1.0",
+    "@mcp-gateway/core": "workspace:*",
+    "@mcp-gateway/i18n": "workspace:*",
+    "openapi-types": "^12.1.3"
+  },
+  "devDependencies": {
+    "@mcp-gateway/testkit": "workspace:*",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
+  }
+}

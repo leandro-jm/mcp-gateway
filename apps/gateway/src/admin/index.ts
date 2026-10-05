@@ -1,0 +1,57 @@
+import type { FastifyPluginAsync } from 'fastify';
+import type { ZodTypeProvider } from 'fastify-type-provider-zod';
+import type { Services } from '../services';
+import { adminAuth } from './auth';
+import { analyticsRoutes } from './routes/analytics';
+import { agentRoutes } from './routes/agents';
+import { auditRoutes } from './routes/audit';
+import { callRoutes } from './routes/calls';
+import { debugRoutes } from './routes/debug';
+import { lgpdRoutes } from './routes/lgpd';
+import { authRoutes } from './routes/auth';
+import { uiRoutes } from './routes/ui';
+import { composerRoutes } from './routes/composer';
+import { compositeRoutes } from './routes/composites';
+import { credentialRoutes } from './routes/credentials';
+import { manualToolRoutes } from './routes/manual-tools';
+import { piiRoutes } from './routes/pii';
+import { policyRoutes } from './routes/policies';
+import { projectionRoutes } from './routes/projections';
+import { sourceImportRoutes } from './routes/source-import';
+import { settingsRoutes } from './routes/settings';
+import { sourceRoutes } from './routes/sources';
+import { tenantRoutes } from './routes/tenants';
+import { userRoutes } from './routes/users';
+import { toolRoutes } from './routes/tools';
+import { virtualServerRoutes } from './routes/virtual-servers';
+
+/** Admin API (`/admin/v1`). */
+export const adminApi: FastifyPluginAsync<{ services: Services }> = async (app, { services }) => {
+  const z = app.withTypeProvider<ZodTypeProvider>();
+  await z.register(adminAuth, { services });
+
+  z.get('/openapi.json', { config: { public: true }, schema: { hide: true } }, async () => app.swagger());
+
+  await z.register(authRoutes, { services });
+  await z.register(tenantRoutes, { services });
+  await z.register(userRoutes, { services });
+  await z.register(credentialRoutes, { services });
+  await z.register(sourceRoutes, { services });
+  await z.register(sourceImportRoutes, { services });
+  await z.register(manualToolRoutes, { services });
+  await z.register(toolRoutes, { services });
+  await z.register(virtualServerRoutes, { services });
+  await z.register(policyRoutes, { services });
+  await z.register(piiRoutes, { services });
+  await z.register(projectionRoutes, { services });
+  await z.register(compositeRoutes, { services });
+  await z.register(composerRoutes, { services });
+  await z.register(auditRoutes, { services });
+  await z.register(analyticsRoutes, { services });
+  await z.register(lgpdRoutes, { services });
+  await z.register(callRoutes, { services });
+  await z.register(debugRoutes, { services });
+  await z.register(agentRoutes, { services });
+  await z.register(settingsRoutes, { services });
+  await z.register(uiRoutes, { services });
+};

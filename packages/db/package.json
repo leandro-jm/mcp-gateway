@@ -1,0 +1,37 @@
+{
+  "name": "@mcp-gateway/db",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "author": "Leandro Martins (https://github.com/leandro-jm)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leandro-jm/mcp-gateway.git",
+    "directory": "packages/db"
+  },
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "db:generate": "drizzle-kit generate && node scripts/renumber.mjs",
+    "db:migrate": "tsx src/cli.ts up",
+    "db:rollback": "tsx src/cli.ts down",
+    "db:create-admin": "tsx src/cli.ts create-admin",
+    "db:seed": "tsx src/seed-cli.ts"
+  },
+  "dependencies": {
+    "@mcp-gateway/call-analytics": "workspace:*",
+    "@mcp-gateway/core": "workspace:*",
+    "@mcp-gateway/i18n": "workspace:*",
+    "drizzle-orm": "^0.45.3",
+    "pg": "^8.23.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@mcp-gateway/testkit": "workspace:*",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.11"
+  }
+}

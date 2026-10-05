@@ -1,0 +1,1 @@
+ALTER TABLE "tenants" ADD COLUMN "data_key_encrypted" text;

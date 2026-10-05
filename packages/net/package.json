@@ -1,0 +1,25 @@
+{
+  "name": "@mcp-gateway/net",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "author": "Leandro Martins (https://github.com/leandro-jm)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leandro-jm/mcp-gateway.git",
+    "directory": "packages/net"
+  },
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@mcp-gateway/core": "workspace:*",
+    "@mcp-gateway/i18n": "workspace:*",
+    "undici": "^8.11.2",
+    "yaml": "^2.9.1"
+  }
+}

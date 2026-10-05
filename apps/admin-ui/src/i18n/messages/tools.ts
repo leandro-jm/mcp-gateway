@@ -1,0 +1,62 @@
+import { defineMessages } from '@mcp-gateway/i18n';
+
+/** Tools page: catalog list, filters and the manual tool form. */
+export const tools = defineMessages('tools', {
+  en: {
+    'tools.title': 'Tools',
+    'tools.liveLabel': 'Enabled tools',
+    'tools.newManual': 'New manual tool',
+    'tools.searchPlaceholder': 'Search by name',
+    'tools.stateFilter': 'State filter',
+    'tools.kindFilter': 'Type filter',
+    'tools.ownerFilter': 'Owner filter',
+    'tools.empty': 'No tools found. Run a crawl in Sources.',
+    'tools.manualCreated': 'Tool {name} created ({state})',
+    'tools.manualIntro':
+      "For endpoints without OpenAPI. The tool uses the source's base URL and credential, goes through the same pipeline (authz, PII, projection) and starts {state}.",
+    'tools.definition': 'Definition',
+    'tools.definitionHint': 'name, description, method, path, params[{name,in,schema}], body{schema}, outputSchema or exampleResponse',
+    'tools.definitionEditor': 'Manual tool definition',
+    'tools.createManual': 'Create manual tool',
+    'tools.registerSource': 'Register a source',
+    'tools.ownersOwnTeam': 'Owners create tools for their own team.',
+  },
+  'pt-BR': {
+    'tools.title': 'Tools',
+    'tools.liveLabel': 'Tools habilitadas',
+    'tools.newManual': 'Nova tool manual',
+    'tools.searchPlaceholder': 'Buscar por nome',
+    'tools.stateFilter': 'Filtro de estado',
+    'tools.kindFilter': 'Filtro de tipo',
+    'tools.ownerFilter': 'Filtro de owner',
+    'tools.empty': 'Nenhuma tool encontrada. Rode um crawl em Sources.',
+    'tools.manualCreated': 'Tool {name} criada ({state})',
+    'tools.manualIntro':
+      'Para endpoints sem OpenAPI. A tool usa a base URL e a credencial da source, passa pela mesma pipeline (authz, PII, projeção) e nasce {state}.',
+    'tools.definition': 'Definição',
+    'tools.definitionHint': 'name, description, method, path, params[{name,in,schema}], body{schema}, outputSchema ou exampleResponse',
+    'tools.definitionEditor': 'Definição da tool manual',
+    'tools.createManual': 'Criar tool manual',
+    'tools.registerSource': 'Cadastrar uma source',
+    'tools.ownersOwnTeam': 'Owners criam tools do próprio time.',
+  },
+  es: {
+    'tools.title': 'Tools',
+    'tools.liveLabel': 'Tools habilitadas',
+    'tools.newManual': 'Nueva tool manual',
+    'tools.searchPlaceholder': 'Buscar por nombre',
+    'tools.stateFilter': 'Filtro de estado',
+    'tools.kindFilter': 'Filtro de tipo',
+    'tools.ownerFilter': 'Filtro de owner',
+    'tools.empty': 'No se encontraron tools. Ejecute un crawl en Sources.',
+    'tools.manualCreated': 'Tool {name} creada ({state})',
+    'tools.manualIntro':
+      'Para endpoints sin OpenAPI. La tool usa la base URL y la credencial de la source, pasa por el mismo pipeline (authz, PII, proyección) y nace {state}.',
+    'tools.definition': 'Definición',
+    'tools.definitionHint': 'name, description, method, path, params[{name,in,schema}], body{schema}, outputSchema o exampleResponse',
+    'tools.definitionEditor': 'Definición de la tool manual',
+    'tools.createManual': 'Crear tool manual',
+    'tools.registerSource': 'Registrar una source',
+    'tools.ownersOwnTeam': 'Los owners crean tools de su propio equipo.',
+  },
+});
