@@ -1,5 +1,5 @@
 # Admin UI: static build (Vite) served by nginx, proxying /admin, /mcp and /sdk to the gateway.
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH CI=true
 RUN corepack enable
 WORKDIR /repo
