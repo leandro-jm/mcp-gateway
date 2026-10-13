@@ -27,8 +27,8 @@
     "@mcp-gateway/net": "workspace:*",
     "@mcp-gateway/openapi-toolgen": "workspace:*",
     "@mcp-gateway/projection": "workspace:*",
-    "bullmq": "^6.3.11",
-    "drizzle-orm": "^0.45.3",
+    "bullmq": "^6.3.12",
+    "drizzle-orm": "^0.45.4",
     "ioredis": "^6.0.0",
     "pino": "^10.4.0",
     "zod": "^4.6.5"
