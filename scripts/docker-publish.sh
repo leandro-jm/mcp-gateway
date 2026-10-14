@@ -74,17 +74,57 @@ if [ -n "$(git status --porcelain)" ]; then
   fi
 fi
 
-dockerhub_logged_in() {
+# Prints the Docker Hub credentials of `docker login` as JSON ({"Username","Secret"}), from config.json or its
+# credential helper. Prints nothing when there are none.
+dockerhub_credentials() {
   local config="${DOCKER_CONFIG:-$HOME/.docker}/config.json" store
-  [ -f "$config" ] || return 1
-  grep -q '"https://index.docker.io/v1/"' "$config" && return 0
-  store="$(node -e 'const c=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));process.stdout.write(c.credsStore||"")' "$config")"
-  [ -n "$store" ] && command -v "docker-credential-$store" >/dev/null &&
-    "docker-credential-$store" list 2>/dev/null | grep -q '"https://index.docker.io/v1/"'
+  [ -f "$config" ] || return 0
+  store="$(node -e '
+    const c = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+    const e = (c.auths || {})["https://index.docker.io/v1/"] || {};
+    if (e.auth) {
+      const [u, ...s] = Buffer.from(e.auth, "base64").toString().split(":");
+      console.log(JSON.stringify({ Username: u, Secret: s.join(":") }));
+    } else process.stdout.write("helper:" + ((c.credHelpers || {})["index.docker.io"] || c.credsStore || ""));
+  ' "$config")"
+  case "$store" in
+    helper:) ;;
+    helper:*)
+      store="${store#helper:}"
+      command -v "docker-credential-$store" >/dev/null &&
+        echo "https://index.docker.io/v1/" | "docker-credential-$store" get 2>/dev/null || true
+      ;;
+    *) echo "$store" ;;
+  esac
+}
+
+# Fails early (before a long multi-arch build) when the login cannot push to $NAMESPACE/<repo>.
+check_push_access() {
+  local repo="$1" creds user token actions
+  creds="$(dockerhub_credentials)"
+  [ -n "$creds" ] || die "not logged in to Docker Hub: run docker login -u $NAMESPACE with a personal access token (scope 'Read & Write')"
+  user="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).Username || "")' "$creds")"
+  token="$(
+    node -e 'const c = JSON.parse(process.argv[1]); process.stdout.write(`user = "${c.Username}:${c.Secret}"\n`)' "$creds" |
+      curl -sS -K - "https://auth.docker.io/token?service=registry.docker.io&scope=repository:$NAMESPACE/$repo:pull,push" |
+      node -e 'try { process.stdout.write(JSON.parse(require("fs").readFileSync(0, "utf8")).token || "") } catch {}'
+  )"
+  [ -n "$token" ] || die "Docker Hub rejected the stored login of '$user': run docker login -u $NAMESPACE again"
+  actions="$(node -e '
+    const p = JSON.parse(Buffer.from(process.argv[1].split(".")[1], "base64url").toString());
+    process.stdout.write((p.access || []).flatMap((a) => a.actions || []).join(","));
+  ' "$token")"
+  case ",$actions," in
+    *,push,*) echo "==> Docker Hub login '$user' can push to $NAMESPACE/$repo" ;;
+    *) die "Docker Hub login '$user' cannot push to $NAMESPACE/$repo (granted: ${actions:-none}). Log in as $NAMESPACE with a personal access token whose scope is 'Read & Write' or 'Read, Write, Delete' (the default 'Public Repo Read-only' cannot push): docker logout && docker login -u $NAMESPACE" ;;
+  esac
 }
 
 if [ "$MODE" = publish ]; then
-  dockerhub_logged_in || die "not logged in to Docker Hub: run docker login -u $NAMESPACE (use a personal access token)"
+  for entry in "${IMAGES[@]}"; do
+    IFS='|' read -r name repo _ <<<"$entry"
+    if [ -z "$ONLY" ] || [ "$ONLY" = "$name" ]; then check_push_access "$repo"; fi
+  done
   if ! docker buildx inspect "$BUILDER" >/dev/null 2>&1; then
     echo "==> creating buildx builder '$BUILDER' (docker-container driver, needed for multi-arch)"
     docker buildx create --name "$BUILDER" --driver docker-container --bootstrap >/dev/null
