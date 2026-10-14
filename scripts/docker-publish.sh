@@ -10,7 +10,8 @@
 #   DOCKERHUB_NAMESPACE  Docker Hub user or org (default: leandrojm)
 #   VERSION              image version (default: "version" of the root package.json)
 #   PLATFORMS            buildx platforms for publish (default: linux/amd64,linux/arm64)
-#   DOCKERHUB_TOKEN      optional personal access token: creates missing repositories as public
+#   DOCKERHUB_TOKEN      optional personal access token with the 'Read, Write, Delete' scope: creates missing
+#                        repositories as public (a 'Read & Write' token only pushes; the push then creates them)
 #   DOCKERHUB_USERNAME   account that owns DOCKERHUB_TOKEN (default: DOCKERHUB_NAMESPACE)
 set -euo pipefail
 
@@ -28,7 +29,7 @@ ONLY=""
 LATEST=1
 ALLOW_DIRTY=0
 
-usage() { sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; }
 die() { echo "error: $*" >&2; exit 1; }
 warn() { echo "warning: $*" >&2; }
 
@@ -116,17 +117,38 @@ ensure_public_repo() {
     return 0
   fi
   rm -f "$body"
+  if [ "$status" = 401 ] || [ "$status" = 403 ]; then
+    warn "Docker Hub refused to read $NAMESPACE/$repo (HTTP $status); skipping the repository check"
+    HUB_CREATE_DENIED=1
+    return 0
+  fi
   [ "$status" = 404 ] || die "Docker Hub returned HTTP $status for $NAMESPACE/$repo"
   echo "==> creating public repository $NAMESPACE/$repo"
-  node -e '
-    const [ns, name, description, readme] = process.argv.slice(1);
-    const full = require("fs").readFileSync(readme, "utf8");
-    process.stdout.write(JSON.stringify({ namespace: ns, name, description, full_description: full, registry: "docker.io", is_private: false }));
-  ' "$NAMESPACE" "$repo" "$description" docker/dockerhub/README.md |
-    curl -fsS -o /dev/null -X POST "https://hub.docker.com/v2/namespaces/$NAMESPACE/repositories" \
-      -H "Authorization: Bearer $HUB_JWT" -H 'Content-Type: application/json' --data-binary @- ||
-    die "could not create $NAMESPACE/$repo on Docker Hub"
+  body="$(mktemp)"
+  status="$(
+    node -e '
+      const [ns, name, description, readme] = process.argv.slice(1);
+      const full = require("fs").readFileSync(readme, "utf8");
+      process.stdout.write(JSON.stringify({ namespace: ns, name, description, full_description: full, registry: "docker.io", is_private: false }));
+    ' "$NAMESPACE" "$repo" "$description" docker/dockerhub/README.md |
+      curl -sS -o "$body" -w '%{http_code}' -X POST "https://hub.docker.com/v2/namespaces/$NAMESPACE/repositories" \
+        -H "Authorization: Bearer $HUB_JWT" -H 'Content-Type: application/json' --data-binary @-
+  )"
+  case "$status" in
+    200 | 201) ;;
+    401 | 403)
+      # A "Read & Write" PAT can push but not manage repositories; the push below creates the repo instead
+      warn "Docker Hub refused to create $NAMESPACE/$repo (HTTP $status: $(head -c 200 "$body")). The token needs the 'Read, Write, Delete' scope for that; continuing, the push creates it with your account's default visibility"
+      HUB_CREATE_DENIED=1
+      ;;
+    *)
+      rm -f "$body"
+      die "could not create $NAMESPACE/$repo on Docker Hub (HTTP $status)"
+      ;;
+  esac
+  rm -f "$body"
 }
+HUB_CREATE_DENIED=0
 
 # ---------- tags ----------
 tags_for() {
@@ -184,7 +206,9 @@ if [ "$MODE" = local ]; then
 else
   echo "Published ($PLATFORMS):"
   for ref in "${PUBLISHED[@]}"; do tags_for "$ref" | sed 's/^/  /'; done
-  [ -z "$HUB_JWT" ] && warn "DOCKERHUB_TOKEN not set: repositories created on first push use your account's default visibility; check they are public at https://hub.docker.com/u/$NAMESPACE"
+  if [ -z "$HUB_JWT" ] || [ "$HUB_CREATE_DENIED" = 1 ]; then
+    warn "repositories created by the push use your account's default visibility; check they are public at https://hub.docker.com/u/$NAMESPACE"
+  fi
   echo
   echo "Check: docker buildx imagetools inspect $NAMESPACE/mcp-gateway:$VERSION"
 fi
