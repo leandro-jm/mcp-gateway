@@ -17,6 +17,7 @@ export interface Me {
   isAdmin: boolean;
   isOwner: boolean;
   locale: Locale;
+  publicUrl: string;
 }
 
 export interface User {
@@ -51,8 +52,10 @@ export interface Tenant {
   id: string;
   slug: string;
   name: string;
-  status: string;
+  status: 'active' | 'suspended';
   settings: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Tool {

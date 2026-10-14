@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Activity,
   Box,
+  Building2,
   ChevronLeft,
   ChevronRight,
   ChevronsUpDown,
@@ -16,6 +17,7 @@ import {
   ListTree,
   LogOut,
   Network,
+  Rocket,
   ScrollText,
   Search,
   Settings,
@@ -36,10 +38,12 @@ import { useSession } from '../api/session';
 import type { DriftEvent, Page, Tool } from '../api/types';
 import { useT, type UiMessageKey } from '../i18n';
 import { enumLabel, TOOL_STATE_LABEL } from '../lib/labels';
+import { useOnboarding } from '../lib/onboarding';
 
-const NAV: Array<{ group?: UiMessageKey; items: Array<{ to: string; label: UiMessageKey; icon: ReactNode; adminOnly?: boolean; analystOnly?: boolean }> }> = [
+const NAV: Array<{ group?: UiMessageKey; items: Array<{ to: string; label: UiMessageKey; icon: ReactNode; adminOnly?: boolean; platformOnly?: boolean; analystOnly?: boolean }> }> = [
   {
     items: [
+      { to: '/onboarding', label: 'shell.navOnboarding', icon: <Rocket size={22} /> },
       { to: '/tools', label: 'shell.navTools', icon: <Box size={22} /> },
       { to: '/sources', label: 'shell.navSources', icon: <Database size={22} /> },
       { to: '/servers', label: 'shell.navServers', icon: <Network size={22} /> },
@@ -64,6 +68,7 @@ const NAV: Array<{ group?: UiMessageKey; items: Array<{ to: string; label: UiMes
       { to: '/sessions', label: 'shell.navSessions', icon: <Waypoints size={22} />, analystOnly: true },
       { to: '/agents', label: 'shell.navAgents', icon: <Lightbulb size={22} /> },
       { to: '/audit', label: 'shell.navAudit', icon: <ScrollText size={22} /> },
+      { to: '/tenants', label: 'shell.navTenants', icon: <Building2 size={22} />, platformOnly: true },
       { to: '/users', label: 'shell.navUsers', icon: <Users size={22} />, adminOnly: true },
       { to: '/tokens', label: 'shell.navTokens', icon: <KeyRound size={22} /> },
       { to: '/settings', label: 'shell.navSettings', icon: <Settings size={22} />, adminOnly: true },
@@ -160,6 +165,8 @@ export function Shell({ children }: { children: ReactNode }) {
     refetchInterval: 30_000,
   });
   const pending = drift.data?.total ?? 0;
+  const onboarding = useOnboarding();
+  const onboardingLeft = onboarding.isLoading ? 0 : onboarding.total - onboarding.done;
   const env = import.meta.env.VITE_ENV_LABEL ?? 'DEV';
   const initials = (me.name ?? me.sub)
     .split(/[\s._-]+/)
@@ -184,9 +191,12 @@ export function Shell({ children }: { children: ReactNode }) {
       <header className="topbar">
         <Logo />
         <nav className="crumbs" aria-label={t('shell.context')}>
-          <span className="crumb">
-            <User size={20} className="muted" />
-            {me.isAdmin && tenants.length > 0 ? (
+          {me.isAdmin && tenants.length > 1 ? (
+            // the native select covers the whole crumb, so icon and chevron open it too
+            <span className="crumb switchable">
+              <User size={20} className="muted" />
+              <span>{tenants.find((tn) => tn.slug === tenant)?.name ?? tenant}</span>
+              <ChevronsUpDown size={16} className="muted" />
               <select value={tenant ?? ''} onChange={(e) => setTenant(e.target.value)} aria-label={t('shell.tenant')}>
                 {tenants.map((tn) => (
                   <option key={tn.slug} value={tn.slug}>
@@ -194,17 +204,18 @@ export function Shell({ children }: { children: ReactNode }) {
                   </option>
                 ))}
               </select>
-            ) : (
-              <span>{tenant}</span>
-            )}
-            <ChevronsUpDown size={16} className="muted" />
-          </span>
+            </span>
+          ) : (
+            <span className="crumb">
+              <User size={20} className="muted" />
+              <span>{tenants.find((tn) => tn.slug === tenant)?.name ?? tenant}</span>
+            </span>
+          )}
           <span className="sep">/</span>
           <span className="crumb">
             <Folder size={20} className="muted" />
             <span>Gateway</span>
             <span className="env-badge">{env}</span>
-            <ChevronsUpDown size={16} className="muted" />
           </span>
         </nav>
         <div className="spacer" />
@@ -227,11 +238,12 @@ export function Shell({ children }: { children: ReactNode }) {
         {NAV.map((g, i) => (
           <div key={i}>
             {g.group && <div className="nav-group">{t(g.group)}</div>}
-            {g.items.filter((item) => (!item.adminOnly || me.isAdmin) && (!item.analystOnly || me.isAdmin || me.roles.includes('analytics-reader'))).map((item) => (
+            {g.items.filter((item) => (!item.adminOnly || me.isAdmin) && (!item.platformOnly || (me.isAdmin && me.tenant === null)) && (!item.analystOnly || me.isAdmin || me.roles.includes('analytics-reader'))).map((item) => (
               <NavLink key={item.to} to={item.to} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
                 {item.icon}
                 <span>{t(item.label)}</span>
                 {item.to === '/drift' && pending > 0 && <span className="count">{pending}</span>}
+                {item.to === '/onboarding' && onboardingLeft > 0 && <span className="count">{onboardingLeft}</span>}
               </NavLink>
             ))}
           </div>

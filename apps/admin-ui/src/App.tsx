@@ -2,8 +2,10 @@ import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { Shell } from './components/Shell';
 import { useT } from './i18n';
+import { useOnboarding } from './lib/onboarding';
 
 // Pages with editors (CodeMirror) are loaded on demand.
+const OnboardingPage = lazy(() => import('./pages/Onboarding').then((m) => ({ default: m.OnboardingPage })));
 const ToolsPage = lazy(() => import('./pages/Tools').then((m) => ({ default: m.ToolsPage })));
 const SourcesPage = lazy(() => import('./pages/Sources').then((m) => ({ default: m.SourcesPage })));
 const ServersPage = lazy(() => import('./pages/Servers').then((m) => ({ default: m.ServersPage })));
@@ -19,8 +21,17 @@ const SessionsPage = lazy(() => import('./pages/Sessions').then((m) => ({ defaul
 const AgentsPage = lazy(() => import('./pages/Agents').then((m) => ({ default: m.AgentsPage })));
 const AuditPage = lazy(() => import('./pages/Audit').then((m) => ({ default: m.AuditPage })));
 const UsersPage = lazy(() => import('./pages/Users').then((m) => ({ default: m.UsersPage })));
+const TenantsPage = lazy(() => import('./pages/Tenants').then((m) => ({ default: m.TenantsPage })));
 const TokensPage = lazy(() => import('./pages/Tokens').then((m) => ({ default: m.TokensPage })));
 const SettingsPage = lazy(() => import('./pages/Settings').then((m) => ({ default: m.SettingsPage })));
+
+/** The app opens on the getting-started guide while its essential steps are pending (ADR-023). */
+function HomeRedirect() {
+  const t = useT();
+  const onboarding = useOnboarding();
+  if (onboarding.isLoading) return <div className="loading content">{t('common.loading')}</div>;
+  return <Navigate to={onboarding.essentialComplete || onboarding.dismissed ? '/tools' : '/onboarding'} replace />;
+}
 
 export function App() {
   const t = useT();
@@ -28,7 +39,8 @@ export function App() {
     <Shell>
       <Suspense fallback={<div className="loading content">{t('common.loading')}</div>}>
         <Routes>
-          <Route path="/" element={<Navigate to="/tools" replace />} />
+          <Route path="/" element={<HomeRedirect />} />
+          <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/tools" element={<ToolsPage />} />
           <Route path="/sources" element={<SourcesPage />} />
           <Route path="/servers" element={<ServersPage />} />
@@ -44,6 +56,7 @@ export function App() {
           <Route path="/agents" element={<AgentsPage />} />
           <Route path="/audit" element={<AuditPage />} />
           <Route path="/users" element={<UsersPage />} />
+          <Route path="/tenants" element={<TenantsPage />} />
           <Route path="/tokens" element={<TokensPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/tools" replace />} />

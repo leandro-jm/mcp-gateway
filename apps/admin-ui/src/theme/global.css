@@ -105,18 +105,21 @@ kbd,
   padding: 4px 6px;
   border: 1px solid transparent;
   background: none;
-  cursor: pointer;
   white-space: nowrap;
 }
-.crumb:hover {
+.crumb.switchable {
+  position: relative;
+  cursor: pointer;
+}
+.crumb.switchable:hover,
+.crumb.switchable:focus-within {
   border-color: var(--border);
 }
-.crumb select {
-  appearance: none;
-  background: transparent;
-  border: none;
-  font-weight: 500;
-  padding-right: 4px;
+.crumb.switchable select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
   cursor: pointer;
 }
 .env-badge {
@@ -1221,4 +1224,177 @@ kbd {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- onboarding (ADR-023) */
+.onb p {
+  margin: 0;
+}
+.onb-lead {
+  font-size: 16px;
+  max-width: 920px;
+  line-height: 1.55;
+}
+.onb-flow {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.onb-node {
+  flex: 1 1 170px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.onb-node.accent {
+  border-color: var(--accent-border);
+  background: var(--accent-dim);
+}
+.onb-arrow {
+  align-self: center;
+  color: var(--text-3);
+  flex: none;
+}
+.onb-pipeline {
+  padding: 8px 12px;
+  border: 1px dashed var(--border-strong);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-2);
+}
+.onb-progress {
+  height: 8px;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+}
+.onb-progress > span {
+  display: block;
+  height: 100%;
+  background: var(--success);
+  transition: width 0.3s ease;
+}
+.onb-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.onb-step {
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+.onb-step.done {
+  border-color: var(--success-border);
+}
+.onb-step-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.onb-step-head:hover {
+  background: var(--surface);
+}
+.onb-step-num {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.onb-step-title {
+  flex: 1;
+  font-weight: 600;
+  font-size: 15px;
+}
+.onb-step.done .onb-step-title {
+  color: var(--text-2);
+}
+.onb-check {
+  color: var(--success);
+  flex: none;
+}
+.onb-pending {
+  color: var(--text-3);
+  flex: none;
+}
+.onb-step-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  padding: 4px 16px 18px 50px;
+}
+.onb-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  line-height: 1.5;
+}
+.onb-how {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.onb-prompt {
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-dim);
+  font-style: italic;
+}
+.onb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+.onb-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  line-height: 1.45;
+}
+.onb-card.done {
+  border-color: var(--success-border);
+}
+.onb-card .row {
+  flex-wrap: wrap;
+}
+.onb-mini {
+  font-size: 12px;
+  color: var(--text-2);
+  padding: 6px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  word-break: break-word;
+}
+.onb-glossary dt {
+  font-weight: 600;
+}
+.onb-glossary dd {
+  margin: 0;
+}
+@media (max-width: 1100px) {
+  .onb-step-body {
+    grid-template-columns: 1fr;
+    padding-left: 16px;
+  }
 }

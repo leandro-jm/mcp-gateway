@@ -34,7 +34,7 @@ export const uiRoutes: FastifyPluginAsyncZod<{ services: Services }> = async (ap
     handler: async (req) => {
       const p = requirePrincipal(req);
       const name = (p.claims.name ?? p.claims.preferred_username ?? null) as string | null;
-      return { sub: p.sub, name, tenant: p.tenant ?? null, roles: p.roles, groups: p.groups, isAdmin: isAdmin(p), isOwner: p.roles.includes(ROLE.owner), locale: p.locale };
+      return { sub: p.sub, name, tenant: p.tenant ?? null, roles: p.roles, groups: p.groups, isAdmin: isAdmin(p), isOwner: p.roles.includes(ROLE.owner), locale: p.locale, publicUrl: services.config.PUBLIC_URL };
     },
   });
 
@@ -48,7 +48,7 @@ export const uiRoutes: FastifyPluginAsyncZod<{ services: Services }> = async (ap
       // every cached token of this user carries the old locale
       services.verifier.clear();
       const name = (p.claims.name ?? p.claims.preferred_username ?? null) as string | null;
-      return { sub: p.sub, name, tenant: p.tenant ?? null, roles: p.roles, groups: p.groups, isAdmin: isAdmin(p), isOwner: p.roles.includes(ROLE.owner), locale: req.body.locale };
+      return { sub: p.sub, name, tenant: p.tenant ?? null, roles: p.roles, groups: p.groups, isAdmin: isAdmin(p), isOwner: p.roles.includes(ROLE.owner), locale: req.body.locale, publicUrl: services.config.PUBLIC_URL };
     },
   });
 

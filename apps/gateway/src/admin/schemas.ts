@@ -630,6 +630,7 @@ export const meSchema = z.object({
   isAdmin: z.boolean(),
   isOwner: z.boolean(),
   locale: localeSchema,
+  publicUrl: z.string().describe('Public base URL of the gateway, used to build MCP client snippets'),
 });
 
 export const mePatchSchema = z.object({ locale: localeSchema });

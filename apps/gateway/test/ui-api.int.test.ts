@@ -27,7 +27,7 @@ describe('Admin UI endpoints (F10)', () => {
   });
 
   it('/me', async () => {
-    expect((await call(owner, 'GET', '/me')).json()).toMatchObject({ sub: 'owner-1', name: 'Owner RH', tenant: 'acme', isAdmin: false, isOwner: true, groups: ['team-rh'], locale: 'en' });
+    expect((await call(owner, 'GET', '/me')).json()).toMatchObject({ sub: 'owner-1', name: 'Owner RH', tenant: 'acme', isAdmin: false, isOwner: true, groups: ['team-rh'], locale: 'en', publicUrl: expect.any(String) });
   });
 
   it('PATCH /me changes the language of later responses (ADR-012)', async () => {
