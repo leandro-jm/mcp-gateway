@@ -1,6 +1,7 @@
 import { applyOverrides, type ToolKind, type ToolState } from '@mcp-gateway/core';
-import { piiRules, policies, projections, type Db, type OperationRef, type ToolAnnotations } from '@mcp-gateway/db';
-import { eq } from 'drizzle-orm';
+import { piiRules, policies, projections, tenantThemes, toolViews, type Db, type OperationRef, type ToolAnnotations } from '@mcp-gateway/db';
+import { parseToolViews, validateSpec, validateTheme, type ThemeTokens, type ToolViews } from '@mcp-ui-kit/view-spec';
+import { and, eq } from 'drizzle-orm';
 import type { Repos } from '../services';
 
 /** Registry view consumed by the data plane (plain JSON, serializable to Redis). */
@@ -61,6 +62,18 @@ export interface SnapshotComposite {
   };
 }
 
+/** Active UI of a tool (ADR-022): only specs that still match the tool contract get here. */
+export interface SnapshotToolView {
+  toolId: string;
+  views: ToolViews;
+}
+
+export interface SnapshotTheme {
+  tokens: ThemeTokens;
+  tileUrl: string | null;
+  tileAttribution: string | null;
+}
+
 export interface RegistrySnapshot {
   tenant: { id: string; slug: string; status: string; settings: Record<string, unknown> };
   builtAt: string;
@@ -73,6 +86,9 @@ export interface RegistrySnapshot {
   piiRules: SnapshotPiiRule[];
   projections: SnapshotProjection[];
   composites: SnapshotComposite[];
+  /** Absent on snapshots cached before F18: read with `?? []`. */
+  toolViews?: SnapshotToolView[];
+  theme?: SnapshotTheme | null;
 }
 
 const strip = <T extends { createdAt: Date; updatedAt: Date }>({ createdAt: _c, updatedAt: _u, ...rest }: T) => rest;
@@ -83,7 +99,7 @@ export async function buildSnapshot(
   tenantId: string,
   generation = 0,
 ): Promise<RegistrySnapshot> {
-  const [tenant, tools, sources, vss, pols, pii, projs, comps] = await Promise.all([
+  const [tenant, tools, sources, vss, pols, pii, projs, comps, views, themes] = await Promise.all([
     repos.tenants.get(tenantId),
     repos.tools.listAll(tenantId, ['enabled', 'disabled', 'deprecated']),
     repos.sources.list(tenantId, { limit: 500 }),
@@ -92,32 +108,37 @@ export async function buildSnapshot(
     db.select().from(piiRules).where(eq(piiRules.tenantId, tenantId)),
     db.select().from(projections).where(eq(projections.tenantId, tenantId)),
     repos.composites.list(tenantId),
+    db.select().from(toolViews).where(and(eq(toolViews.tenantId, tenantId), eq(toolViews.status, 'active'))),
+    db.select().from(tenantThemes).where(eq(tenantThemes.tenantId, tenantId)),
   ]);
+  const snapshotTools = tools.map((t) => {
+    const eff = applyOverrides(t);
+    return {
+      id: t.id,
+      kind: t.kind,
+      sourceId: t.sourceId,
+      compositeDefId: t.compositeDefId,
+      name: eff.name,
+      baseName: eff.baseName,
+      title: eff.title,
+      description: eff.description,
+      inputSchema: eff.inputSchema,
+      outputSchema: t.outputSchema,
+      annotations: t.annotations,
+      state: t.state,
+      operationRef: t.operationRef,
+      ownerTeam: t.ownerTeam,
+      version: t.version,
+      tags: t.tags,
+    };
+  });
+  const byId = new Map(snapshotTools.map((t) => [t.id, t]));
+  const theme = themes[0];
   return {
     tenant: { id: tenant.id, slug: tenant.slug, status: tenant.status, settings: tenant.settings },
     builtAt: new Date().toISOString(),
     generation,
-    tools: tools.map((t) => {
-      const eff = applyOverrides(t);
-      return {
-        id: t.id,
-        kind: t.kind,
-        sourceId: t.sourceId,
-        compositeDefId: t.compositeDefId,
-        name: eff.name,
-        baseName: eff.baseName,
-        title: eff.title,
-        description: eff.description,
-        inputSchema: eff.inputSchema,
-        outputSchema: t.outputSchema,
-        annotations: t.annotations,
-        state: t.state,
-        operationRef: t.operationRef,
-        ownerTeam: t.ownerTeam,
-        version: t.version,
-        tags: t.tags,
-      };
-    }),
+    tools: snapshotTools,
     sources: sources.items.map((s) => ({
       id: s.id,
       name: s.name,
@@ -152,5 +173,14 @@ export async function buildSnapshot(
         timeout_ms: c.timeoutMs,
       },
     })),
+    toolViews: views.flatMap((v) => {
+      const tool = byId.get(v.toolId);
+      const parsed = parseToolViews(v.views);
+      // a view that no longer matches the tool contract (drift, rename) is left out, never half-applied
+      if (!tool || !parsed.ok) return [];
+      const issues = validateSpec(parsed.value, { name: tool.name, inputSchema: tool.inputSchema, ...(tool.outputSchema ? { outputSchema: tool.outputSchema } : {}), annotations: tool.annotations });
+      return issues.length ? [] : [{ toolId: v.toolId, views: parsed.value }];
+    }),
+    theme: theme && !validateTheme(theme.tokens as ThemeTokens).errors.length ? { tokens: theme.tokens as ThemeTokens, tileUrl: theme.tileUrl, tileAttribution: theme.tileAttribution } : null,
   };
 }

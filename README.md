@@ -4,7 +4,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 ![Node ≥ 22.12](https://img.shields.io/badge/node-%E2%89%A522.12-339933)
 
-**English** · [Português](README.pt-BR.md)
+**English** · [Português](README.pt-BR.md) · **Website:** [leandro-jm.github.io/mcp-gateway](https://leandro-jm.github.io/mcp-gateway/)
 
 A multi-tenant **Model Context Protocol (MCP) gateway** that turns existing REST/OpenAPI APIs into governed MCP tools for AI agents, without changing the APIs themselves.
 
@@ -110,9 +110,9 @@ Then:
 
 ## Deployment
 
-Docker images for `gateway`, `crawler` and `admin-ui` are published to `ghcr.io/leandro-jm/mcp-gateway/*` from version tags. See:
+Public, multi-arch Docker images are published to Docker Hub from version tags: [`leandrojm/mcp-gateway`](https://hub.docker.com/r/leandrojm/mcp-gateway), [`leandrojm/mcp-gateway-crawler`](https://hub.docker.com/r/leandrojm/mcp-gateway-crawler) and [`leandrojm/mcp-gateway-admin-ui`](https://hub.docker.com/r/leandrojm/mcp-gateway-admin-ui) (mirrored on `ghcr.io/leandro-jm/*`). The stack in [`docker/docker-compose.prod.yml`](docker/docker-compose.prod.yml) runs with `docker compose` or as a Portainer stack. See:
 
-- [docs/deploy.md](docs/deploy.md): production deployment (compose stack, TLS, first admin, upgrades, backup, security checklist), in pt-BR;
+- [docs/deploy.md](docs/deploy.md): production deployment (compose and Portainer, TLS, first admin, upgrades, backup, security checklist, publishing images), in pt-BR;
 - [docker/prod.env.example](docker/prod.env.example): environment variables;
 - [docs/observability](docs/observability): metrics, traces, Grafana dashboard and Prometheus rules.
 
@@ -129,6 +129,7 @@ apps/
   gateway/        MCP data plane + Admin API (Fastify)
   crawler/        BullMQ worker: discovery, tool generation, drift
   admin-ui/       React + Vite admin console
+  site/           landing page (React + Vite, GitHub Pages)
 packages/
   core/           config, errors, crypto, logger (pure)
   i18n/           typed message catalogs: en, pt-BR, es (pure)

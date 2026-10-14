@@ -14,6 +14,7 @@ import {
   DriftEventsRepo,
   Keyring,
   ProjectionsRepo,
+  ToolViewsRepo,
   SourcesRepo,
   SystemQueries,
   TenantsRepo,
@@ -38,6 +39,7 @@ export interface CrawlerServices {
     tools: ToolsRepo;
     drift: DriftEventsRepo;
     projections: ProjectionsRepo;
+    toolViews: ToolViewsRepo;
     composites: CompositesRepo;
     system: SystemQueries;
   };
@@ -67,6 +69,7 @@ export function createCrawlerServices(config: CrawlerConfig, logger: Logger): Cr
       tools: new ToolsRepo(db),
       drift: new DriftEventsRepo(db),
       projections: new ProjectionsRepo(db),
+      toolViews: new ToolViewsRepo(db),
       composites: new CompositesRepo(db),
       system: new SystemQueries(db),
     },

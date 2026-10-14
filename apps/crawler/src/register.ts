@@ -1,6 +1,7 @@
 import { Conflict } from '@mcp-gateway/core';
 import { msg, type ServerMessage } from '@mcp-gateway/i18n/server';
-import type { CompositesRepo, DriftEvent, DriftEventsRepo, ProjectionsRepo, Source, Tool, ToolsRepo } from '@mcp-gateway/db';
+import type { CompositesRepo, DriftEvent, DriftEventsRepo, JsonObject, ProjectionsRepo, Source, Tool, ToolsRepo, ToolViewsRepo } from '@mcp-gateway/db';
+import { infer } from '@mcp-ui-kit/view-spec';
 import {
   diffTools,
   shortHash,
@@ -20,6 +21,8 @@ export interface RegisterStats {
   deprecated: number;
   restored: number;
   projectionsSuggested: number;
+  /** Views inferred for new tools (ADR-022), stored as `suggested`. */
+  viewsSuggested: number;
   compositesInvalidated: number;
   /** Warnings (e.g. a spec operation equivalent to a manual tool, which is not replaced). */
   warnings: string[];
@@ -37,6 +40,8 @@ export interface RegisterDeps {
   projections?: ProjectionsRepo;
   /** Optional: invalidates composites that depend on tools with breaking drift/removed (F7b.5). */
   composites?: CompositesRepo;
+  /** Optional: stores views inferred from the tool contract, inactive until approved (ADR-022). */
+  views?: ToolViewsRepo;
 }
 
 const fields = (g: GeneratedTool) => ({
@@ -88,6 +93,7 @@ export async function registerTools(
     deprecated: 0,
     restored: 0,
     projectionsSuggested: 0,
+    viewsSuggested: 0,
     compositesInvalidated: 0,
     warnings: [],
   };
@@ -142,6 +148,10 @@ export async function registerTools(
       const suggestion = suggestProjection(g.outputSchema);
       if (suggestion && deps.projections && (await deps.projections.suggest(tenantId, tool.id, suggestion.include))) {
         stats.projectionsSuggested += 1;
+      }
+      const views = deps.views ? infer({ name: tool.name, ...(g.title ? { title: g.title } : {}), inputSchema: g.inputSchema, ...(g.outputSchema ? { outputSchema: g.outputSchema } : {}), annotations: g.annotations }) : undefined;
+      if (views && (await deps.views!.suggest(tenantId, tool.id, views as unknown as JsonObject, views.version))) {
+        stats.viewsSuggested += 1;
       }
       continue;
     }

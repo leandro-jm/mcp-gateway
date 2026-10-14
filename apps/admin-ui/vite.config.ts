@@ -5,6 +5,8 @@ const gateway = process.env.GATEWAY_URL ?? 'http://localhost:4000';
 
 export default defineConfig({
   plugins: [react()],
+  // one React for the whole app, also when @mcp-ui-kit/* is pnpm-linked from a local checkout
+  resolve: { dedupe: ['react', 'react-dom'] },
   server: {
     port: 5180,
     strictPort: true,

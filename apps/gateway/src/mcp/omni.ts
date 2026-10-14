@@ -1,13 +1,13 @@
 import type { Locale } from '@mcp-gateway/i18n';
 import { msg, translate, type ServerMessage, type ServerMessageKey } from '@mcp-gateway/i18n/server';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { CallToolRequestSchema, ListToolsRequestSchema, McpError } from '@modelcontextprotocol/sdk/types.js';
+import { ProtocolError as McpProtocolError, Server } from '@modelcontextprotocol/server';
 import { descriptorTokens, shortHash } from '@mcp-gateway/call-analytics';
 import type { ArtifactService } from '../proxy/artifacts';
 import type { CallRecorder } from '../telemetry/call-events/recorder';
-import { forRequest } from './call-context';
+import { forRequest, requestInfo } from './call-context';
 import { outcomeToolEnabled, REPORT_OUTCOME, reportOutcomeTool, type OutcomeHandler } from './outcomes';
-import { artifactTools, callArtifactTool, isArtifactTool, registerArtifactResources } from './artifact-tools';
+import { artifactResources, artifactTools, callArtifactTool, isArtifactTool } from './artifact-tools';
+import { registerResources, uiResources } from './resources';
 import { activeProjection, ProtocolError, toDescriptor, type CallContext, type ToolExecutor } from '../proxy/executor';
 import { describeTool } from '../proxy/effect';
 import { errorResult, type ToolResult } from '../proxy/result';
@@ -120,7 +120,7 @@ export function createOmniServer(deps: OmniDeps, getCtx: () => CallContext, sess
 
   const visible = () => new Map(deps.executor.listTools(current()).map((d) => [d.name, d]));
 
-  server.setRequestHandler(ListToolsRequestSchema, async (req, extra) => {
+  server.setRequestHandler('tools/list', async (_req, h) => {
     const tools: unknown[] = [
       ...omniTools(locale),
       ...(deps.artifacts?.enabled ? artifactTools(locale) : []),
@@ -134,12 +134,12 @@ export function createOmniServer(deps: OmniDeps, getCtx: () => CallContext, sess
       }
     }
     // Omni savings (ADR-016 §11): what the native catalog would have cost
-    deps.executor.recordList(forRequest(current(), req.params?._meta, extra.requestId), tools, descriptorTokens([...all.values()]));
+    deps.executor.recordList(forRequest(current(), requestInfo(h, false)), tools, descriptorTokens([...all.values()]));
     return { tools } as never;
   });
 
-  server.setRequestHandler(CallToolRequestSchema, async (req, extra) => {
-    const ctx = forRequest(current(), req.params._meta, extra.requestId, extra.signal);
+  server.setRequestHandler('tools/call', async (req, h) => {
+    const ctx = forRequest(current(), requestInfo(h));
     const args = (req.params.arguments ?? {}) as Record<string, unknown>;
     const name = req.params.name;
 
@@ -150,7 +150,7 @@ export function createOmniServer(deps: OmniDeps, getCtx: () => CallContext, sess
     if (!META_NAMES.has(name)) {
       // Dynamic mode: native tool discovered by the search.
       if (!session.dynamic || !session.discovered.has(name)) {
-        throw new McpError(-32602, text(msg('mcp.omniUnknownTool', { tool: name })));
+        throw new McpProtocolError(-32602, text(msg('mcp.omniUnknownTool', { tool: name })));
       }
       return callInner(deps, ctx, name, args, locale);
     }
@@ -207,7 +207,7 @@ export function createOmniServer(deps: OmniDeps, getCtx: () => CallContext, sess
     });
   };
 
-  if (deps.artifacts) registerArtifactResources(server, deps.artifacts, current);
+  registerResources(server, [...(deps.artifacts ? [artifactResources(deps.artifacts)] : []), uiResources()], current);
   return server;
 }
 

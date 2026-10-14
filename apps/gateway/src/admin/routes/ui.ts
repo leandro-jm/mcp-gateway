@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { applyOverrides, Forbidden, NotFound } from '@mcp-gateway/core';
 import { msg } from '@mcp-gateway/i18n/server';
-import { McpError } from '@modelcontextprotocol/sdk/types.js';
+import { ProtocolError as McpProtocolError } from '@modelcontextprotocol/server';
+import { MCP_APPS_EXTENSION } from '@mcp-ui-kit/view-spec';
+import { uiRequestOf } from '../../proxy/ui';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import type { Principal } from '../../auth/tokens';
 import { ProtocolError, type CallContext } from '../../proxy/executor';
@@ -141,6 +143,8 @@ export const uiRoutes: FastifyPluginAsyncZod<{ services: Services }> = async (ap
         sessionKey: `playground-${caller.sub}`,
         capture,
         identity: { endpoint: 'playground', sessionSource: 'principal' },
+        ...(req.body.ui ? { client: { era: 'modern' as const, name: 'playground', extensions: [MCP_APPS_EXTENSION] } } : {}),
+        ...(req.body.ui && uiRequestOf(req.body.meta) ? { ui: uiRequestOf(req.body.meta) } : {}),
       };
       const started = Date.now();
       let decision = 'allow';
@@ -149,7 +153,7 @@ export const uiRoutes: FastifyPluginAsyncZod<{ services: Services }> = async (ap
         result = (await services.executor.call(ctx, req.body.tool, req.body.arguments)) as Record<string, unknown>;
         if (result.isError) decision = 'error';
       } catch (err) {
-        if (err instanceof ProtocolError || err instanceof McpError) {
+        if (err instanceof ProtocolError || err instanceof McpProtocolError) {
           const e = err instanceof ProtocolError ? err.error.toJSON(requestLocale(req)) : { error: 'PROTOCOL', message: err.message };
           decision = e.error === 'TOOL_NOT_FOUND' ? 'deny' : 'error';
           result = { isError: true, content: [{ type: 'text', text: JSON.stringify(e) }] };

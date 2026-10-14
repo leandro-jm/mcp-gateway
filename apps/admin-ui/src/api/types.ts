@@ -270,6 +270,8 @@ export interface AuditEvent {
 
 export interface PlaygroundResult {
   decision: string;
+  /** The MCP result as returned to the agent (with `_meta`, where views travel). */
+  result: unknown;
   final: unknown;
   raw: unknown;
   rawVisible: boolean;
@@ -278,6 +280,29 @@ export interface PlaygroundResult {
   bytesSaved: number;
   artifactId: string | null;
   durationMs: number;
+}
+
+// ------------------------------------------------------------- generative UI (F18, ADR-022)
+export interface ViewIssue {
+  code: string;
+  path: string;
+}
+
+export interface ToolViewDto {
+  toolId: string;
+  views: Record<string, unknown>;
+  status: 'suggested' | 'active' | 'disabled';
+  specVersion: number;
+  issues: ViewIssue[];
+  updatedAt: string;
+}
+
+export interface ThemeDto {
+  tokens: Record<string, unknown>;
+  tileUrl: string | null;
+  tileAttribution: string | null;
+  warnings: ViewIssue[];
+  updatedAt: string | null;
 }
 
 // ------------------------------------------------------------- natural-language composer (F14, ADR-015)

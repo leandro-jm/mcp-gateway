@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
+    <script>
+      // Applies the saved theme and language before first paint (no flash). "System" does not set data-theme.
+      try {
+        var t = localStorage.getItem('mcp-gw-site:theme');
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+        var q = new URLSearchParams(location.search).get('lang');
+        var l = q || localStorage.getItem('mcp-gw-site:locale');
+        if (l === 'en' || l === 'pt-BR' || l === 'es') document.documentElement.lang = l;
+      } catch (e) {}
+    </script>
+    <title>MCP Gateway: your REST APIs as governed MCP tools</title>
+    <meta
+      name="description"
+      content="Open-source, multi-tenant MCP gateway that turns REST/OpenAPI APIs into governed MCP tools for AI agents, with policies, PII redaction, response projection and full observability."
+    />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="canonical" href="https://leandro-jm.github.io/mcp-gateway/" />
+    <link rel="alternate" hreflang="en" href="https://leandro-jm.github.io/mcp-gateway/?lang=en" />
+    <link rel="alternate" hreflang="pt-BR" href="https://leandro-jm.github.io/mcp-gateway/?lang=pt-BR" />
+    <link rel="alternate" hreflang="es" href="https://leandro-jm.github.io/mcp-gateway/?lang=es" />
+    <link rel="alternate" hreflang="x-default" href="https://leandro-jm.github.io/mcp-gateway/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MCP Gateway" />
+    <meta property="og:title" content="MCP Gateway: your REST APIs as governed MCP tools" />
+    <meta
+      property="og:description"
+      content="Open-source, multi-tenant MCP gateway with default deny, credential vault, PII redaction, projection and agent observability."
+    />
+    <meta property="og:url" content="https://leandro-jm.github.io/mcp-gateway/" />
+    <meta property="og:image" content="https://leandro-jm.github.io/mcp-gateway/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#0a0a0a" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,4 +1,6 @@
 # Production stack (compatible with Portainer "Stacks"): images only, configured through variables.
+# Images: ${IMAGE_NAMESPACE}/mcp-gateway[-crawler|-admin-ui]:${TAG}. Default namespace is Docker Hub (leandrojm);
+# use IMAGE_NAMESPACE=ghcr.io/leandro-jm for GHCR.
 # Required variables: see docs/deploy.md ("Variáveis" section).
 name: ${STACK_NAME:-mcp-gateway}
 
@@ -56,7 +58,7 @@ services:
 
   # Migrations as a separate job: runs and exits; gateway and crawler wait for it to succeed.
   migrate:
-    image: ${IMAGE_PREFIX:-ghcr.io/leandro-jm/mcp-gateway}/gateway:${TAG:-latest}
+    image: ${IMAGE_NAMESPACE:-leandrojm}/mcp-gateway:${TAG:-latest}
     restart: 'no'
     command: ['node', 'dist/migrate.js', 'up']
     environment:
@@ -66,7 +68,7 @@ services:
         condition: service_healthy
 
   gateway:
-    image: ${IMAGE_PREFIX:-ghcr.io/leandro-jm/mcp-gateway}/gateway:${TAG:-latest}
+    image: ${IMAGE_NAMESPACE:-leandrojm}/mcp-gateway:${TAG:-latest}
     restart: unless-stopped
     environment:
       <<: *node-env
@@ -107,7 +109,7 @@ services:
       start_period: 15s
 
   crawler:
-    image: ${IMAGE_PREFIX:-ghcr.io/leandro-jm/mcp-gateway}/crawler:${TAG:-latest}
+    image: ${IMAGE_NAMESPACE:-leandrojm}/mcp-gateway-crawler:${TAG:-latest}
     restart: unless-stopped
     environment:
       <<: *node-env
@@ -118,7 +120,7 @@ services:
         condition: service_healthy
 
   admin-ui:
-    image: ${IMAGE_PREFIX:-ghcr.io/leandro-jm/mcp-gateway}/admin-ui:${TAG:-latest}
+    image: ${IMAGE_NAMESPACE:-leandrojm}/mcp-gateway-admin-ui:${TAG:-latest}
     restart: unless-stopped
     environment:
       GATEWAY_URL: http://gateway:4000

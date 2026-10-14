@@ -1,6 +1,7 @@
 import type { PolicyInput } from '@mcp-gateway/db';
 import { generateTools, parseSpec } from '@mcp-gateway/openapi-toolgen';
 import { FAKE_CREDENTIALS, type FakeUpstream } from '@mcp-gateway/testkit';
+import { Client as ModernClient, StreamableHTTPClientTransport as ModernTransport, type ClientCapabilities } from '@modelcontextprotocol/client';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { Harness } from './harness';
@@ -89,5 +90,22 @@ export async function mcpClient(baseUrl: string, token: string, path = '/mcp'): 
     requestInit: { headers: { authorization: `Bearer ${token}` } },
   });
   await client.connect(transport);
+  return client;
+}
+
+/** MCP client on the 2026-07-28 era (ADR-021): stateless, client info and capabilities in every request envelope. */
+export async function modernMcpClient(
+  baseUrl: string,
+  token: string,
+  path = '/mcp',
+  opts: { name?: string; version?: string; capabilities?: ClientCapabilities; headers?: Record<string, string> } = {},
+): Promise<ModernClient> {
+  const client = new ModernClient(
+    { name: opts.name ?? 'modern-test', version: opts.version ?? '2.0.0' },
+    { capabilities: opts.capabilities ?? {}, versionNegotiation: { mode: { pin: '2026-07-28' } } },
+  );
+  await client.connect(
+    new ModernTransport(new URL(`${baseUrl}${path}`), { requestInit: { headers: { authorization: `Bearer ${token}`, ...opts.headers } } }),
+  );
   return client;
 }

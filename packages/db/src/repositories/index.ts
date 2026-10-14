@@ -12,6 +12,7 @@ export * from './drift-events';
 export * from './policies';
 export * from './pii';
 export * from './projections';
+export * from './ui';
 export * from './composites';
 export * from './artifacts';
 export * from './users';

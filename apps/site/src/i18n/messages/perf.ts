@@ -1,0 +1,43 @@
+import { defineMessages } from '@mcp-gateway/i18n';
+
+export const perf = defineMessages('perf', {
+  en: {
+    'perf.label': 'Performance',
+    'perf.title': 'Governance that does not get in the way.',
+    'perf.lead': 'Measured with the full pipeline on: authentication, policy, rate limit, validation, OAuth2, PII redaction, audit and metrics.',
+    'perf.p95': 'p95 gateway overhead',
+    'perf.avg': 'average internal processing',
+    'perf.rps': 'requests per second, one instance',
+    'perf.errors': 'errors',
+    'perf.ms': 'ms',
+    'perf.note': 'k6, constant arrival rate for 60 s on an Apple M4. Overhead is p95(gateway) minus p95(direct upstream).',
+    'perf.report': 'Read the full report (pt-BR)',
+    'perf.target': 'target',
+  },
+  'pt-BR': {
+    'perf.label': 'Performance',
+    'perf.title': 'Governança que não atrapalha.',
+    'perf.lead': 'Medido com o pipeline completo ligado: autenticação, política, rate limit, validação, OAuth2, redação de PII, auditoria e métricas.',
+    'perf.p95': 'overhead do gateway no p95',
+    'perf.avg': 'processamento interno médio',
+    'perf.rps': 'requisições por segundo, uma instância',
+    'perf.errors': 'de erros',
+    'perf.ms': 'ms',
+    'perf.note': 'k6, taxa de chegada constante por 60 s num Apple M4. Overhead é o p95(gateway) menos o p95(upstream direto).',
+    'perf.report': 'Leia o relatório completo',
+    'perf.target': 'meta',
+  },
+  es: {
+    'perf.label': 'Rendimiento',
+    'perf.title': 'Gobernanza que no estorba.',
+    'perf.lead': 'Medido con el pipeline completo activo: autenticación, política, rate limit, validación, OAuth2, redacción de PII, auditoría y métricas.',
+    'perf.p95': 'overhead del gateway en p95',
+    'perf.avg': 'procesamiento interno promedio',
+    'perf.rps': 'solicitudes por segundo, una instancia',
+    'perf.errors': 'de errores',
+    'perf.ms': 'ms',
+    'perf.note': 'k6, tasa de llegada constante durante 60 s en un Apple M4. El overhead es p95(gateway) menos p95(upstream directo).',
+    'perf.report': 'Lee el informe completo (pt-BR)',
+    'perf.target': 'meta',
+  },
+});

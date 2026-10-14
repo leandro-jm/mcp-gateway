@@ -17,6 +17,7 @@ import { manualToolRoutes } from './routes/manual-tools';
 import { piiRoutes } from './routes/pii';
 import { policyRoutes } from './routes/policies';
 import { projectionRoutes } from './routes/projections';
+import { viewRoutes } from './routes/views';
 import { sourceImportRoutes } from './routes/source-import';
 import { settingsRoutes } from './routes/settings';
 import { sourceRoutes } from './routes/sources';
@@ -44,6 +45,7 @@ export const adminApi: FastifyPluginAsync<{ services: Services }> = async (app, 
   await z.register(policyRoutes, { services });
   await z.register(piiRoutes, { services });
   await z.register(projectionRoutes, { services });
+  await z.register(viewRoutes, { services });
   await z.register(compositeRoutes, { services });
   await z.register(composerRoutes, { services });
   await z.register(auditRoutes, { services });

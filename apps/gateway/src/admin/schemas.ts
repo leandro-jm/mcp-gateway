@@ -667,6 +667,10 @@ export const playgroundSchema = z.object({
       claims: jsonObject.default({}),
     })
     .optional(),
+  /** Simulates an MCP client with MCP Apps (ADR-022): results carry their views; destructive views ask for confirmation. */
+  ui: z.boolean().default(false),
+  /** Request `_meta` of a simulated view call (confirmation token, origin). */
+  meta: jsonObject.optional(),
 });
 
 export const playgroundResultSchema = z.object({

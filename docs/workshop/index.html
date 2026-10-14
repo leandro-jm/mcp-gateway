@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP Gateway — Workshop</title>
+<link rel="icon" href="../../apps/site/public/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Tokens copied from apps/site/src/theme/tokens.css (dark theme). */
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface-2: #161616;
+    --surface-3: #1c1c1c;
+    --border: #262626;
+    --border-strong: #333333;
+    --text: #ededed;
+    --text-2: #8f8f8f;
+    --text-3: #5c5c5c;
+    --accent: #ff8a1f;
+    --accent-dim: rgba(255, 138, 31, .12);
+    --success: #22c55e;
+    --danger: #ef4444;
+    --warning: #f5a524;
+    --info: #60a5fa;
+    --violet: #c084fc;
+    --radius: 2px;
+    --sans: "IBM Plex Sans", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); overflow: hidden; }
+
+  /* Stage: fixed 1600x900 canvas scaled to fit the window. */
+  #stage { position: absolute; left: 50%; top: 50%; width: 1600px; height: 900px; transform-origin: center center; }
+  .slide {
+    position: absolute; inset: 0; padding: 80px 104px 72px; display: none; flex-direction: column;
+    background:
+      radial-gradient(circle at 1px 1px, #1a1a1a 1px, transparent 0) 0 0 / 32px 32px,
+      var(--bg);
+    overflow: hidden;
+  }
+  .slide.active { display: flex; }
+  .slide > .notes { display: none; }
+
+  /* Chrome around the stage. */
+  #progress { position: fixed; left: 0; top: 0; height: 3px; background: var(--accent); transition: width .25s ease; z-index: 10; }
+  #counter { position: fixed; right: 20px; bottom: 14px; font: 500 13px var(--mono); color: var(--text-3); z-index: 10; }
+  #notes-panel {
+    position: fixed; left: 0; right: 0; bottom: 0; max-height: 34vh; overflow: auto; z-index: 20; display: none;
+    background: rgba(17, 17, 17, .97); border-top: 1px solid var(--accent); padding: 18px 28px 28px;
+    font: 16px/1.55 var(--sans); color: var(--text);
+  }
+  #notes-panel h6 { font: 600 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  #notes-panel ul, #notes-panel ol { padding-left: 22px; }
+  #notes-panel li { margin: 3px 0; }
+  #notes-panel p, #notes-panel li { font-size: 16px; line-height: 1.55; color: var(--text); }
+  #notes-panel p + p, #notes-panel ol + p { margin-top: 8px; }
+  #notes-panel code { font-family: var(--mono); font-size: 14px; color: var(--accent); }
+  body.show-notes #notes-panel { display: block; }
+  #help { position: fixed; left: 20px; bottom: 14px; font: 12px var(--mono); color: var(--text-3); z-index: 10; }
+
+  /* Overview grid (O). */
+  body.overview { overflow: auto; }
+  body.overview #stage { position: static; transform: none !important; width: auto; height: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(352px, 1fr)); gap: 20px; padding: 28px; }
+  body.overview .slide { display: flex; position: relative; zoom: .22; cursor: pointer; outline: 4px solid var(--border); }
+  body.overview .slide.active { outline: 6px solid var(--accent); }
+  body.overview #help, body.overview #counter { display: none; }
+
+  /* Typography. */
+  .eyebrow { font: 600 15px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-bottom: 18px; display: flex; align-items: center; gap: 12px; }
+  .eyebrow::before { content: ""; width: 28px; height: 1px; background: var(--accent); }
+  h1 { font-size: 84px; line-height: 1.02; font-weight: 700; letter-spacing: -.025em; }
+  h2 { font-size: 54px; line-height: 1.08; font-weight: 700; letter-spacing: -.02em; margin-bottom: 36px; max-width: 1300px; }
+  h3 { font-size: 26px; font-weight: 600; margin-bottom: 10px; }
+  p, li { font-size: 25px; line-height: 1.45; color: var(--text-2); }
+  strong { color: var(--text); font-weight: 600; }
+  .lead { font-size: 32px; line-height: 1.4; color: var(--text-2); max-width: 1180px; }
+  .accent { color: var(--accent); }
+  .ok { color: var(--success); }
+  .bad { color: var(--danger); }
+  code, .mono { font-family: var(--mono); }
+  p code, li code, td code { font-size: .86em; color: var(--text); background: var(--surface-3); border: 1px solid var(--border); padding: 1px 7px; border-radius: var(--radius); white-space: nowrap; }
+  .nw { white-space: nowrap; }
+  .muted { color: var(--text-3); }
+  .grow { flex: 1; }
+
+  /* Building blocks. */
+  .grid { display: grid; gap: 22px; }
+  .g2 { grid-template-columns: 1fr 1fr; }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 30px; }
+  .card p, .card li { font-size: 21px; }
+  .card .tag { font: 600 13px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); margin-bottom: 14px; display: block; }
+  .card.hl { border-color: var(--accent); background: linear-gradient(180deg, var(--accent-dim), var(--surface) 70%); }
+  .num { font: 600 15px var(--mono); color: var(--accent); margin-bottom: 12px; display: block; }
+  pre {
+    font: 20px/1.6 var(--mono); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 24px 28px; color: var(--text); white-space: pre; overflow: hidden;
+  }
+  pre .c { color: var(--text-3); }
+  pre .k { color: var(--info); }
+  pre .s { color: var(--success); }
+  pre .a { color: var(--accent); }
+  pre .p { color: var(--text-3); user-select: none; }
+  .label { font: 600 13px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); margin-bottom: 10px; display: block; }
+  .shot { width: 100%; border: 1px solid var(--border-strong); border-radius: var(--radius); display: block; box-shadow: 0 30px 80px -30px rgba(0,0,0,.9); }
+  .pill { display: inline-block; font: 500 16px var(--mono); padding: 5px 12px; border: 1px solid var(--border-strong); border-radius: 999px; color: var(--text-2); margin: 0 8px 10px 0; }
+  .pill.on { border-color: var(--accent); color: var(--accent); }
+  ul.clean { list-style: none; }
+  ul.clean li { padding-left: 30px; position: relative; margin: 10px 0; }
+  ul.clean li::before { content: "→"; position: absolute; left: 0; color: var(--accent); font-family: var(--mono); }
+  .footer-line { position: absolute; left: 104px; right: 104px; bottom: 36px; display: flex; justify-content: space-between; font: 14px var(--mono); color: var(--text-3); }
+  .logo { display: inline-flex; align-items: center; gap: 12px; font: 600 22px var(--mono); color: var(--text); letter-spacing: .02em; }
+  .logo svg { width: 34px; height: 34px; color: var(--accent); }
+
+  /* Pipeline / flow diagrams. */
+  .flow { display: flex; align-items: stretch; gap: 0; }
+  .node { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 18px; min-width: 0; }
+  .node b { display: block; font: 600 21px var(--sans); color: var(--text); margin-bottom: 6px; }
+  .node span { display: block; font: 15px/1.4 var(--mono); color: var(--text-2); }
+  .node.hl { border-color: var(--accent); background: var(--accent-dim); }
+  .node.dim { border-style: dashed; }
+  .arrow { width: 46px; flex: 0 0 46px; display: flex; align-items: center; justify-content: center; color: var(--text-3); font: 22px var(--mono); }
+  .flow-title { font: 600 14px var(--mono); letter-spacing: .12em; text-transform: uppercase; margin: 0 0 12px; }
+
+  /* Problem slide. */
+  .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .vs .card h3 { display: flex; align-items: center; gap: 12px; }
+
+  /* Round display mock for the ESP32-S3-Touch-AMOLED-1.75C (466x466 round AMOLED). */
+  .device { width: 400px; height: 400px; border-radius: 50%; background: #1d1d1f; padding: 18px; box-shadow: 0 0 0 2px #2c2c2e, 0 40px 90px -30px rgba(255,138,31,.25); position: relative; flex: 0 0 400px; }
+  .device .screen { width: 100%; height: 100%; border-radius: 50%; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 50px; gap: 14px; overflow: hidden; }
+  .device .wave { display: flex; gap: 5px; align-items: center; height: 34px; }
+  .device .wave i { width: 6px; border-radius: 3px; background: var(--accent); animation: wv 1.1s ease-in-out infinite; }
+  .device .wave i:nth-child(1) { height: 12px; animation-delay: 0s; }
+  .device .wave i:nth-child(2) { height: 26px; animation-delay: .1s; }
+  .device .wave i:nth-child(3) { height: 34px; animation-delay: .2s; }
+  .device .wave i:nth-child(4) { height: 20px; animation-delay: .3s; }
+  .device .wave i:nth-child(5) { height: 14px; animation-delay: .4s; }
+  @keyframes wv { 0%,100% { transform: scaleY(.45); } 50% { transform: scaleY(1); } }
+  .device .q { font: 17px/1.35 var(--sans); color: var(--text-2); }
+  .device .r { font: 600 20px/1.35 var(--sans); color: var(--text); }
+  .device .m { font: 14px var(--mono); color: var(--success); }
+  .specs td { font-size: 21px; padding: 9px 0; border-bottom: 1px solid var(--border); color: var(--text-2); vertical-align: top; }
+  .specs td:first-child { font: 500 15px var(--mono); color: var(--text-3); text-transform: uppercase; letter-spacing: .08em; width: 190px; padding-top: 13px; }
+  .specs { border-collapse: collapse; width: 100%; }
+  .gov ul.clean li { font-size: 21px; margin: 6px 0; }
+  .xlink { font: 14px var(--mono); color: var(--text-3); margin-top: 6px; }
+  .xlink b { color: var(--accent); font-weight: 600; }
+
+  /* Zones diagram (ESP32 architecture). */
+  .zones { display: grid; grid-template-columns: 1fr 1.55fr; gap: 26px; }
+  .zone { border: 1px dashed var(--border-strong); border-radius: var(--radius); padding: 22px; position: relative; }
+  .zone > .label { position: absolute; top: -11px; left: 18px; background: var(--bg); padding: 0 10px; margin: 0; }
+  .zone.local { border-color: rgba(255,138,31,.55); }
+  .zone.local > .label { color: var(--accent); }
+  .vflow { display: flex; flex-direction: column; gap: 0; }
+  .vflow .link { font: 14px var(--mono); color: var(--text-3); padding: 7px 0 7px 22px; border-left: 1px solid var(--border-strong); margin-left: 26px; }
+  .hflow { display: flex; align-items: stretch; }
+  .hflow .link { writing-mode: horizontal-tb; font: 13px/1.3 var(--mono); color: var(--text-3); flex: 0 0 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 0 6px; position: relative; }
+  .hflow .link::after { content: "⇄"; font-size: 22px; color: var(--accent); order: -1; margin-bottom: 4px; }
+
+  /* Comparison table. */
+  table.cmp { width: 100%; border-collapse: collapse; }
+  table.cmp th, table.cmp td { text-align: left; padding: 15px 18px; border-bottom: 1px solid var(--border); font-size: 21px; vertical-align: top; }
+  table.cmp th { font: 600 14px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--text-3); }
+  table.cmp th.c1 { color: var(--info); }
+  table.cmp th.c2 { color: var(--accent); }
+  table.cmp td:first-child { font: 500 15px var(--mono); color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; width: 220px; padding-top: 19px; }
+  table.cmp td { color: var(--text-2); }
+  table.cmp tr.same td { background: rgba(34,197,94,.06); }
+  table.cmp tr.same td:not(:first-child) { color: var(--text); }
+
+  /* Agenda. */
+  .agenda { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; border: 1px solid var(--border); }
+  .agenda > div { padding: 30px 26px; border-right: 1px solid var(--border); background: var(--surface); }
+  .agenda > div:last-child { border-right: 0; }
+  .agenda .t { font: 600 15px var(--mono); color: var(--accent); display: block; margin-bottom: 18px; }
+  .agenda b { font-size: 26px; display: block; margin-bottom: 10px; }
+  .agenda p { font-size: 19px; }
+  .timebar { display: flex; height: 8px; margin-top: 22px; gap: 3px; }
+  .timebar i { display: block; height: 100%; background: var(--border-strong); }
+  .timebar i.a { background: var(--accent); }
+
+  /* Cover. */
+  .cover { justify-content: center; }
+  .cover h1 { max-width: 960px; }
+  .cover .lead { max-width: 900px; }
+  .cover .lead { margin-top: 30px; }
+  .cover .cube { position: absolute; right: 96px; top: 50%; transform: translateY(-50%); width: 420px; height: 420px; color: var(--accent); opacity: .85; }
+  .chips { margin-top: 46px; }
+
+  /* Print: one slide per page, for a PDF backup. */
+  @media print {
+    @page { size: 1600px 900px; margin: 0; }
+    html, body { overflow: visible; height: auto; background: var(--bg); }
+    #stage { position: static; transform: none !important; width: 1600px; height: auto; }
+    .slide { display: flex !important; position: relative; width: 1600px; height: 900px; page-break-after: always; break-after: page; }
+    #progress, #counter, #help, #notes-panel { display: none !important; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .device .wave i { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="counter"></div>
+<div id="help">← → navegar · N notas · O visão geral · F tela cheia</div>
+<div id="notes-panel"></div>
+
+<!-- Cube logo, reused below via <use>. Paths from apps/site/src/components/Logo.tsx. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="cube" viewBox="0 0 32 32">
+    <g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M16 3 28 9.5v13L16 29 4 22.5v-13z"/>
+      <path d="M4 9.5 16 16l12-6.5M16 16v13"/>
+    </g>
+  </symbol>
+</svg>
+
+<main id="stage">
+
+<!-- 1 · Capa -->
+<section class="slide cover">
+  <svg class="cube" aria-hidden="true"><use href="#cube"/></svg>
+  <span class="logo"><svg><use href="#cube"/></svg>MCP·GW</span>
+  <div style="height:56px"></div>
+  <div class="eyebrow">Workshop</div>
+  <h1>Suas APIs REST como<br>ferramentas MCP <span class="accent">governadas</span>.</h1>
+  <p class="lead">Do Claude a um assistente de voz num ESP32-S3: os mesmos agentes, as mesmas regras e nenhuma mudança na API.</p>
+  <div class="chips">
+    <span class="pill on">MCP</span><span class="pill">Claude</span><span class="pill">ESP32-S3</span><span class="pill">OpenAPI</span><span class="pill">open source · Apache-2.0</span>
+  </div>
+  <div class="footer-line"><span>Leandro Martins</span><span>github.com/leandro-jm/mcp-gateway · v0.1.0</span></div>
+  <aside class="notes">
+    <ul>
+      <li>Abertura: em 30 minutos vou mostrar como expor APIs REST existentes para agentes de IA <strong>sem abrir mão de segurança</strong>.</li>
+      <li>Promessa do workshop: no fim, a mesma API vai ser usada pelo Claude e por um dispositivo de voz que cabe na palma da mão.</li>
+      <li>Deixe o ESP32 ligado e visível na mesa desde o início, porque gera curiosidade.</li>
+    </ul>
+  </aside>
+</section>
+
+<!-- 2 · Agenda -->
+<section class="slide">
+  <div class="eyebrow">Agenda · 30 min</div>
+  <h2>O que vamos ver</h2>
+  <div class="agenda">
+    <div><span class="t">00 – 04</span><b>O problema</b><p>Por que agentes não devem falar direto com suas APIs. MCP em 1 slide.</p></div>
+    <div><span class="t">04 – 12</span><b>O gateway</b><p>Pipeline, governança, contexto e observabilidade.</p></div>
+    <div><span class="t">12 – 18</span><b>Case 1 · Claude</b><p>Claude Code conectado ao gateway, ao vivo.</p></div>
+    <div><span class="t">18 – 26</span><b>Case 2 · ESP32-S3</b><p>Assistente de voz consultando a API de RH pelo gateway.</p></div>
+    <div><span class="t">26 – 30</span><b>Fechamento</b><p>Como começar e perguntas.</p></div>
+  </div>
+  <div class="timebar"><i style="flex:4"></i><i style="flex:8"></i><i class="a" style="flex:6"></i><i class="a" style="flex:8"></i><i style="flex:4"></i></div>
+  <p class="muted" style="margin-top:14px;font-size:18px">Em laranja: demos ao vivo, metade do tempo do workshop.</p>
+  <aside class="notes">
+    <p>Combine com a plateia: perguntas rápidas a qualquer momento, perguntas longas no fim.</p>
+  </aside>
+</section>
+
+<!-- 3 · O problema -->
+<section class="slide">
+  <div class="eyebrow">O problema</div>
+  <h2>Agentes não deveriam falar com suas APIs sem supervisão.</h2>
+  <div class="vs">
+    <div class="card">
+      <h3><span class="bad mono">✕</span> Agente → API direto</h3>
+      <ul class="clean">
+        <li><strong>Credenciais</strong> no prompt, no config do cliente ou no histórico do chat.</li>
+        <li><strong>CPF, salário e e-mail</strong> vão inteiros para o contexto do modelo.</li>
+        <li>Respostas enormes <strong>estouram o contexto</strong> e o custo.</li>
+        <li><strong>Ninguém sabe</strong> quem chamou o quê, quando e por quê.</li>
+        <li>Toda API precisa ser reescrita como servidor MCP.</li>
+      </ul>
+    </div>
+    <div class="card hl">
+      <h3><span class="ok mono">✓</span> Agente → gateway → API</h3>
+      <ul class="clean">
+        <li>Credenciais ficam num <strong>cofre</strong> e são injetadas por chamada.</li>
+        <li>PII sai <strong>mascarada</strong> antes de chegar ao modelo.</li>
+        <li>A resposta é <strong>recortada</strong> para caber no contexto.</li>
+        <li>Cada chamada gera <strong>um evento</strong> de auditoria.</li>
+        <li>A API continua <strong>exatamente igual</strong>.</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes">
+    <ul>
+      <li>Pergunte à plateia: quem já colou um token de API num config de MCP? (quase todo mundo)</li>
+      <li>O ponto central: o modelo é um cliente <strong>não confiável</strong>. Tudo o que entra no contexto pode vazar, ser logado ou ser repetido.</li>
+    </ul>
+  </aside>
+</section>
+
+<!-- 4 · MCP em 1 slide -->
+<section class="slide">
+  <div class="eyebrow">Contexto · MCP em 1 slide</div>
+  <h2>Model Context Protocol: o "USB-C" dos agentes.</h2>
+  <div class="flow" style="margin-bottom:40px">
+    <div class="node"><b>Host</b><span>Claude Desktop, Claude Code, IDE, assistente de voz…</span></div>
+    <div class="arrow">→</div>
+    <div class="node"><b>Client MCP</b><span>uma conexão por servidor, dentro do host</span></div>
+    <div class="arrow">⇄</div>
+    <div class="node hl"><b>Server MCP</b><span>expõe tools, resources e prompts</span></div>
+    <div class="arrow">→</div>
+    <div class="node dim"><b>Sistema real</b><span>API, banco, dispositivo…</span></div>
+  </div>
+  <div class="grid g3">
+    <div class="card"><span class="tag">Tools</span><p>Funções que o modelo pode chamar, com <strong>JSON Schema</strong> de entrada e saída. Ex.: <code>rh_colaborador_get</code>.</p></div>
+    <div class="card"><span class="tag">Resources</span><p>Conteúdo que o host lê sob demanda. O gateway usa para <code>artifact://</code> (respostas grandes) e <code>ui://</code> (interfaces).</p></div>
+    <div class="card"><span class="tag">Transporte</span><p><strong>Streamable HTTP</strong>, com o token no header <code>Authorization</code>. Specs <span class="nw">2025-11-25</span> e <span class="nw">2026-07-28</span>.</p></div>
+  </div>
+  <aside class="notes">
+    <ul>
+      <li>Para quem é de produto: MCP é o padrão aberto que deixa qualquer agente usar qualquer ferramenta.</li>
+      <li>O gateway é um <strong>Server MCP</strong> do lado do agente e um <strong>cliente REST</strong> do lado da API.</li>
+    </ul>
+  </aside>
+</section>
+
+<!-- 5 · O MCP Gateway -->
+<section class="slide">
+  <div class="eyebrow">A ferramenta</div>
+  <h2 style="margin-bottom:16px">MCP Gateway</h2>
+  <p class="lead" style="margin-bottom:40px">Aponte para um OpenAPI, Postman, HAR ou cURL e o gateway gera as tools. O dono revisa e habilita, e as políticas decidem quem chama o quê.</p>
+  <div class="grid g3">
+    <div class="card"><span class="num">01</span><h3>Default deny</h3><p>Toda tool nasce <code>disabled</code>. Sem policy, ninguém chama.</p></div>
+    <div class="card"><span class="num">02</span><h3>Downstream intocado</h3><p>A API REST não muda nada: nem código, nem deploy.</p></div>
+    <div class="card"><span class="num">03</span><h3>Credencial invisível</h3><p>O agente usa um token do gateway; o segredo da API fica no cofre.</p></div>
+    <div class="card"><span class="num">04</span><h3>PII mascarada</h3><p>CPF, CNPJ, PIS, e-mail e telefone saem mascarados, com hash ou tokenizados.</p></div>
+    <div class="card"><span class="num">05</span><h3>Contexto é escasso</h3><p>Projeção, limites e artifacts deixam a resposta enxuta.</p></div>
+    <div class="card"><span class="num">06</span><h3>Tudo auditável</h3><p>Um evento por chamada alimenta auditoria, métricas e traces.</p></div>
+  </div>
+  <aside class="notes">
+    <ul>
+      <li>Multi-tenant e open source (Apache-2.0); roda com Postgres, Redis e S3/MinIO.</li>
+      <li>Admin UI em React para owners revisarem as tools; Admin API em <code>/admin/v1</code>.</li>
+      <li>Estes seis princípios são o fio da apresentação: volte a eles nas demos.</li>
+    </ul>
+  </aside>
+</section>
+
+<!-- 6 · Pipeline -->
+<section class="slide">
+  <div class="eyebrow">Como funciona</div>
+  <h2>Toda chamada passa pelo mesmo pipeline.</h2>
+  <div class="flow-title" style="color:var(--info)">Ida →</div>
+  <div class="flow">
+    <div class="node"><b>Agente</b><span>Bearer mgw_…</span></div>
+    <div class="arrow">→</div>
+    <div class="node"><b>AuthN</b><span>token opaco → tenant, papéis, clientId</span></div>
+    <div class="arrow">→</div>
+    <div class="node hl"><b>Policy</b><span>default deny, rate limit</span></div>
+    <div class="arrow">→</div>
+    <div class="node"><b>Validate</b><span>JSON Schema</span></div>
+    <div class="arrow">→</div>
+    <div class="node"><b>Credentials</b><span>cofre por tenant: OAuth2, API key…</span></div>
+    <div class="arrow">→</div>
+    <div class="node dim"><b>API REST</b><span>sem mudanças</span></div>
+  </div>
+  <div class="flow-title" style="color:var(--success);margin-top:44px">← Volta</div>
+  <div class="flow">
+    <div class="node dim"><b>Resposta</b><span>JSON bruto da API</span></div>
+    <div class="arrow">→</div>
+    <div class="node hl"><b>Redact</b><span>mask · hash · drop · tokenize</span></div>
+    <div class="arrow">→</div>
+    <div class="node"><b>Project</b><span>JSONPath, _fields, limites</span></div>
+    <div class="arrow">→</div>
+    <div class="node"><b>Offload</b><span>payload grande → artifact://</span></div>
+    <div class="arrow">→</div>
+    <div class="node"><b>CallEvent</b><span>audit · métricas · traces</span></div>
+    <div class="arrow">→</div>
+    <div class="node"><b>Agente</b><span>só o necessário</span></div>
+  </div>
+  <p class="muted" style="margin-top:40px;font-size:21px">O pipeline completo adiciona <strong class="accent">+4,55 ms no p95</strong>, a 200 rps numa única instância e com 0 erros (k6, docs/perf).</p>
+  <aside class="notes">
+    <ul>
+      <li>Leia da esquerda para a direita. O destaque em laranja marca onde a segurança acontece: policy na ida e redaction na volta.</li>
+      <li>Por que performance importa: o gateway fica no caminho de toda chamada, e 4,55 ms é ruído perto da latência de um LLM.</li>
+    </ul>
+  </aside>
+</section>
+
+<!-- 7 · Da API à tool -->
+<section class="slide">
+  <div class="eyebrow">Onboarding</div>
+  <h2>Da API à tool em 5 passos.</h2>
+  <div class="grid" style="grid-template-columns: 560px 1fr; gap:44px; align-items:start">
+    <div>
+      <ul class="clean">
+        <li><strong>Importar</strong>: OpenAPI 3.x, Swagger 2.0, Postman, HAR ou cURL, com preview antes de salvar.</li>
+        <li><strong>Crawler</strong>: um worker gera uma tool por operação, e re-crawls detectam drift.</li>
+        <li><strong>Revisar</strong>: a tool nasce <code>disabled</code>; o owner confere schema e anotações.</li>
+        <li><strong>Policy</strong>: quem pode chamar, por papel, grupo, usuário ou cliente.</li>
+        <li><strong>Publicar</strong>: num servidor virtual <code>/mcp/s/:slug</code> com catálogo próprio.</li>
+      </ul>
+    </div>
+    <img class="shot" src="../../apps/site/public/screens/tools-dark.jpg" alt="Admin UI: lista de tools geradas">
+  </div>
+  <aside class="notes">
+    <ul>
+      <li>Sem OpenAPI? Cole um cURL ou um HAR exportado do navegador.</li>
+      <li>Também dá para criar tools manuais e tools <strong>compostas</strong> (JSONata), inclusive descrevendo em linguagem natural no Composer.</li>
+    </ul>
+  </aside>
+</section>
+
+<!-- 8 · Governança -->
+<section class="slide">
+  <div class="eyebrow">Governança</div>
+  <h2>Quem pode chamar o quê, e o que pode sair.</h2>
+  <div class="grid g2 gov" style="gap:36px">
+    <div>
+      <span class="label">Policies</span>
+      <img class="shot" src="../../apps/site/public/screens/policies-dark.jpg" alt="Admin UI: políticas">
+      <ul class="clean" style="margin-top:18px">
+        <li>Explicit deny vence allow.</li>
+        <li>Tools <code>destructiveHint</code> só com allow explícito; <code>*</code> não cobre.</li>
+        <li>Rate limit por cliente, no Redis.</li>
+      </ul>
+    </div>
+    <div>
+      <span class="label">PII</span>
+      <img class="shot" src="../../apps/site/public/screens/pii-dark.jpg" alt="Admin UI: regras de PII">
+      <ul class="clean" style="margin-top:18px">
+        <li>Detectores: CPF, CNPJ, PIS, CEP, e-mail, telefone, cartão e IBAN.</li>
+        <li>Regras por campo, como saúde e salário.</li>
+        <li>Índice de titular para pedidos LGPD.</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes">
+    <ul>
+      <li>Exemplo concreto: <code>rh_marcacoes_delete</code> é destrutiva. Mesmo com allow <code>rh_*</code>, o agente não apaga nada sem uma regra nominal.</li>
+      <li>O simulador de policy (<code>/policies/simulate</code>) responde "esse cliente pode chamar essa tool?" antes de ir para produção.</li>
+    </ul>
+  </aside>
+</section>
+
+<!-- 9 · Contexto -->
+<section class="slide">
+  <div class="eyebrow">Contexto é escasso</div>
+  <h2>Três jeitos de expor o catálogo.</h2>
+  <div class="grid g3" style="margin-bottom:34px">
+    <div class="card"><span class="tag">POST /mcp</span><h3>Catálogo nativo</h3><p>Todas as tools permitidas viram tools MCP. Ideal para <strong>catálogos pequenos</strong>.</p></div>
+    <div class="card hl"><span class="tag">POST /mcp/omni</span><h3>Descoberta sob demanda</h3><p><code>search_tools</code> → <code>get_tool_schema</code> → <code>call_tool</code>. Usa <strong class="accent">~4% dos tokens</strong> de definição de tools.</p></div>
+    <div class="card"><span class="tag">POST /mcp/s/:slug</span><h3>Servidor virtual</h3><p>Catálogo <strong>curado</strong> e instruções próprias por caso de uso. É o que o ESP32 vai usar.</p></div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><span class="tag">Projeção</span><p>JSONPath para incluir ou excluir campos e limitar arrays e bytes. O agente também pode pedir só o que quer com <code>_fields</code>.</p></div>
+    <div class="card"><span class="tag">Artifacts</span><p>Respostas grandes viram <code>artifact://</code>, lidas em partes com <code>artifact_read</code> e <code>artifact_query</code>.</p></div>
+  </div>
+  <aside class="notes">
+    <ul>
+      <li>Com 200 tools, só as definições ocupam dezenas de milhares de tokens antes da primeira pergunta. O omni resolve isso com busca.</li>
+      <li>Antecipe o case 2: um modelo de voz pequeno se dá melhor com <strong>poucas tools bem descritas</strong>, por isso o servidor virtual.</li>
+    </ul>
+  </aside>
+</section>
+
+<!-- 10 · Observabilidade -->
+<section class="slide">
+  <div class="eyebrow">Observabilidade</div>
+  <h2>Um evento por chamada. Tudo deriva dele.</h2>
+  <div class="grid" style="grid-template-columns: 1fr 520px; gap:44px; align-items:start">
+    <img class="shot" src="../../apps/site/public/screens/observability-dark.jpg" alt="Admin UI: observabilidade">
+    <div>
+      <ul class="clean">
+        <li><strong>CallEvent</strong>: tool, cliente, decisão de policy, latência e resultado, <strong>sem payload</strong>.</li>
+        <li>Alimenta auditoria, <strong>Prometheus</strong>, traces <strong>OpenTelemetry</strong> (com <code>traceparent</code> do agente) e dashboard Grafana.</li>
+        <li>Explorador de chamadas e trajetórias de sessão.</li>
+        <li><code>/mcp/observability</code>: o próprio agente pergunta "quais tools mais falharam hoje?".</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes">
+    <p>Guarde esta tela, porque ela volta no fim: o explorador vai mostrar as chamadas do Claude e do ESP32 lado a lado.</p>
+  </aside>
+</section>
+
+<!-- 11 · Case 1: Claude -->
+<section class="slide">
+  <div class="eyebrow">Case 1 · ao vivo</div>
+  <h2>Claude conectado ao gateway.</h2>
+  <div class="grid g2" style="gap:36px;align-items:start">
+    <div>
+      <span class="label">1 · Registrar o servidor no Claude Code</span>
+<pre><span class="p">$ </span><span class="k">claude</span> mcp add --transport http mcp-gateway \
+    <span class="s">http://localhost:4000/mcp/omni</span> \
+    --header <span class="s">"Authorization: Bearer mgw_…"</span></pre>
+      <span class="label" style="margin-top:26px">ou · .mcp.json (gerado pela Admin UI)</span>
+<pre>{ <span class="a">"mcpServers"</span>: { <span class="a">"rh-gestor"</span>: {
+  <span class="k">"type"</span>: <span class="s">"http"</span>,
+  <span class="k">"url"</span>: <span class="s">"https://mcp.empresa.com/mcp/s/rh-gestor"</span>,
+  <span class="k">"headers"</span>: { <span class="k">"Authorization"</span>:
+    <span class="s">"Bearer ${MCP_GATEWAY_TOKEN}"</span> } } } }</pre>
+    </div>
+    <div>
+      <span class="label">2 · Perguntar</span>
+      <div class="card" style="margin-bottom:22px">
+        <p style="color:var(--text);font-size:23px">"Quais são os dados do colaborador <code>col-00001</code> e qual a escala dele esta semana?"</p>
+      </div>
+      <span class="label">3 · Observar</span>
+      <ul class="clean">
+        <li>Claude busca a tool com <code>search_tools</code> e chama <code>rh_colaborador_get</code>.</li>
+        <li>O CPF chega <strong class="ok">mascarado</strong>; a credencial da API nunca aparece.</li>
+        <li>Pedir para <strong>apagar uma marcação</strong> resulta em <strong class="bad">negado</strong> (<code>destructiveHint</code>).</li>
+        <li>Em hosts com MCP Apps, o resultado aparece como <strong>tabela ou card</strong> (UI generativa).</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes">
+    <h6>Roteiro (6 min)</h6>
+    <ol>
+      <li>Terminal pronto com <code>pnpm dev</code>, <code>pnpm dev:upstream</code> e o crawler rodando. Admin UI aberta em <code>localhost:5180</code> (login <code>owner</code>).</li>
+      <li>Rodar o <code>claude mcp add</code> com o token dev <code>mgw_dev-agent-token-somente-para-desenvolvimento</code>, depois <code>/mcp</code> para mostrar o servidor conectado.</li>
+      <li>Fazer a pergunta e apontar o CPF mascarado na resposta.</li>
+      <li>Pedir "apague a última marcação do col-00001" e mostrar a negação da policy.</li>
+      <li>Abrir o explorador de chamadas na Admin UI: as chamadas estão lá, sem payload.</li>
+    </ol>
+    <p><strong>Limitação para mencionar:</strong> conectores do claude.ai que só aceitam OAuth ainda não conectam, porque o gateway autentica com Bearer em header. Claude Code e Desktop com header customizado funcionam.</p>
+    <p><strong>Plano B:</strong> screenshot <code>playground-dark.jpg</code> ou PDF deste deck.</p>
+  </aside>
+</section>
+
+<!-- 12 · Case 2: hardware -->
+<section class="slide">
+  <div class="eyebrow">Case 2 · o hardware</div>
+  <h2>Um assistente de voz na palma da mão.</h2>
+  <div style="display:flex;gap:80px;align-items:center" class="grow">
+    <div class="device">
+      <div class="screen">
+        <div class="wave"><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="q">"Qual a escala do colaborador 1 amanhã?"</div>
+        <div class="r">Turno das 08h às 17h,<br>na unidade Centro.</div>
+        <div class="m">via mcp-gateway ✓</div>
+      </div>
+    </div>
+    <div class="grow">
+      <table class="specs">
+        <tr><td>Placa</td><td><strong>Waveshare ESP32-S3-Touch-AMOLED-1.75C</strong></td></tr>
+        <tr><td>SoC</td><td>ESP32-S3R8 · dual-core Xtensa LX7 a 240 MHz · 8 MB PSRAM</td></tr>
+        <tr><td>Tela</td><td>AMOLED redonda de 1.75", 466×466, touch capacitivo</td></tr>
+        <tr><td>Áudio</td><td>2 microfones com cancelamento de eco · alto-falante</td></tr>
+        <tr><td>Rede</td><td>Wi-Fi 2.4 GHz · Bluetooth 5 LE</td></tr>
+        <tr><td>Firmware</td><td><strong>xiaozhi-esp32</strong> (ESP-IDF 5.5), um agente de voz com MCP</td></tr>
+      </table>
+    </div>
+  </div>
+  <aside class="notes">
+    <ul>
+      <li>Passe o dispositivo pela plateia ou mostre-o na câmera.</li>
+      <li>O xiaozhi é um firmware open source de assistente de voz. O device captura a voz, e a nuvem xiaozhi faz ASR, LLM e TTS.</li>
+      <li>O ponto que interessa: o LLM do xiaozhi aceita <strong>ferramentas MCP externas</strong> por um "endpoint MCP". É por aí que entra o gateway.</li>
+    </ul>
+  </aside>
+</section>
+
+<!-- 13 · Case 2: arquitetura -->
+<section class="slide">
+  <div class="eyebrow">Case 2 · arquitetura</div>
+  <h2>Da voz à API, passando pelo gateway.</h2>
+  <div class="zones">
+    <div class="zone">
+      <span class="label">Internet</span>
+      <div class="vflow">
+        <div class="node"><b>ESP32-S3</b><span>microfone, tela, alto-falante</span></div>
+        <div class="link">WebSocket · áudio</div>
+        <div class="node"><b>Nuvem xiaozhi</b><span>ASR → LLM → TTS</span></div>
+        <div class="link">MCP sobre WebSocket</div>
+        <div class="node"><b>Endpoint MCP</b><span>wss://…/mcp/?token=…</span></div>
+      </div>
+    </div>
+    <div class="zone local">
+      <span class="label">Sua rede · nada exposto</span>
+      <div class="xlink"><b>←</b> o pipe abre um wss de saída até o Endpoint MCP</div>
+      <div class="hflow" style="margin-top:16px">
+        <div class="node"><b>mcp_pipe.py</b><span>conecta de dentro para fora (wss)</span></div>
+        <div class="link">Streamable HTTP<br>Bearer mgw_…</div>
+        <div class="node hl"><b>MCP Gateway</b><span>/mcp/s/<br>assistente-voz</span></div>
+        <div class="link">REST<br>+ credencial</div>
+        <div class="node dim"><b>API de RH</b><span>:4010, sem mudanças</span></div>
+      </div>
+      <div class="grid g3" style="margin-top:30px;gap:14px">
+        <div class="card" style="padding:18px 20px"><p style="font-size:18px"><strong>Saída apenas.</strong> O pipe abre a conexão; nenhuma porta é aberta no firewall.</p></div>
+        <div class="card" style="padding:18px 20px"><p style="font-size:18px"><strong>PII antes da voz.</strong> O CPF é mascarado antes de chegar ao LLM e ao TTS.</p></div>
+        <div class="card" style="padding:18px 20px"><p style="font-size:18px"><strong>Cliente próprio.</strong> Token <code>esp32-sala</code> com policy e rate limit dedicados.</p></div>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">
+    <ul>
+      <li>Caminho de uma pergunta: voz → device → nuvem xiaozhi (o LLM decide chamar uma tool) → endpoint MCP → <code>mcp_pipe.py</code> na sua máquina → gateway → API.</li>
+      <li>O <code>mcp_pipe.py</code> (repositório 78/mcp-calculator) faz a ponte entre o WebSocket do xiaozhi e um servidor MCP via stdio, SSE ou <strong>HTTP com headers</strong>.</li>
+      <li>Ponto de segurança: a nuvem xiaozhi nunca vê a credencial da API nem o CPF completo.</li>
+    </ul>
+  </aside>
+</section>
+
+<!-- 14 · Case 2: configuração -->
+<section class="slide">
+  <div class="eyebrow">Case 2 · configuração</div>
+  <h2>Nenhuma linha de código no firmware.</h2>
+  <div class="grid g2" style="gap:36px;align-items:start">
+    <div>
+      <span class="label">mcp_config.json · o pipe aponta para o gateway</span>
+<pre>{ <span class="a">"mcpServers"</span>: {
+  <span class="a">"mcp-gateway"</span>: {
+    <span class="k">"type"</span>: <span class="s">"http"</span>,
+    <span class="k">"url"</span>: <span class="s">"http://localhost:4000/mcp/s/assistente-voz"</span>,
+    <span class="k">"headers"</span>: {
+      <span class="k">"Authorization"</span>: <span class="s">"Bearer mgw_…"</span>
+    } } } }</pre>
+      <span class="label" style="margin-top:24px">Terminal · o endpoint vem do console xiaozhi.me</span>
+<pre><span class="p">$ </span><span class="k">export</span> MCP_ENDPOINT=<span class="s">'wss://api.xiaozhi.me/mcp/?token=…'</span>
+<span class="p">$ </span><span class="k">python</span> mcp_pipe.py   <span class="c"># sobe todos do mcp_config.json</span></pre>
+    </div>
+    <div>
+      <span class="label">Gateway · Admin UI</span>
+      <div class="card" style="margin-bottom:18px">
+        <span class="num">Servidor virtual · assistente-voz</span>
+        <p>Só 2 tools de <strong>leitura</strong>: <code>rh_colaborador_get</code> e <code>rh_escalas_list</code>, com instruções curtas e próprias para voz.</p>
+      </div>
+      <div class="card" style="margin-bottom:18px">
+        <span class="num">Usuário service · token esp32-sala</span>
+        <p>O nome do token vira o <code>clientId</code>, que aparece nas policies, no rate limit e na auditoria.</p>
+      </div>
+      <div class="card">
+        <span class="num">Policy</span>
+        <p><code>client esp32-sala</code> → <span class="ok">allow</span> nas 2 tools; o resto continua em default deny.</p>
+      </div>
+    </div>
+  </div>
+  <aside class="notes">
+    <h6>Roteiro (8 min)</h6>
+    <ol>
+      <li>Admin UI (<code>owner</code>): mostrar o servidor virtual <code>assistente-voz</code> com as 2 tools e a policy do cliente <code>esp32-sala</code>.</li>
+      <li>Terminal: <code>python mcp_pipe.py</code>, mostrando no log a conexão ao endpoint e o <code>tools/list</code>.</li>
+      <li>No console xiaozhi.me, o endpoint MCP aparece online com as tools do gateway.</li>
+      <li>Falar com o device: "Qual a escala do colaborador 1 amanhã?" e depois "Qual o CPF dele?", que vem mascarado.</li>
+      <li>"Apague a marcação dele" não tem tool no servidor virtual, então o assistente responde que não pode.</li>
+    </ol>
+    <p><strong>Checklist antes do workshop:</strong> gateway e crawler com <code>NETWORK_ALLOW_PRIVATE=true</code> (padrão no <code>.env.example</code> de dev, porque a API fake roda em localhost); device no Wi-Fi do evento; testar o pipe na rede do local.</p>
+    <p><strong>Plano B:</strong> vídeo curto gravado da interação por voz.</p>
+  </aside>
+</section>
+
+<!-- 15 · Mesmas tools, dois agentes -->
+<section class="slide">
+  <div class="eyebrow">O que acabamos de ver</div>
+  <h2>Mesmas tools, dois agentes, uma governança.</h2>
+  <table class="cmp">
+    <tr><th></th><th class="c1">Claude Code</th><th class="c2">ESP32-S3 · xiaozhi</th></tr>
+    <tr><td>Interface</td><td>Texto, no terminal</td><td>Voz, numa tela redonda</td></tr>
+    <tr><td>Transporte</td><td>Streamable HTTP direto</td><td>WebSocket → <code>mcp_pipe</code> → Streamable HTTP</td></tr>
+    <tr><td>Endpoint</td><td><code>/mcp/omni</code>, com o catálogo inteiro via busca</td><td><code>/mcp/s/assistente-voz</code>, com 2 tools curadas</td></tr>
+    <tr><td>Cliente</td><td>token <code>agent-dev</code></td><td>token <code>esp32-sala</code></td></tr>
+    <tr class="same"><td>Policy</td><td colspan="2">Default deny · destrutivas exigem allow explícito · rate limit por cliente</td></tr>
+    <tr class="same"><td>PII</td><td colspan="2">CPF e e-mail mascarados antes de chegar ao modelo</td></tr>
+    <tr class="same"><td>Credencial</td><td colspan="2">No cofre do gateway; nenhum dos dois agentes a vê</td></tr>
+    <tr class="same"><td>Auditoria</td><td colspan="2">O mesmo explorador de chamadas, filtrado por clientId</td></tr>
+  </table>
+  <aside class="notes">
+    <ul>
+      <li>Feche a demo voltando ao explorador de chamadas e filtrando pelos dois clientes, para mostrar as chamadas do Claude e do ESP32 juntas.</li>
+      <li>Mensagem final: <strong>o agente muda, a governança não</strong>. Amanhã pode ser um copiloto interno, um bot no Slack ou outro device.</li>
+    </ul>
+  </aside>
+</section>
+
+<!-- 16 · Como começar -->
+<section class="slide">
+  <div class="eyebrow">Como começar</div>
+  <h2>Do clone ao primeiro agente em minutos.</h2>
+  <div class="grid g2" style="gap:36px;align-items:start">
+<pre><span class="p">$ </span><span class="k">git</span> clone github.com/leandro-jm/mcp-gateway
+<span class="p">$ </span><span class="k">pnpm</span> install
+<span class="p">$ </span><span class="k">pnpm</span> dev:infra        <span class="c"># Postgres, Redis, MinIO</span>
+<span class="p">$ </span><span class="k">pnpm</span> db:migrate &amp;&amp; <span class="k">pnpm</span> db:seed
+<span class="p">$ </span><span class="k">pnpm</span> dev              <span class="c"># gateway :4000</span>
+<span class="p">$ </span><span class="k">pnpm</span> dev:upstream     <span class="c"># API de RH fake :4010</span>
+<span class="p">$ </span><span class="k">pnpm</span> --filter @mcp-gateway/crawler dev
+<span class="p">$ </span><span class="k">pnpm</span> --filter @mcp-gateway/admin-ui dev   <span class="c"># :5180</span></pre>
+    <div>
+      <div class="card" style="margin-bottom:18px"><span class="tag">Produção</span><p>Imagens <code>leandrojm/mcp-gateway</code>, <code>-crawler</code> e <code>-admin-ui</code> com <code>docker-compose.prod.yml</code>. Guia em <code>docs/deploy.md</code>.</p></div>
+      <div class="card" style="margin-bottom:18px"><span class="tag">Integrações</span><p>Claude Code, SDKs e cURL em <code>docs/integrations/</code>.</p></div>
+      <div class="card"><span class="tag">ESP32</span><p>Firmware <strong>xiaozhi-esp32</strong> + <code>mcp_pipe.py</code> (repositório 78/mcp-calculator).</p></div>
+    </div>
+  </div>
+  <aside class="notes">
+    <p>Usuários de dev do seed: <code>admin/admin</code>, <code>owner/owner</code> e o token <code>mgw_dev-agent-token-somente-para-desenvolvimento</code>. Apenas para desenvolvimento.</p>
+  </aside>
+</section>
+
+<!-- 17 · Encerramento -->
+<section class="slide cover">
+  <svg class="cube" aria-hidden="true"><use href="#cube"/></svg>
+  <div class="eyebrow">Obrigado</div>
+  <h1>Perguntas?</h1>
+  <p class="lead">O agente muda. A <span class="accent">governança</span> não.</p>
+  <div class="chips">
+    <span class="pill on">github.com/leandro-jm/mcp-gateway</span><span class="pill">Apache-2.0</span><span class="pill">PRs bem-vindos</span>
+  </div>
+  <div class="footer-line"><span>Leandro Martins</span><span>MCP·GW · Workshop</span></div>
+  <aside class="notes">
+    <p>Perguntas frequentes: OAuth no MCP (no roadmap), suporte a gRPC ou GraphQL (hoje REST; GraphQL pode entrar via cURL ou HAR), custo de latência (4,55 ms p95) e onde roda o LLM do ESP32 (nuvem xiaozhi ou servidor xiaozhi self-hosted).</p>
+  </aside>
+</section>
+
+</main>
+
+<script>
+(() => {
+  const slides = [...document.querySelectorAll('.slide')];
+  const stage = document.getElementById('stage');
+  const progress = document.getElementById('progress');
+  const counter = document.getElementById('counter');
+  const notesPanel = document.getElementById('notes-panel');
+  let current = 0;
+
+  function fit() {
+    if (document.body.classList.contains('overview')) return;
+    const s = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
+    stage.style.transform = `translate(-50%, -50%) scale(${s})`;
+  }
+
+  function go(i) {
+    current = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach((el, n) => el.classList.toggle('active', n === current));
+    progress.style.width = `${((current + 1) / slides.length) * 100}%`;
+    counter.textContent = `${current + 1} / ${slides.length}`;
+    const notes = slides[current].querySelector('.notes');
+    notesPanel.innerHTML = `<h6>Notas · slide ${current + 1}</h6>` + (notes ? notes.innerHTML : '<p>—</p>');
+    if (location.hash !== `#${current + 1}`) history.replaceState(null, '', `#${current + 1}`);
+  }
+
+  function toggleOverview(force) {
+    const on = document.body.classList.toggle('overview', force);
+    if (on) {
+      stage.style.transform = '';
+      slides[current].scrollIntoView({ block: 'center' });
+    } else {
+      fit();
+    }
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const k = e.key;
+    if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter'].includes(k)) { e.preventDefault(); go(current + 1); }
+    else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(k)) { e.preventDefault(); go(current - 1); }
+    else if (k === 'Home') go(0);
+    else if (k === 'End') go(slides.length - 1);
+    else if (k === 'n' || k === 'N') document.body.classList.toggle('show-notes');
+    else if (k === 'o' || k === 'O' || k === 'Escape') toggleOverview(k === 'Escape' ? false : undefined);
+    else if (k === 'f' || k === 'F') {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen?.();
+    }
+  });
+
+  slides.forEach((el, n) => el.addEventListener('click', (e) => {
+    if (document.body.classList.contains('overview')) { go(n); toggleOverview(false); return; }
+    if (e.target.closest('a, pre, code') || getSelection().toString()) return;
+    go(e.clientX > window.innerWidth / 2 ? current + 1 : current - 1);
+  }));
+
+  let touchX = null;
+  document.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', (e) => {
+    if (touchX === null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 50) go(current + (dx < 0 ? 1 : -1));
+    touchX = null;
+  });
+
+  window.addEventListener('resize', fit);
+  window.addEventListener('hashchange', () => go(parseInt(location.hash.slice(1), 10) - 1 || 0));
+  fit();
+  go(parseInt(location.hash.slice(1), 10) - 1 || 0);
+})();
+</script>
+</body>
+</html>

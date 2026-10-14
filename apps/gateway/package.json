@@ -35,7 +35,10 @@
     "@mcp-gateway/policy": "workspace:*",
     "@mcp-gateway/projection": "workspace:*",
     "@mcp-gateway/redaction": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.32.0",
+    "@mcp-ui-kit/view-spec": "^0.1.0",
+    "@mcp-ui-kit/views": "^0.1.0",
+    "@modelcontextprotocol/node": "^2.1.1",
+    "@modelcontextprotocol/server": "^2.3.1",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/core": "^2.11.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.222.0",
@@ -59,6 +62,8 @@
   },
   "devDependencies": {
     "@apidevtools/swagger-parser": "^13.1.0",
-    "@mcp-gateway/testkit": "workspace:*"
+    "@mcp-gateway/testkit": "workspace:*",
+    "@modelcontextprotocol/client": "^2.3.1",
+    "@modelcontextprotocol/sdk": "^1.32.0"
   }
 }

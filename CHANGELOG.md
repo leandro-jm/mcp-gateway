@@ -5,6 +5,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+- Landing page (`apps/site`) in English, Portuguese and Spanish, published to GitHub Pages (ADR-020).
+- MCP protocol revision 2026-07-28 (stateless, per-request envelope) on every MCP endpoint, served next to 2025-era clients (ADR-021). Client name, version and capabilities from the envelope feed the call identity.
+- Generative UI on tool results via MCP Apps (ADR-022): per-tool views (table, chart, card, form, confirmation plan, map, diagram) from `@mcp-ui-kit`, inferred by the crawler and activated in the Admin UI; tenant appearance (accent, chart palette, basemap) with a contrast and color-blindness gate; `ui://mcp-gateway/*` resources; destructive tools with a plan view require a one-time human confirmation from 2026-07-28 clients with UI. Playground can simulate an MCP Apps client.
+- Public multi-arch (`linux/amd64`, `linux/arm64`) images on Docker Hub: `leandrojm/mcp-gateway`, `leandrojm/mcp-gateway-crawler` and `leandrojm/mcp-gateway-admin-ui`, published by CI on `v*` tags and by `pnpm docker:publish` (`scripts/docker-publish.sh`). `pnpm docker:build` builds them locally to try the production stack.
+- Portainer guide in `docs/deploy.md`: web editor, Git repository and webhook modes, first admin from the container console.
+
+### Changed
+- MCP SDK moved from `@modelcontextprotocol/sdk` 1.x to `@modelcontextprotocol/server` / `@modelcontextprotocol/node` 2.x.
+- `resources/read` of a missing or expired artifact now answers `-32602` with `data.uri` (was `-32002`), as the 2026-07-28 revision requires.
+- `/mcp/omni` dynamic sessions remain available to 2025-era clients only; 2026-07-28 clients get the static mode.
+- **Breaking (deploy):** the production compose now takes `IMAGE_NAMESPACE` (default `leandrojm`, Docker Hub) instead of `IMAGE_PREFIX`. GHCR images were renamed to the same scheme: `ghcr.io/leandro-jm/mcp-gateway`, `mcp-gateway-crawler` and `mcp-gateway-admin-ui` (were `ghcr.io/leandro-jm/mcp-gateway/{gateway,crawler,admin-ui}`).
+- `@mcp-ui-kit/*` is consumed from npm instead of a sibling checkout, so the repo builds (and its images build) on its own.
+
 ## [0.1.0] - 2026-10-04
 
 First public release.

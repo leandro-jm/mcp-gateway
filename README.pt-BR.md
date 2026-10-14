@@ -4,7 +4,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 ![Node ≥ 22.12](https://img.shields.io/badge/node-%E2%89%A522.12-339933)
 
-[English](README.md) · **Português**
+[English](README.md) · **Português** · **Site:** [leandro-jm.github.io/mcp-gateway](https://leandro-jm.github.io/mcp-gateway/?lang=pt-BR)
 
 Um **gateway MCP (Model Context Protocol)** multi-tenant que transforma APIs REST/OpenAPI existentes em tools MCP governadas para agentes de IA, sem alterar as APIs.
 
@@ -110,9 +110,9 @@ Depois:
 
 ## Deploy
 
-As imagens Docker de `gateway`, `crawler` e `admin-ui` são publicadas em `ghcr.io/leandro-jm/mcp-gateway/*` a partir das tags de versão. Veja:
+Imagens Docker públicas e multi-arch são publicadas no Docker Hub a partir das tags de versão: [`leandrojm/mcp-gateway`](https://hub.docker.com/r/leandrojm/mcp-gateway), [`leandrojm/mcp-gateway-crawler`](https://hub.docker.com/r/leandrojm/mcp-gateway-crawler) e [`leandrojm/mcp-gateway-admin-ui`](https://hub.docker.com/r/leandrojm/mcp-gateway-admin-ui) (espelhadas em `ghcr.io/leandro-jm/*`). A stack de [`docker/docker-compose.prod.yml`](docker/docker-compose.prod.yml) roda com `docker compose` ou como stack do Portainer. Veja:
 
-- [docs/deploy.md](docs/deploy.md): deploy em produção (stack compose, TLS, primeiro admin, atualizações, backup e checklist de segurança);
+- [docs/deploy.md](docs/deploy.md): deploy em produção (compose e Portainer, TLS, primeiro admin, atualizações, backup, checklist de segurança e publicação das imagens);
 - [docker/prod.env.example](docker/prod.env.example): variáveis de ambiente;
 - [docs/observability](docs/observability): métricas, traces, dashboard do Grafana e regras do Prometheus.
 
@@ -129,6 +129,7 @@ apps/
   gateway/        data plane MCP + Admin API (Fastify)
   crawler/        worker BullMQ: discovery, geração de tools, drift
   admin-ui/       console de administração (React + Vite)
+  site/           landing page (React + Vite, GitHub Pages)
 packages/
   core/           config, erros, criptografia, logger (puro)
   i18n/           catálogos tipados: en, pt-BR, es (puro)

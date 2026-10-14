@@ -1,6 +1,6 @@
 # ADR-001: Versão da spec MCP e uso do SDK
 
-- Status: aceito
+- Status: aceito (revisado pelo ADR-021: SDK v2 e spec 2026-07-28)
 - Data: 2026-10-03
 
 ## Contexto

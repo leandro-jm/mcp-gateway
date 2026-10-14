@@ -41,7 +41,7 @@ const IO_MODULES = [
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**', '**/migrations/**', 'apps/admin-ui/public/**'],
+    ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**', '**/migrations/**', 'apps/admin-ui/public/**', 'apps/site/public/**'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -79,7 +79,7 @@ export default tseslint.config(
     languageOptions: { globals: { __ENV: 'readonly', __VU: 'readonly', __ITER: 'readonly' } },
   },
   {
-    files: ['apps/admin-ui/**/*.{ts,tsx}'],
+    files: ['apps/admin-ui/**/*.{ts,tsx}', 'apps/site/src/**/*.{ts,tsx}'],
     languageOptions: { globals: { ...globals.browser } },
   },
 );

@@ -13,7 +13,7 @@ importers:
         version: 10.0.1(eslint@10.12.0)
       '@modelcontextprotocol/sdk':
         specifier: ^1.32.0
-        version: 1.32.0(zod@4.6.5)
+        version: 1.32.0(@cfworker/json-schema@4.1.1)(zod@4.6.5)
       '@types/node':
         specifier: ^22.20.5
         version: 22.20.5
@@ -71,6 +71,12 @@ importers:
       '@mcp-gateway/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@mcp-ui-kit/components':
+        specifier: ^0.1.0
+        version: 0.1.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@mcp-ui-kit/view-spec':
+        specifier: ^0.1.0
+        version: 0.1.0
       '@tanstack/react-query':
         specifier: ^5.104.1
         version: 5.104.1(react@19.3.0)
@@ -132,6 +138,9 @@ importers:
       '@mcp-gateway/projection':
         specifier: workspace:*
         version: link:../../packages/projection
+      '@mcp-ui-kit/view-spec':
+        specifier: ^0.1.0
+        version: 0.1.0
       bullmq:
         specifier: ^6.3.11
         version: 6.3.11(ioredis@6.0.0)(pg@8.23.1)
@@ -202,9 +211,18 @@ importers:
       '@mcp-gateway/redaction':
         specifier: workspace:*
         version: link:../../packages/redaction
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.32.0
-        version: 1.32.0(zod@4.6.5)
+      '@mcp-ui-kit/view-spec':
+        specifier: ^0.1.0
+        version: 0.1.0
+      '@mcp-ui-kit/views':
+        specifier: ^0.1.0
+        version: 0.1.0
+      '@modelcontextprotocol/node':
+        specifier: ^2.1.1
+        version: 2.1.1(@modelcontextprotocol/server@2.3.1)
+      '@modelcontextprotocol/server':
+        specifier: ^2.3.1
+        version: 2.3.1
       '@opentelemetry/api':
         specifier: ^1.9.1
         version: 1.9.1
@@ -272,6 +290,49 @@ importers:
       '@mcp-gateway/testkit':
         specifier: workspace:*
         version: link:../../packages/testkit
+      '@modelcontextprotocol/client':
+        specifier: ^2.3.1
+        version: 2.3.1
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.32.0
+        version: 1.32.0(@cfworker/json-schema@4.1.1)(zod@4.6.5)
+
+  apps/site:
+    dependencies:
+      '@fontsource/ibm-plex-mono':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/ibm-plex-sans':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@mcp-gateway/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
+      lucide-react:
+        specifier: ^1.50.0
+        version: 1.50.0(@types/react@19.3.0)(react@19.3.0)
+      react:
+        specifier: ^19.3.0
+        version: 19.3.0
+      react-dom:
+        specifier: ^19.3.0
+        version: 19.3.0(react@19.3.0)
+    devDependencies:
+      '@playwright/test':
+        specifier: ^1.63.0
+        version: 1.63.0
+      '@types/react':
+        specifier: ^19.3.0
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: ^19.3.0
+        version: 19.3.0(@types/react@19.3.0)
+      '@vitejs/plugin-react':
+        specifier: ^6.1.1
+        version: 6.1.1(vite@8.3.2(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))
+      vite:
+        specifier: ^8.3.2
+        version: 8.3.2(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1)
 
   packages/api-import:
     dependencies:
@@ -589,6 +650,9 @@ packages:
 
   '@cacheable/utils@2.5.0':
     resolution: {integrity: sha512-buipgOVDkkPXNR5+xBpDw7Zk2n1EvU7qBJCNUcL7rhQ//kfpOXPAvQ511Os0vpLYJ1pZnvudNytkQt2hst3wqA==}
+
+  '@cfworker/json-schema@4.1.1':
+    resolution: {integrity: sha512-gAmrUZSGtKc3AiBL71iNWxDsyUC5uMaKKGdvzYsBoTW/xi42JQHl7eKV2OYzCUqvc+D2RCcf7EXY2iCyFIk6og==}
 
   '@codemirror/autocomplete@6.20.3':
     resolution: {integrity: sha512-tlosUqb+3BbxCxZdu4tKeRghPFC+QM7q4X5YhKV2eCmPG+1r2F3f4AaSz5sCrFqUtX4Jh20VFTKecl16MgiV9g==}
@@ -1311,6 +1375,12 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
+  '@hono/node-server@1.19.17':
+    resolution: {integrity: sha512-dSneS5qhiauZWGDCeK4o695Xd9nUNjviSZCMQrj10eetr8Uln1ucn6bbphOM6UynAMMtNIzZNSpL9vnASJwrPQ==}
+    engines: {node: '>=18.14.1'}
+    peerDependencies:
+      hono: ^4
+
   '@hono/node-server@2.1.3':
     resolution: {integrity: sha512-TA//nWMqPhbfdfneACk6t5a9eqbS9lABEPyKn0/xZTah3H3U2XaVg85rJFl0/Fyit0I552YDHgXGVSf3GwqbUw==}
     engines: {node: '>=20'}
@@ -1390,6 +1460,39 @@ packages:
   '@marijn/find-cluster-break@1.0.4':
     resolution: {integrity: sha512-Wy0V7+SGUjnF9/TkiM1hKVDPj7jKXduPNboMVtHTA8dySMURWqfg/JZ9E2Sq8JgSJmkl7k7Qe9FLeMSrSraWmQ==}
 
+  '@mcp-ui-kit/components@0.1.0':
+    resolution: {integrity: sha512-XzgB0A7jqeKdvlHTLzTmO8wbcMbMijs1LhDuYACStqpgFfg9fC+5aPrDESIMBFbdisx5xYXDfbbyPSVp1GenfA==}
+    peerDependencies:
+      leaflet: ^1.9.4
+      mermaid: ^12.1.0
+      react: ^19.0.0
+      react-dom: ^19.0.0
+    peerDependenciesMeta:
+      leaflet:
+        optional: true
+      mermaid:
+        optional: true
+
+  '@mcp-ui-kit/view-spec@0.1.0':
+    resolution: {integrity: sha512-l1vs5pI3v26oMHnFsMy10jIYix/CCxXppbarAcgi1NthpPULJD8DuR7hjkAVFBQ3tnXAeoGTurSYlSRbF/ldsQ==}
+
+  '@mcp-ui-kit/views@0.1.0':
+    resolution: {integrity: sha512-64Dv3j1HQ7pyCzT9blL/6D1VDQyiuiOemDXqTWsGajwxu72Docz/A12rs+R8YittTEgwFyzBW8ohlRLoQ7JGZw==}
+
+  '@modelcontextprotocol/client@2.3.1':
+    resolution: {integrity: sha512-mIGZXpHsjnZ6lD+gD/WCMpR5k8yVQQ8nNFH1N0Srf7AvnwTUMYD6pvTY8ng2+He5FfV7YMZLmrjL7cLa/cc3dQ==}
+    engines: {node: '>=20'}
+
+  '@modelcontextprotocol/core@2.3.1':
+    resolution: {integrity: sha512-laVmIhPGpWi7rG9q+0UigblRN0Hws/Yjlb6qLFtVqryXVLkc4h+yN8z731POD2LnAGQlFe7/tXhUm7Bi0YB91g==}
+    engines: {node: '>=20'}
+
+  '@modelcontextprotocol/node@2.1.1':
+    resolution: {integrity: sha512-EY92OAXN2xYL7tNS/MVsWJW1v8VHAPwl9B4Ca3pCrjmvqyC+S1C/6UHsMxF2GoFPraS5Yyg56vFz9brVpFojMA==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@modelcontextprotocol/server': ^2.3.0
+
   '@modelcontextprotocol/sdk@1.32.0':
     resolution: {integrity: sha512-8BviX/hK4Gd2eL1KdTwm0gfl4d3wdoErW0Jd00h6nomUAtk6IJk5vwQJc6kfWtJTzN5OEV/lgIiJKI8fiDGAlA==}
     engines: {node: '>=18'}
@@ -1399,6 +1502,10 @@ packages:
     peerDependenciesMeta:
       '@cfworker/json-schema':
         optional: true
+
+  '@modelcontextprotocol/server@2.3.1':
+    resolution: {integrity: sha512-e59MfWuSssj6DoQ96JCTqdW1AXT5/XtnTl0WWd6MU1Ka434fFUGGosCLJbGNySDhHGvxQWoRWK137FXYFkYNWw==}
+    engines: {node: '>=20'}
 
   '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.4':
     resolution: {integrity: sha512-LCkGo6JDfaBhgST7UpPWgNgLINpcpabaHfyz5OBx75nUYxBsaEPxjnyNjWpeb/xBup/682QnBfRBy2/LvPutZQ==}
@@ -4106,6 +4213,8 @@ snapshots:
       hashery: 1.5.1
       keyv: 5.6.0
 
+  '@cfworker/json-schema@4.1.1': {}
+
   '@codemirror/autocomplete@6.20.3':
     dependencies:
       '@codemirror/language': 6.12.4
@@ -4576,6 +4685,10 @@ snapshots:
       protobufjs: 7.6.6
       yargs: 17.7.3
 
+  '@hono/node-server@1.19.17(hono@4.13.12)':
+    dependencies:
+      hono: 4.13.12
+
   '@hono/node-server@2.1.3(hono@4.13.12)':
     dependencies:
       hono: 4.13.12
@@ -4661,7 +4774,40 @@ snapshots:
 
   '@marijn/find-cluster-break@1.0.4': {}
 
-  '@modelcontextprotocol/sdk@1.32.0(zod@4.6.5)':
+  '@mcp-ui-kit/components@0.1.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+    dependencies:
+      '@cfworker/json-schema': 4.1.1
+      '@mcp-ui-kit/view-spec': 0.1.0
+      react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
+
+  '@mcp-ui-kit/view-spec@0.1.0': {}
+
+  '@mcp-ui-kit/views@0.1.0':
+    dependencies:
+      '@mcp-ui-kit/view-spec': 0.1.0
+
+  '@modelcontextprotocol/client@2.3.1':
+    dependencies:
+      '@modelcontextprotocol/core': 2.3.1
+      cross-spawn: 7.0.6
+      eventsource: 3.0.7
+      eventsource-parser: 3.1.1
+      jose: 6.2.12
+      pkce-challenge: 5.0.1
+      zod: 4.6.5
+
+  '@modelcontextprotocol/core@2.3.1':
+    dependencies:
+      zod: 4.6.5
+
+  '@modelcontextprotocol/node@2.1.1(@modelcontextprotocol/server@2.3.1)':
+    dependencies:
+      '@hono/node-server': 1.19.17(hono@4.13.12)
+      '@modelcontextprotocol/server': 2.3.1
+      hono: 4.13.12
+
+  '@modelcontextprotocol/sdk@1.32.0(@cfworker/json-schema@4.1.1)(zod@4.6.5)':
     dependencies:
       '@hono/node-server': 2.1.3(hono@4.13.12)
       ajv: 8.20.0
@@ -4680,8 +4826,15 @@ snapshots:
       raw-body: 3.0.2
       zod: 4.6.5
       zod-to-json-schema: 3.25.2(zod@4.6.5)
+    optionalDependencies:
+      '@cfworker/json-schema': 4.1.1
     transitivePeerDependencies:
       - supports-color
+
+  '@modelcontextprotocol/server@2.3.1':
+    dependencies:
+      '@modelcontextprotocol/core': 2.3.1
+      zod: 4.6.5
 
   '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.4':
     optional: true

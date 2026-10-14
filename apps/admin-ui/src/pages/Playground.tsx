@@ -9,6 +9,7 @@ import { Badge, ErrorBox, Field, fmtBytes, fmtNumber, JsonView, PageHeader, Tabs
 import { useT } from '../i18n';
 import { useTenantQuery } from '../lib/hooks';
 import { argsSkeleton, parseJson } from '../lib/schema';
+import { ToolUiPreview } from '../components/ToolUiPreview';
 
 /** F10.2: calls a tool as a simulated subject and shows the final × raw response, with the differences highlighted. */
 export function PlaygroundPage() {
@@ -19,6 +20,7 @@ export function PlaygroundPage() {
   const [roles, setRoles] = useState('agent');
   const [groups, setGroups] = useState('');
   const [claims, setClaims] = useState('{}');
+  const [simulateUi, setSimulateUi] = useState(false);
   const tool = useMemo(() => tools.data?.items.find((item) => item.name === toolName), [tools.data, toolName]);
   useEffect(() => {
     if (!toolName && tools.data?.items[0]) setToolName(tools.data.items[0].name);
@@ -26,6 +28,13 @@ export function PlaygroundPage() {
   useEffect(() => {
     if (tool) setArgs(JSON.stringify(argsSkeleton(tool.inputSchema), null, 2));
   }, [tool]);
+
+  const subjectOf = (claimsValue: Record<string, unknown>) => ({
+    sub: 'playground',
+    roles: roles.split(',').map((r) => r.trim()).filter(Boolean),
+    groups: groups.split(',').map((g) => g.trim()).filter(Boolean),
+    claims: claimsValue,
+  });
 
   const run = useMutation({
     mutationFn: () => {
@@ -35,17 +44,8 @@ export function PlaygroundPage() {
       if (c.error) throw new Error(t('playground.invalidClaims', { error: c.error }));
       return api<PlaygroundResult>('/playground/call', {
         method: 'POST',
-        body: {
-          tool: toolName,
-          arguments: a.value,
-          subject: {
-            sub: 'playground',
-            roles: roles.split(',').map((r) => r.trim()).filter(Boolean),
-            groups: groups.split(',').map((g) => g.trim()).filter(Boolean),
-            claims: c.value,
-          },
-        },
-      });
+        body: { tool: toolName, arguments: a.value, subject: subjectOf(c.value ?? {}), ui: simulateUi },
+      }).then((res) => ({ ...res, args: a.value ?? {}, subject: subjectOf(c.value ?? {}) }));
     },
   });
   const r = run.data;
@@ -74,6 +74,9 @@ export function PlaygroundPage() {
               <Field label={t('common.arguments')}>
                 <Editor value={args} onChange={setArgs} height="180px" label={t('common.arguments')} />
               </Field>
+              <label className="row" style={{ gap: 6, marginBottom: 12 }} title={t('views.simulateUiHint')}>
+                <input type="checkbox" checked={simulateUi} onChange={(e) => setSimulateUi(e.target.checked)} /> {t('views.simulateUi')}
+              </label>
               <button className="btn primary" onClick={() => run.mutate()} disabled={!toolName || run.isPending}>
                 {t('common.run')}
               </button>
@@ -109,6 +112,16 @@ export function PlaygroundPage() {
               {r.artifactId && <Badge kind="accent">{t('playground.artifact')}</Badge>}
               <Badge>{t('common.durationMs', { ms: fmtNumber(r.durationMs) })}</Badge>
             </div>
+            {simulateUi && (
+              <div className="panel" data-testid="playground-view">
+                <div className="panel-head">
+                  <span className="panel-title">{t('views.panelTitle')}</span>
+                </div>
+                <div className="panel-body">
+                  <ToolUiPreview result={r.result} args={r.args} subject={r.subject} />
+                </div>
+              </div>
+            )}
             <div className="split panel">
               <div className="panel-body">
                 <div className="label" style={{ marginBottom: 8 }}>

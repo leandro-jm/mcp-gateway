@@ -1,0 +1,58 @@
+import { defineMessages } from '@mcp-gateway/i18n';
+
+export const why = defineMessages('why', {
+  en: {
+    'why.label': 'Why a gateway',
+    'why.title': 'Agents should not talk to your APIs unsupervised.',
+    'why.lead':
+      'Wiring agents straight into internal APIs leaks credentials into prompts, ships personal data to the model, floods the context window and leaves no trace of what the agent did. mcp-gateway sits in the middle and enforces six principles.',
+    'why.denyTitle': 'Default deny',
+    'why.denyBody': 'Discovered tools are born disabled. An enabled tool without a policy is still unreachable.',
+    'why.downstreamTitle': 'Untouched downstream',
+    'why.downstreamBody': 'No API needs to change. The gateway speaks MCP to agents and plain HTTP to your services.',
+    'why.credsTitle': 'Agents never see credentials',
+    'why.credsBody': 'OAuth2, API keys and bearer tokens live only in the gateway, encrypted per tenant and injected per upstream.',
+    'why.piiTitle': 'PII leaves masked',
+    'why.piiBody': 'Redaction runs before any byte reaches the model: mask, hash, drop or tokenize, with detectors for documents, email, phone, cards and IBAN.',
+    'why.contextTitle': 'Context is scarce',
+    'why.contextBody': 'Projection, incremental discovery and artifacts keep large catalogs and huge payloads out of the context window.',
+    'why.auditTitle': 'Everything is auditable',
+    'why.auditBody': 'One structured event per call feeds audit, metrics, traces and analytics, with no sensitive payload.',
+  },
+  'pt-BR': {
+    'why.label': 'Por que um gateway',
+    'why.title': 'Agentes não deveriam falar com suas APIs sem supervisão.',
+    'why.lead':
+      'Ligar agentes direto nas APIs internas vaza credenciais para os prompts, envia dados pessoais ao modelo, lota a janela de contexto e não deixa rastro do que o agente fez. O mcp-gateway fica no meio e aplica seis princípios.',
+    'why.denyTitle': 'Default deny',
+    'why.denyBody': 'Tools descobertas nascem desabilitadas. Uma tool habilitada sem política continua inacessível.',
+    'why.downstreamTitle': 'Downstream intocado',
+    'why.downstreamBody': 'Nenhuma API precisa mudar. O gateway fala MCP com os agentes e HTTP comum com os seus serviços.',
+    'why.credsTitle': 'Agentes nunca veem credenciais',
+    'why.credsBody': 'OAuth2, API keys e bearer tokens ficam só no gateway, criptografados por tenant e injetados por upstream.',
+    'why.piiTitle': 'PII sai mascarada',
+    'why.piiBody': 'A redação roda antes de qualquer byte chegar ao modelo: mascarar, hash, remover ou tokenizar, com detectores de documentos, e-mail, telefone, cartões e IBAN.',
+    'why.contextTitle': 'Contexto é escasso',
+    'why.contextBody': 'Projeção, descoberta incremental e artefatos mantêm catálogos grandes e payloads enormes fora da janela de contexto.',
+    'why.auditTitle': 'Tudo é auditável',
+    'why.auditBody': 'Um evento estruturado por chamada alimenta auditoria, métricas, traces e analytics, sem payload sensível.',
+  },
+  es: {
+    'why.label': 'Por qué un gateway',
+    'why.title': 'Los agentes no deberían hablar con tus APIs sin supervisión.',
+    'why.lead':
+      'Conectar agentes directo a las APIs internas filtra credenciales en los prompts, envía datos personales al modelo, satura la ventana de contexto y no deja rastro de lo que hizo el agente. mcp-gateway se ubica en el medio y aplica seis principios.',
+    'why.denyTitle': 'Default deny',
+    'why.denyBody': 'Las tools descubiertas nacen deshabilitadas. Una tool habilitada sin política sigue siendo inaccesible.',
+    'why.downstreamTitle': 'Downstream intacto',
+    'why.downstreamBody': 'Ninguna API necesita cambiar. El gateway habla MCP con los agentes y HTTP común con tus servicios.',
+    'why.credsTitle': 'Los agentes nunca ven credenciales',
+    'why.credsBody': 'OAuth2, API keys y bearer tokens viven solo en el gateway, cifrados por tenant e inyectados por upstream.',
+    'why.piiTitle': 'La PII sale enmascarada',
+    'why.piiBody': 'La redacción corre antes de que cualquier byte llegue al modelo: enmascarar, hash, eliminar o tokenizar, con detectores de documentos, e-mail, teléfono, tarjetas e IBAN.',
+    'why.contextTitle': 'El contexto es escaso',
+    'why.contextBody': 'Proyección, descubrimiento incremental y artefactos mantienen catálogos grandes y payloads enormes fuera de la ventana de contexto.',
+    'why.auditTitle': 'Todo es auditable',
+    'why.auditBody': 'Un evento estructurado por llamada alimenta auditoría, métricas, trazas y analytics, sin payload sensible.',
+  },
+});

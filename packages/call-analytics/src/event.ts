@@ -63,6 +63,11 @@ export interface EventMeta {
   results?: string[];
   tool?: string;
   fullCatalogTokens?: number;
+  /**
+   * Generative UI (ADR-022): `origin` is self-declared by the view (informative only); `phase`
+   * is `input` when the call stopped at a form/confirmation instead of running.
+   */
+  ui?: { origin?: 'app'; phase: 'input' | 'result'; view?: string };
 }
 
 export interface CallEvent {

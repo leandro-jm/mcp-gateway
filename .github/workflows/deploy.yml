@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Image tag, e.g. sha-abc1234 or 0.1.0'
+        description: 'Docker Hub image tag (published from v* tags), e.g. 0.1.0'
         required: true
       environment:
         description: Environment
@@ -45,7 +45,7 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           docker run --rm -e DATABASE_URL \
-            ghcr.io/${{ github.repository }}/gateway:${{ inputs.tag }} \
+            docker.io/${{ vars.DOCKERHUB_NAMESPACE || 'leandrojm' }}/mcp-gateway:${{ inputs.tag }} \
             node dist/migrate.js up
 
   deploy:

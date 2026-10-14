@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { Activity, Sparkles } from 'lucide-react';
+import { Activity, Palette, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import type { LlmProvider, LlmSettings, LlmTestResult, ObservabilitySettings } from '../api/types';
@@ -7,6 +7,7 @@ import { useToast } from '../components/toast';
 import { Badge, ErrorBox, Field, fmtDate, PageHeader, Tabs } from '../components/ui';
 import { useT } from '../i18n';
 import { useInvalidate, useTenantQuery } from '../lib/hooks';
+import { AppearancePanel } from './AppearancePanel';
 
 /** Anthropic models offered in the select; any other id can be typed. */
 export const ANTHROPIC_MODELS = ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-4-5'] as const;
@@ -35,19 +36,20 @@ const fromSettings = (s: LlmSettings | undefined): Form => ({
 /** Tenant settings (gateway-admin): the Composer LLM provider (ADR-015) and observability (ADR-016). */
 export function SettingsPage() {
   const t = useT();
-  const [tab, setTab] = useState<'llm' | 'observability'>('llm');
+  const [tab, setTab] = useState<'llm' | 'observability' | 'appearance'>('llm');
   return (
     <>
       <PageHeader title={t('settings.title')} subtitle={t('settings.subtitle')} />
-      <Tabs<'llm' | 'observability'>
+      <Tabs<'llm' | 'observability' | 'appearance'>
         tabs={[
           { id: 'llm', label: t('settings.tabLlm'), icon: <Sparkles size={20} /> },
           { id: 'observability', label: t('settings.tabObservability'), icon: <Activity size={20} /> },
+          { id: 'appearance', label: t('views.appearance'), icon: <Palette size={20} /> },
         ]}
         value={tab}
         onChange={setTab}
       />
-      {tab === 'llm' ? <LlmSettingsPanel /> : <ObservabilitySettingsPanel />}
+      {tab === 'llm' ? <LlmSettingsPanel /> : tab === 'observability' ? <ObservabilitySettingsPanel /> : <AppearancePanel />}
     </>
   );
 }

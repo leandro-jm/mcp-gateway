@@ -75,7 +75,7 @@
 
 - Node 22 LTS, TypeScript estrito, pnpm workspaces
 - HTTP: Fastify
-- MCP: `@modelcontextprotocol/sdk` (transport Streamable HTTP, stateless onde possível)
+- MCP: `@modelcontextprotocol/server` + `@modelcontextprotocol/node` 2.x (transport Streamable HTTP, stateless; spec 2026-07-28 e clientes 2025, ADR-021)
 - Validação: Zod (+ conversão JSON Schema ↔ Zod onde necessário; Ajv para validar args contra schema gerado)
 - OpenAPI: `@apidevtools/swagger-parser` (dereference de `$ref`, OpenAPI 3.0/3.1 e Swagger 2.0)
 - Banco: Postgres + Drizzle ORM + migrations; `pgvector` opcional (F7)
@@ -717,6 +717,51 @@ Objetivo: cada chamada gera um `CallEvent` largo (identidade, tool, decisões, d
 **F15.25 Hardening e documentação**
 - Suíte de segurança cobrindo as rotas novas, varredura de PII nas tabelas novas, k6 (overhead p95 até +2 ms em relação à F11.2), guia em `docs/observability/`.
 
+
+### F17 — Spec MCP 2026-07-28 e SDK v2 (ADR-021)
+
+Objetivo: atender a revisão stateless da spec (capabilities do cliente por request, `server/discover`, sem `initialize`) com o SDK oficial v2, sem quebrar clientes 2025. É pré-requisito da UI generativa (F18), que decide por request se o cliente suporta MCP Apps.
+
+**F17.1 ADR e plano**
+- ADR-021 (revisa o ADR-001); spike do `Server` de baixo nível com catálogo por tenant na v2; marco M8.
+
+**F17.2 Migração do SDK**
+- `@modelcontextprotocol/server` + `@modelcontextprotocol/node` 2.x no gateway; `createMcpHandler` por superfície com `toNodeHandler`; o `CallContext` chega ao factory por `authInfo.extra`.
+- `setRequestHandler` por nome de método; `McpError` → `ProtocolError`; resources de artefato e tools de observabilidade migrados.
+- CA: `pnpm check`, `pnpm test` e `pnpm test:int` verdes; nenhum comportamento muda para clientes 2025.
+
+**F17.3 Contexto do cliente por request**
+- `CallContext.client` (era, versão do protocolo, `clientInfo`, capabilities) lido do envelope `_meta` em 2026-07-28 e do header em 2025; identidade de analytics usa o `clientInfo` do envelope quando não há `mcp-session-id`.
+- CA: um cliente 2026-07-28 aparece com nome/versão do agente e `protocolVersion` no `CallEvent`; capabilities declaradas chegam ao executor.
+
+**F17.4 Omni nas duas eras**
+- Sessões dinâmicas (`list_changed`) só para clientes 2025, via `NodeStreamableHTTPServerTransport`; clientes 2026-07-28 recebem o modo estático.
+- CA: o teste de sessão dinâmica 2025 continua verde; um cliente 2026-07-28 lista as 3 meta-tools e chama uma tool descoberta via `call_tool`.
+
+**F17.5 Testes com as duas eras**
+- Helper de cliente moderno (`@modelcontextprotocol/client` 2.x, versão fixada em 2026-07-28) ao lado do cliente 1.x; suíte de compatibilidade nas quatro superfícies MCP.
+- CA: `tools/list`, `tools/call`, `resources/read` e erros (`-32602`) equivalentes nas duas eras; isolamento de tenant verificado com o cliente moderno.
+
+
+### F18 — UI generativa nas respostas (ADR-022)
+
+Objetivo: as tools do gateway abrem UI dentro do chat (tabela, gráfico, card, formulário, plano com confirmação, mapa, diagrama) em qualquer host MCP Apps, com o contrato e as views genéricas do repositório **mcp-ui-kit**. Dados continuam só em `structuredContent`; view e tema vão no `_meta`, fora do contexto do modelo.
+
+**F18.1 ADR e kit**
+- ADR-022; dependência de `@mcp-ui-kit/view-spec` (puro) e `@mcp-ui-kit/views` (estático) publicados no npm (`^0.1.0`; para desenvolver o kit junto, `pnpm link` local sem commitar).
+
+**F18.2 Persistência**
+- Migration 0023: `tool_views` (1:1 com a tool, `suggested | active | disabled`) e `tenant_themes` (tokens validados, basemap do mapa); snapshot carrega só views que conferem com o contrato atual.
+- CA: repositórios com `tenantId`; view inválida após drift fica fora do snapshot.
+
+**F18.3 Data plane**
+- `_meta.ui.resourceUri` (+ `openai/outputTemplate`) só para clientes com UI; `ViewPayload` e tema no `_meta` do resultado; formulário pré-preenchido quando a validação falha; plano destrutivo exige token de confirmação de uso único (clientes 2026-07-28 com UI); `ui://mcp-gateway/{view,map,diagram}` no roteador de resources; `CallEvent.meta.ui`.
+- CA: clientes sem UI recebem o resultado de hoje; token forjado, reutilizado ou de outro sujeito não confirma; isolamento de tenant.
+
+**F18.4 Admin e crawler**
+- Rotas `/tools/:id/view` (+ `suggest`) e `/settings/theme`; aba View no drawer da tool (editor + prévia real); Playground com "simular cliente MCP Apps"; aba Aparência com prévia clara e escura; crawler sugere views para tools novas.
+- CA: specs e temas inválidos voltam 400 com os problemas; E2E do exemplo `chat-external` do kit (tabela, formulário, plano confirmado) contra a stack de dev.
+
 ---
 
 ## 5. Ordem e marcos
@@ -730,6 +775,8 @@ Objetivo: cada chamada gera um `CallEvent` largo (identidade, tool, decisões, d
 | M5 — Onboarding sem OpenAPI | F13 | Sources criadas a partir de cURL, Postman ou HAR, com preview |
 | M6 — Composição assistida | F14 | Compostas criadas a partir de linguagem natural, revisadas e publicadas pela UI |
 | M7 — Agentes observáveis | F15 | Evento largo por chamada, visões por público, explorador, trajetórias, sugestão de compostas e MCP de observabilidade |
+| M8 — Spec MCP 2026-07-28 | F17 | Gateway atende clientes stateless da nova spec e clientes 2025 com o SDK v2 |
+| M9 — UI generativa | F18 | Resultados das tools viram tabela, gráfico, formulário e plano com confirmação em qualquer host MCP Apps |
 
 M2 é o mínimo para qualquer uso com dados reais de clientes.
 

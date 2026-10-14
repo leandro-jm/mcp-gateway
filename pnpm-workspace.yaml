@@ -8,3 +8,7 @@ allowBuilds:
   cpu-features: false
   protobufjs: false
   ssh2: false
+
+# @mcp-ui-kit is our own sibling project: allow a fresh release without waiting for minimumReleaseAge
+minimumReleaseAgeExclude:
+  - '@mcp-ui-kit/*'

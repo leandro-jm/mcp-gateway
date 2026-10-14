@@ -10,7 +10,7 @@
     "ai-agents",
     "llm-tools"
   ],
-  "homepage": "https://github.com/leandro-jm/mcp-gateway#readme",
+  "homepage": "https://leandro-jm.github.io/mcp-gateway/",
   "bugs": {
     "url": "https://github.com/leandro-jm/mcp-gateway/issues"
   },
@@ -42,7 +42,9 @@
     "db:migrate": "pnpm --filter @mcp-gateway/db db:migrate",
     "db:seed": "pnpm --filter @mcp-gateway/db db:seed",
     "db:create-admin": "pnpm --filter @mcp-gateway/db db:create-admin",
-    "test:security": "vitest run --project integration apps/gateway/test/security"
+    "test:security": "vitest run --project integration apps/gateway/test/security",
+    "docker:build": "scripts/docker-publish.sh --local",
+    "docker:publish": "scripts/docker-publish.sh"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

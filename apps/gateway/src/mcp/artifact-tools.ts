@@ -1,11 +1,11 @@
 import { isGatewayError } from '@mcp-gateway/core';
 import { formatDateTime, type Locale } from '@mcp-gateway/i18n';
 import { msg, translate, type ServerMessageKey } from '@mcp-gateway/i18n/server';
-import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { ListResourcesRequestSchema, ListResourceTemplatesRequestSchema, McpError, ReadResourceRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { ResourceNotFoundError } from '@modelcontextprotocol/server';
 import { ARTIFACT_SCHEME, type ArtifactService } from '../proxy/artifacts';
 import type { CallContext } from '../proxy/executor';
 import type { ToolResult } from '../proxy/result';
+import type { ResourceProvider } from './resources';
 
 /** Artifact tool definitions, in the caller's locale. */
 export function artifactTools(locale: Locale) {
@@ -65,13 +65,12 @@ export async function callArtifactTool(artifacts: ArtifactService, ctx: CallCont
   }
 }
 
-/** `resources/list` and `resources/read` on `artifact://…` (F8.3). */
-export function registerArtifactResources(server: Server, artifacts: ArtifactService, getCtx: () => CallContext): void {
-  server.setRequestHandler(ListResourcesRequestSchema, async () => {
-    const ctx = getCtx();
-    const locale = ctx.principal.locale;
-    return {
-      resources: (await artifacts.list(actx(ctx))).map((a) => ({
+/** `resources/list`, templates and `resources/read` on `artifact://…` (F8.3). */
+export function artifactResources(artifacts: ArtifactService): ResourceProvider {
+  return {
+    async list(ctx) {
+      const locale = ctx.principal.locale;
+      return (await artifacts.list(actx(ctx))).map((a) => ({
         uri: a.uri,
         name: `${a.toolName ?? 'artifact'}-${a.id.slice(0, 8)}.json`,
         mimeType: a.contentType,
@@ -85,13 +84,11 @@ export function registerArtifactResources(server: Server, artifacts: ArtifactSer
           }),
           locale,
         ),
-      })),
-    };
-  });
-  server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
-    const locale = getCtx().principal.locale;
-    return {
-      resourceTemplates: artifacts.enabled
+      }));
+    },
+    templates(ctx) {
+      const locale = ctx.principal.locale;
+      return artifacts.enabled
         ? [
             {
               uriTemplate: `${ARTIFACT_SCHEME}{id}`,
@@ -100,17 +97,18 @@ export function registerArtifactResources(server: Server, artifacts: ArtifactSer
               description: translate(msg('mcp.artifactTemplateDescription'), locale),
             },
           ]
-        : [],
-    };
-  });
-  server.setRequestHandler(ReadResourceRequestSchema, async (req) => {
-    const ctx = getCtx();
-    try {
-      const { artifact, data } = await artifacts.load(actx(ctx), req.params.uri);
-      return { contents: [{ uri: artifact.uri, mimeType: artifact.contentType, text: JSON.stringify(data) }] };
-    } catch (err) {
-      if (isGatewayError(err)) throw new McpError(-32002, err.localize(ctx.principal.locale));
-      throw err;
-    }
-  });
+        : [];
+    },
+    async read(ctx, uri) {
+      if (!uri.startsWith(ARTIFACT_SCHEME)) return undefined;
+      try {
+        const { artifact, data } = await artifacts.load(actx(ctx), uri);
+        return { contents: [{ uri: artifact.uri, mimeType: artifact.contentType, text: JSON.stringify(data) }] };
+      } catch (err) {
+        // missing, expired or another session's artifact all read as "not found" (-32602 + data.uri, ADR-021)
+        if (isGatewayError(err)) throw new ResourceNotFoundError(uri, err.localize(ctx.principal.locale));
+        throw err;
+      }
+    },
+  };
 }

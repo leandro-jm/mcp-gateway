@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { NodeStreamableHTTPServerTransport as StreamableHTTPServerTransport } from '@modelcontextprotocol/node';
+import type { Server } from '@modelcontextprotocol/server';
 import type { CallContext } from '../proxy/executor';
 import type { OmniSession } from './omni';
 
@@ -18,7 +18,7 @@ export interface McpSession {
 }
 
 /**
- * Stateful MCP sessions (Omni dynamic mode). They live in the process memory:
+ * Stateful MCP sessions (Omni dynamic mode, 2025-era clients only: ADR-021). They live in the process memory:
  * in a multi-replica deploy, the load balancer needs `mcp-session-id` affinity (ADR-009).
  */
 export class SessionStore {

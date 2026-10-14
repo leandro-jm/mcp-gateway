@@ -56,7 +56,7 @@ export async function runCrawl(services: CrawlerServices, job: CrawlSourceJob): 
     if (source.specFormat === 'postman') raw = importPostman(raw).openapi;
     const spec = await parseSpec(raw);
     const generated = generateTools(spec, { sourceName: source.name });
-    const result = await registerTools({ tools: repos.tools, drift: repos.drift, projections: repos.projections, composites: repos.composites }, job.tenantId, source, generated);
+    const result = await registerTools({ tools: repos.tools, drift: repos.drift, projections: repos.projections, composites: repos.composites, views: repos.toolViews }, job.tenantId, source, generated);
     await repos.sources.markCrawled(job.tenantId, source.id);
     await services.invalidateRegistry(job.tenantId);
     const webhooks = await enqueueDriftWebhooks(services, job.tenantId, result.driftEvents);

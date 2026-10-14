@@ -1,0 +1,40 @@
+import { defineMessages } from '@mcp-gateway/i18n';
+
+export const endpoints = defineMessages('endpoints', {
+  en: {
+    'endpoints.label': 'Endpoints',
+    'endpoints.title': 'One gateway, the right surface for each agent.',
+    'endpoints.lead': 'All MCP endpoints speak Streamable HTTP (MCP 2025-11-25) and authenticate with a Bearer token.',
+    'endpoints.colPath': 'Path',
+    'endpoints.colPurpose': 'What it exposes',
+    'endpoints.mcp': 'Every tool the caller may use, as native MCP tools. Best for small catalogs.',
+    'endpoints.omni': 'Incremental discovery for large catalogs: search_tools, get_tool_schema and call_tool.',
+    'endpoints.servers': 'Curated virtual servers built in the Admin UI, each with its own catalog and instructions.',
+    'endpoints.observability': 'The gateway analytics as tools (analytics_query, explain_call, top_failing_tools).',
+    'endpoints.sdk': 'A typed TypeScript SDK for agents that run code.',
+  },
+  'pt-BR': {
+    'endpoints.label': 'Endpoints',
+    'endpoints.title': 'Um gateway, a superfície certa para cada agente.',
+    'endpoints.lead': 'Todos os endpoints MCP falam Streamable HTTP (MCP 2025-11-25) e autenticam com token Bearer.',
+    'endpoints.colPath': 'Caminho',
+    'endpoints.colPurpose': 'O que expõe',
+    'endpoints.mcp': 'Todas as tools que o chamador pode usar, como tools MCP nativas. Ideal para catálogos pequenos.',
+    'endpoints.omni': 'Descoberta incremental para catálogos grandes: search_tools, get_tool_schema e call_tool.',
+    'endpoints.servers': 'Servidores virtuais curados na Admin UI, cada um com seu catálogo e suas instruções.',
+    'endpoints.observability': 'Os analytics do gateway como tools (analytics_query, explain_call, top_failing_tools).',
+    'endpoints.sdk': 'Um SDK TypeScript tipado para agentes que executam código.',
+  },
+  es: {
+    'endpoints.label': 'Endpoints',
+    'endpoints.title': 'Un gateway, la superficie justa para cada agente.',
+    'endpoints.lead': 'Todos los endpoints MCP hablan Streamable HTTP (MCP 2025-11-25) y se autentican con token Bearer.',
+    'endpoints.colPath': 'Ruta',
+    'endpoints.colPurpose': 'Qué expone',
+    'endpoints.mcp': 'Todas las tools que el llamador puede usar, como tools MCP nativas. Ideal para catálogos pequeños.',
+    'endpoints.omni': 'Descubrimiento incremental para catálogos grandes: search_tools, get_tool_schema y call_tool.',
+    'endpoints.servers': 'Servidores virtuales curados en la Admin UI, cada uno con su catálogo e instrucciones.',
+    'endpoints.observability': 'Los analytics del gateway como tools (analytics_query, explain_call, top_failing_tools).',
+    'endpoints.sdk': 'Un SDK TypeScript tipado para agentes que ejecutan código.',
+  },
+});

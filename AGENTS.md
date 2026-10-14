@@ -8,6 +8,7 @@ Multi-tenant MCP gateway that exposes REST/OpenAPI APIs as MCP tools. The full p
 - `apps/gateway`: data plane (`/mcp`, `/mcp/omni`, `/mcp/s/:slug`, `/mcp/observability`) and Admin API (`/admin/v1`), in the same process and in separate modules.
 - `apps/crawler`: BullMQ worker (OpenAPI discovery, tool generation, drift).
 - `apps/admin-ui`: React + Vite.
+- `apps/site`: landing page (React + Vite, static, GitHub Pages; ADR-020). Strings in `apps/site/src/i18n/messages/<area>.ts` with all three locales.
 - `packages/*`: internal libraries, consumed straight from source (`exports: ./src/index.ts`).
 - `docs/decisions`: ADRs. A decision not covered by the roadmap needs an ADR **before** implementation.
 
@@ -21,8 +22,14 @@ Multi-tenant MCP gateway that exposes REST/OpenAPI APIs as MCP tools. The full p
 - `pnpm --filter @mcp-gateway/admin-ui dev`: Admin UI (port 5180, proxies to the gateway).
 - `pnpm --filter @mcp-gateway/crawler dev`: crawler worker in watch mode (needed for crawls in dev and for the import E2E).
 - `pnpm --filter @mcp-gateway/admin-ui test:e2e`: UI E2E (Playwright) against the dev stack.
+- `pnpm --filter @mcp-gateway/site dev`: landing page (port 5190).
+- `pnpm --filter @mcp-gateway/site build:single`: the landing page as one self-contained HTML file (`apps/site/dist/mcp-gateway-landing.html`, works offline).
+- `pnpm --filter @mcp-gateway/site screens`: recaptures the Admin UI screenshots used by the landing page (needs the dev stack; `SITE_URL` also renders `og.png`).
 - `pnpm db:migrate` / `pnpm db:seed`: migrations and seed (require `DATABASE_URL`).
 - `pnpm db:create-admin <username>`: creates a platform admin and prints the generated password (production bootstrap).
+- `pnpm docker:build`: builds the three images for the native platform as `leandrojm/mcp-gateway*:local` (try them with `IMAGE_NAMESPACE=leandrojm TAG=local docker compose -f docker/docker-compose.prod.yml …`).
+- `pnpm docker:publish`: builds multi-arch images and pushes them to Docker Hub (`scripts/docker-publish.sh --help`; needs `docker login`). CI publishes the same images on `v*` tags.
+- `@mcp-ui-kit/*` comes from npm. To work on the kit at the same time, `pnpm link ../mcp-ui-kit/packages/<pkg>` inside the app and never commit the resulting `link:` (the image build refuses it).
 - Dev ports: Postgres 15432, Redis 16379, MinIO 19000/19001.
 - Seed users (ADR-011, **development only**): `admin`/`admin` (platform), `owner`/`owner`, `agente`/`agente`, and the service user `agent-dev` with the token `mgw_dev-agent-token-somente-para-desenvolvimento`.
 

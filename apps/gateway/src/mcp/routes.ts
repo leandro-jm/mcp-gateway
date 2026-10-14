@@ -2,7 +2,6 @@ import { createHash } from 'node:crypto';
 import type { CallEndpoint, SessionSource } from '@mcp-gateway/call-analytics';
 import { isGatewayError, NotFound, readObservabilitySettings, Unauthorized } from '@mcp-gateway/core';
 import { msg, translate, type ServerMessage } from '@mcp-gateway/i18n/server';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { bearerToken, wwwAuthenticate, type Principal } from '../auth/tokens';
 import { requestLocale } from '../i18n';
@@ -16,6 +15,7 @@ import { createObservabilityServer } from './observability';
 import { outcomeHandler, parseOutcome, reportOutcome } from './outcomes';
 import { createMcpServer } from './server';
 import { withHeaderTrace } from './call-context';
+import { classify, McpSurface } from './surface';
 import { clientInfoOf, isStatelessSessionId, issueSessionId, parseSessionId, type AgentInfo } from './session-id';
 
 export interface McpRouteDeps {
@@ -23,6 +23,22 @@ export interface McpRouteDeps {
   executor: ToolExecutor;
   search: ToolSearch;
   sessions: SessionStore;
+}
+
+/** The MCP surfaces of one app instance (ADR-021): each serves both protocol eras. */
+interface Surfaces {
+  native: McpSurface;
+  omni: McpSurface;
+  observability: McpSurface;
+}
+
+function createSurfaces(deps: McpRouteDeps): Surfaces {
+  const omniDeps = { executor: deps.executor, search: deps.search, artifacts: deps.services.artifacts, outcomes: outcomeHandler(deps.services) };
+  return {
+    native: new McpSurface((ctx) => createMcpServer(deps.executor, ctx, deps.services.artifacts, outcomeHandler(deps.services))),
+    omni: new McpSurface((ctx) => createOmniServer(omniDeps, () => ctx, { dynamic: false, discovered: new Set() })),
+    observability: new McpSurface((ctx) => createObservabilityServer(deps.services, ctx)),
+  };
 }
 
 function jsonRpcError(reply: FastifyReply, status: number, code: number, message: string, headers: Record<string, string> = {}) {
@@ -150,8 +166,9 @@ async function contextOrReply(deps: McpRouteDeps, req: FastifyRequest, reply: Fa
   }
 }
 
-export async function handleMcpPost(
+async function handleMcpPost(
   deps: McpRouteDeps,
+  surfaces: Surfaces,
   req: FastifyRequest,
   reply: FastifyReply,
   serverSlug?: string,
@@ -159,16 +176,8 @@ export async function handleMcpPost(
 ) {
   const ctx = resolved ?? (await contextOrReply(deps, req, reply, serverSlug));
   if (!ctx) return reply;
-  const server = createMcpServer(deps.executor, ctx, deps.services.artifacts, outcomeHandler(deps.services));
-  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
-  maybeIssueSessionId(ctx, req, reply);
-  reply.hijack();
-  reply.raw.on('close', () => {
-    void transport.close();
-    void server.close();
-  });
-  await server.connect(transport);
-  await transport.handleRequest(req.raw, reply.raw, req.body);
+  await surfaces.native.serve(req, reply, ctx, await classify(req), () => maybeIssueSessionId(ctx, req, reply));
+  return reply;
 }
 
 const sessionHeader = (req: FastifyRequest) => {
@@ -193,8 +202,9 @@ const wantsDynamic = (req: FastifyRequest) =>
  * (or `?mode=dynamic`) on initialize, creates a session: the tools found by the search join
  * the list and the client receives `tools/list_changed` on the GET stream.
  */
-export async function handleOmni(
+async function handleOmni(
   deps: McpRouteDeps,
+  surfaces: Surfaces,
   req: FastifyRequest,
   reply: FastifyReply,
   serverSlug?: string,
@@ -225,8 +235,10 @@ export async function handleOmni(
 
   if (req.method !== 'POST') return localizedError(req, reply, 400, -32000, msg('mcp.sessionIdRequired'));
 
-  const omniDeps = { executor: deps.executor, search: deps.search, artifacts: deps.services.artifacts, outcomes: outcomeHandler(deps.services) };
-  if (wantsDynamic(req)) {
+  const cls = await classify(req);
+  // Dynamic sessions (list_changed on the GET stream) exist only for 2025-era clients (ADR-021).
+  if (cls.legacy && wantsDynamic(req)) {
+    const omniDeps = { executor: deps.executor, search: deps.search, artifacts: deps.services.artifacts, outcomes: outcomeHandler(deps.services) };
     const omni = { dynamic: true, discovered: new Set<string>() };
     const agent = clientInfoOf(req.body);
     const sessionCtx = { ...ctx, identity: { ...ctx.identity!, sessionSource: 'omni' as const, ...agentFields(agent) } };
@@ -239,56 +251,42 @@ export async function handleOmni(
     return reply;
   }
 
-  const server = createOmniServer(omniDeps, () => ctx, { dynamic: false, discovered: new Set() });
-  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
-  maybeIssueSessionId(ctx, req, reply);
-  reply.hijack();
-  reply.raw.on('close', () => {
-    void transport.close();
-    void server.close();
-  });
-  await server.connect(transport);
-  await transport.handleRequest(req.raw, reply.raw, req.body);
+  await surfaces.omni.serve(req, reply, ctx, cls, () => maybeIssueSessionId(ctx, req, reply));
   return reply;
 }
 
 const OBSERVABILITY_ROLES = ['gateway-admin', 'analytics-reader'];
 
 /** `/mcp/observability` (F15.14): tenant analytics as MCP tools, for gateway-admin and analytics-reader. */
-export async function handleObservability(deps: McpRouteDeps, req: FastifyRequest, reply: FastifyReply) {
+async function handleObservability(deps: McpRouteDeps, surfaces: Surfaces, req: FastifyRequest, reply: FastifyReply) {
   const resolved = await contextOrReply(deps, req, reply);
   if (!resolved) return reply;
   if (!resolved.principal.roles.some((r) => OBSERVABILITY_ROLES.includes(r))) {
     return localizedError(req, reply, 403, -32003, msg('mcp.obsForbidden'));
   }
   const ctx = withEndpoint(resolved, 'observability');
-  const server = createObservabilityServer(deps.services, ctx);
-  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
-  maybeIssueSessionId(ctx, req, reply);
-  reply.hijack();
-  reply.raw.on('close', () => {
-    void transport.close();
-    void server.close();
-  });
-  await server.connect(transport);
-  await transport.handleRequest(req.raw, reply.raw, req.body);
+  await surfaces.observability.serve(req, reply, ctx, await classify(req), () => maybeIssueSessionId(ctx, req, reply));
   return reply;
 }
 
 export async function mcpRoutes(app: FastifyInstance, deps: McpRouteDeps): Promise<void> {
+  const surfaces = createSurfaces(deps);
+  app.addHook('onClose', async () => {
+    await Promise.all([surfaces.native.close(), surfaces.omni.close(), surfaces.observability.close()]);
+  });
   const methodNotAllowed = async (req: FastifyRequest, reply: FastifyReply) =>
     localizedError(req, reply, 405, -32000, msg('mcp.methodNotAllowed'), { allow: 'POST' });
 
   const opts = { schema: { hide: true } };
-  app.post('/mcp', opts, (req, reply) => handleMcpPost(deps, req, reply));
+  app.post('/mcp', opts, (req, reply) => handleMcpPost(deps, surfaces, req, reply));
   // MCP self-service: the virtual server mode picks native tools or Omni.
   app.post<{ Params: { serverSlug: string } }>('/mcp/s/:serverSlug', opts, async (req, reply) => {
     const ctx = await contextOrReply(deps, req, reply, req.params.serverSlug);
     if (!ctx) return reply;
-    if (ctx.virtualServer?.mode === 'omni') return handleOmni(deps, req, reply, req.params.serverSlug, ctx);
-    return handleMcpPost(deps, req, reply, req.params.serverSlug, ctx);
+    if (ctx.virtualServer?.mode === 'omni') return handleOmni(deps, surfaces, req, reply, req.params.serverSlug, ctx);
+    return handleMcpPost(deps, surfaces, req, reply, req.params.serverSlug, ctx);
   });
-  app.post('/mcp/observability', opts, (req, reply) => handleObservability(deps, req, reply));
+  app.post('/mcp/observability', opts, (req, reply) => handleObservability(deps, surfaces, req, reply));
   // report_outcome for orchestrators that know the outcome outside the model (F15.22)
   app.post('/v1/outcomes', opts, async (req, reply) => {
     const ctx = await contextOrReply(deps, req, reply);
@@ -305,12 +303,12 @@ export async function mcpRoutes(app: FastifyInstance, deps: McpRouteDeps): Promi
     app.delete(url, opts, methodNotAllowed);
   }
   for (const method of ['GET', 'POST', 'DELETE'] as const) {
-    app.route({ method, url: '/mcp/omni', ...opts, handler: (req, reply) => handleOmni(deps, req, reply) });
+    app.route({ method, url: '/mcp/omni', ...opts, handler: (req, reply) => handleOmni(deps, surfaces, req, reply) });
     app.route<{ Params: { serverSlug: string } }>({
       method,
       url: '/mcp/s/:serverSlug/omni',
       ...opts,
-      handler: (req, reply) => handleOmni(deps, req, reply, req.params.serverSlug),
+      handler: (req, reply) => handleOmni(deps, surfaces, req, reply, req.params.serverSlug),
     });
   }
 }

@@ -24,6 +24,8 @@ import {
   PiiTokensRepo,
   PoliciesRepo,
   ProjectionsRepo,
+  ToolViewsRepo,
+  TenantThemesRepo,
   SystemQueries,
   CredentialsRepo,
   Keyring,
@@ -73,6 +75,8 @@ export interface Repos {
   piiRules: PiiRulesRepo;
   piiTokens: PiiTokensRepo;
   projections: ProjectionsRepo;
+  toolViews: ToolViewsRepo;
+  tenantThemes: TenantThemesRepo;
   system: SystemQueries;
   composites: CompositesRepo;
   drift: DriftEventsRepo;
@@ -162,6 +166,8 @@ export function createRepos(db: Db, keyring: Keyring): Repos {
     piiRules: new PiiRulesRepo(db),
     piiTokens: new PiiTokensRepo(db),
     projections: new ProjectionsRepo(db),
+    toolViews: new ToolViewsRepo(db),
+    tenantThemes: new TenantThemesRepo(db),
     system: new SystemQueries(db),
     composites: new CompositesRepo(db),
     drift: new DriftEventsRepo(db),

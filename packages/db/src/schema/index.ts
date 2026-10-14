@@ -344,6 +344,37 @@ export const projections = pgTable('projections', {
   updatedAt: updatedAt(),
 });
 
+/** UI attached to a tool (ADR-022): `view-spec` `ToolViews`, 1:1 with the tool. */
+export const toolViews = pgTable(
+  'tool_views',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    toolId: uuid('tool_id')
+      .notNull()
+      .unique()
+      .references(() => tools.id, { onDelete: 'cascade' }),
+    views: jsonb('views').$type<JsonObject>().notNull(),
+    specVersion: integer('spec_version').notNull().default(1),
+    /** `suggested`: inferred by the crawl, inactive until the owner approves it. */
+    status: text('status', { enum: ['suggested', 'active', 'disabled'] }).notNull().default('suggested'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index('tool_views_tenant_idx').on(t.tenantId, t.status)],
+);
+
+/** Branding of the tenant's views (ADR-022): validated `ThemeTokens` and the optional map basemap. */
+export const tenantThemes = pgTable('tenant_themes', {
+  tenantId: uuid('tenant_id')
+    .primaryKey()
+    .references(() => tenants.id, { onDelete: 'cascade' }),
+  tokens: jsonb('tokens').$type<JsonObject>().notNull().default({}),
+  tileUrl: text('tile_url'),
+  tileAttribution: text('tile_attribution'),
+  updatedAt: updatedAt(),
+});
+
 export const crawlRuns = pgTable(
   'crawl_runs',
   {

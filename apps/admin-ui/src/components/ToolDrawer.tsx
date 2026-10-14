@@ -13,9 +13,10 @@ import { argsSkeleton, lines, parseJson } from '../lib/schema';
 import { DiffView } from './DiffView';
 import { Editor } from './Editor';
 import { useToast } from './toast';
+import { ViewTab } from './ViewTab';
 import { Badge, Drawer, ErrorBox, Field, fmtBytes, fmtDate, JsonView, Tabs } from './ui';
 
-type Tab = 'overview' | 'versions' | 'projection' | 'test';
+type Tab = 'overview' | 'versions' | 'projection' | 'view' | 'test';
 
 export function StateBadge({ state }: { state: string }) {
   const t = useT();
@@ -96,6 +97,7 @@ export function ToolDrawer({ toolId, onClose }: { toolId: string; onClose(): voi
           { id: 'overview', label: t('toolDrawer.tabOverview') },
           { id: 'versions', label: t('toolDrawer.tabVersions') },
           { id: 'projection', label: t('toolDrawer.tabProjection') },
+          { id: 'view', label: t('views.tab') },
           { id: 'test', label: t('toolDrawer.tabTest') },
         ]}
         value={tab}
@@ -106,6 +108,7 @@ export function ToolDrawer({ toolId, onClose }: { toolId: string; onClose(): voi
         {tl && tab === 'overview' && <Overview tool={tl} />}
         {tl && tab === 'versions' && <Versions tool={tl} />}
         {tl && tab === 'projection' && <ProjectionTab tool={tl} />}
+        {tl && tab === 'view' && <ViewTab tool={tl} />}
         {tl && tab === 'test' && <TestTab tool={tl} />}
       </div>
     </Drawer>

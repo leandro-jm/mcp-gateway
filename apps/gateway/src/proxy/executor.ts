@@ -52,6 +52,8 @@ import type { ArgValidator } from './validation';
 import type { CircuitBreaker, RateLimiter } from './guards';
 import { NetworkError, UpstreamTimeout } from './rest-adapter';
 import { agentUpstreamMessage, errorResult, upstreamToToolResult, type ToolResult } from './result';
+import { activeViews, clientHasUi, ConfirmTokens, descriptorUiMeta, fieldErrors, resultUiMeta } from './ui';
+import type { ToolViews } from '@mcp-ui-kit/view-spec';
 import type { UpstreamAdapter, UpstreamResult } from './types';
 
 export interface CallContext {
@@ -80,6 +82,24 @@ export interface CallContext {
   inboundTrace?: { source: 'meta' | 'header'; parentSpanId: string };
   /** Who is calling and through where (ADR-016 §10); informative only, never used for authorization. */
   identity?: CallIdentity;
+  /** What the MCP client declared for this request (ADR-021); informative only, never used for authorization. */
+  client?: McpClientInfo;
+  /** UI hints of the request `_meta` (ADR-022): a view's confirmation token and self-declared origin. */
+  ui?: { confirmToken?: string; origin?: 'app' };
+}
+
+/**
+ * The MCP client as seen on one request (ADR-021). On the 2026-07-28 era every request carries
+ * it in the `_meta` envelope; on 2025-era stateless requests only the protocol version header
+ * is known (capabilities were sent on `initialize`, a different request).
+ */
+export interface McpClientInfo {
+  era: 'modern' | 'legacy';
+  protocolVersion?: string;
+  name?: string;
+  version?: string;
+  /** Extension ids declared in `capabilities.extensions` (e.g. `io.modelcontextprotocol/ui`). */
+  extensions: string[];
 }
 
 export interface CallIdentity {
@@ -99,6 +119,7 @@ export interface McpToolDescriptor {
   inputSchema: Record<string, unknown>;
   outputSchema?: Record<string, unknown>;
   annotations?: Record<string, unknown>;
+  _meta?: Record<string, unknown>;
 }
 
 export interface ExecutorDeps {
@@ -139,6 +160,8 @@ export interface DescriptorOptions {
   artifacts?: boolean;
   /** Locale of the gateway-authored texts (effect sentence, `_fields`/`_output` descriptions). */
   locale?: Locale;
+  /** Active views to advertise as an MCP App (ADR-022); only for clients with UI. */
+  ui?: ToolViews;
 }
 
 /**
@@ -175,6 +198,7 @@ export function toDescriptor(t: SnapshotTool, projection?: SnapshotProjection, o
     // The advertised schema reflects the post-redaction/projection response (fields may disappear or become masks).
     ...(t.outputSchema ? { outputSchema: relaxOutputSchema(t.outputSchema) } : {}),
     annotations: { ...t.annotations, ...(t.title ? { title: t.title } : {}) },
+    ...(opts.ui ? { _meta: descriptorUiMeta(opts.ui) } : {}),
   };
 }
 
@@ -218,7 +242,12 @@ export class ToolExecutor {
   private readonly defTokens = new WeakMap<SnapshotTool, number>();
   private readonly policyVersions = new WeakMap<RegistrySnapshot, string>();
 
-  constructor(private readonly deps: ExecutorDeps) {}
+  /** One-time confirmations of destructive calls made from a view (ADR-022). */
+  private readonly confirmTokens: ConfirmTokens;
+
+  constructor(private readonly deps: ExecutorDeps) {
+    this.confirmTokens = new ConfirmTokens((tenantId) => deps.pii.analyticsKey(tenantId));
+  }
 
   /** Visibility (list mode): args constraints are left for the call. */
   protected isAllowed(ctx: CallContext, tool: SnapshotTool): boolean {
@@ -232,7 +261,10 @@ export class ToolExecutor {
   listTools(ctx: CallContext): McpToolDescriptor[] {
     return this.catalog(ctx)
       .filter((t) => t.state === 'enabled' && this.isAllowed(ctx, t))
-      .map((t) => toDescriptor(t, activeProjection(ctx.snapshot, t.id), { artifacts: this.deps.artifacts.enabled, locale: ctx.principal.locale }));
+      .map((t) => {
+        const ui = clientHasUi(ctx.client) ? activeViews(ctx.snapshot, t.id) : undefined;
+        return toDescriptor(t, activeProjection(ctx.snapshot, t.id), { artifacts: this.deps.artifacts.enabled, locale: ctx.principal.locale, ...(ui ? { ui } : {}) });
+      });
   }
 
   findTool(ctx: CallContext, name: string): SnapshotTool {
@@ -328,7 +360,7 @@ export class ToolExecutor {
       }
       // only after visibility: the state of a tool the subject cannot see is not revealed
       if (tool.state !== 'enabled') throw new ProtocolError(new ToolDisabled(name, tool.state));
-      const result = await this.execute(ctx, tool, rawArgs ?? {}, rec);
+      const result = await this.executeWithUi(ctx, tool, rawArgs ?? {}, rec);
       if (result.isError) rec.toolError(result);
       rec.responseBytes(resultBytes(result));
       if (ctx.capture) {
@@ -347,6 +379,45 @@ export class ToolExecutor {
     } finally {
       await this.finish(ctx, rec, span, 'tools/call');
       if (slot) this.capture(ctx, slot, rec, name, rawArgs, final);
+    }
+  }
+
+  /**
+   * Generative UI around the pipeline (ADR-022), only for clients with UI and tools with active
+   * views: destructive calls wait for a human confirmation (2026-07-28 clients), invalid
+   * arguments come back as a prefilled form, results carry their view in `_meta` (never in
+   * the model's content).
+   */
+  private async executeWithUi(ctx: CallContext, tool: SnapshotTool, rawArgs: unknown, rec: CallRecorder): Promise<ToolResult> {
+    const views = clientHasUi(ctx.client) ? activeViews(ctx.snapshot, tool.id) : undefined;
+    if (!views) return this.execute(ctx, tool, rawArgs, rec);
+    const locale = ctx.principal.locale;
+    const origin = ctx.ui?.origin ? { origin: ctx.ui.origin } : {};
+
+    if (views.input?.kind === 'plan' && ctx.client?.era === 'modern') {
+      const token = ctx.ui?.confirmToken;
+      if (!token || !(await this.confirmTokens.consume(ctx, tool.name, token))) {
+        rec.meta({ ui: { phase: 'input', view: 'plan', ...origin } });
+        // no structuredContent: it would have to match the tool output schema
+        return {
+          content: [{ type: 'text', text: translate(msg('ui.confirmationRequired', { tool: tool.title ?? tool.name }), locale) }],
+          _meta: resultUiMeta(ctx.snapshot, { views, phase: 'input', confirmToken: await this.confirmTokens.issue(ctx, tool.name) }),
+        };
+      }
+    }
+
+    try {
+      const result = await this.execute(ctx, tool, rawArgs, rec);
+      if (result.isError || !views.result) return result;
+      rec.meta({ ui: { phase: 'result', view: views.result.kind, ...origin } });
+      const payload = { views, phase: 'result' as const, ...(rec.ev.artifactId ? { truncated: true } : {}) };
+      return { ...result, _meta: { ...(result._meta as Record<string, unknown> | undefined), ...resultUiMeta(ctx.snapshot, payload) } };
+    } catch (err) {
+      if (views.input?.kind !== 'form' || !(err instanceof ValidationError)) throw err;
+      rec.fail(err);
+      rec.meta({ ui: { phase: 'input', view: 'form', ...origin } });
+      const base = err.toToolResult(locale) as ToolResult;
+      return { ...base, _meta: resultUiMeta(ctx.snapshot, { views, phase: 'input', errors: fieldErrors(err.details, locale) }) };
     }
   }
 

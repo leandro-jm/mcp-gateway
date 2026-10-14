@@ -2,14 +2,13 @@ import { DIMENSIONS, FILTERS, METRICS, validateQuery, type LastRange } from '@mc
 import { isGatewayError, readTrafficSettings } from '@mcp-gateway/core';
 import type { Locale } from '@mcp-gateway/i18n';
 import { msg, translate, type ServerMessageKey } from '@mcp-gateway/i18n/server';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { CallToolRequestSchema, ListToolsRequestSchema, McpError } from '@modelcontextprotocol/sdk/types.js';
+import { ProtocolError as McpProtocolError, Server } from '@modelcontextprotocol/server';
 import { explainCall } from '../analytics/explain';
 import { rangeOf, topFailingTools } from '../analytics/views';
 import type { CallContext } from '../proxy/executor';
 import { errorResult, type ToolResult } from '../proxy/result';
 import type { Services } from '../services';
-import { forRequest } from './call-context';
+import { forRequest, requestInfo } from './call-context';
 import { SERVER_INFO } from './server';
 
 export const OBSERVABILITY_TOOL_NAMES = ['analytics_query', 'explain_call', 'top_failing_tools'] as const;
@@ -156,18 +155,18 @@ export function createObservabilityServer(services: Services, ctx: CallContext):
     { capabilities: { tools: {} }, instructions: translate(msg('mcp.obsInstructions'), locale) },
   );
 
-  server.setRequestHandler(ListToolsRequestSchema, async (req, extra) => {
+  server.setRequestHandler('tools/list', async (_req, h) => {
     const tools = observabilityTools(locale);
-    services.executor.recordList(forRequest(ctx, req.params?._meta, extra.requestId), tools);
+    services.executor.recordList(forRequest(ctx, requestInfo(h, false)), tools);
     return { tools } as never;
   });
 
-  server.setRequestHandler(CallToolRequestSchema, async (req, extra) => {
-    const callCtx = forRequest(ctx, req.params._meta, extra.requestId, extra.signal);
+  server.setRequestHandler('tools/call', async (req, h) => {
+    const callCtx = forRequest(ctx, requestInfo(h));
     const name = req.params.name;
     const args = (req.params.arguments ?? {}) as Record<string, unknown>;
     if (!(OBSERVABILITY_TOOL_NAMES as readonly string[]).includes(name)) {
-      throw new McpError(-32602, translate(msg('mcp.omniUnknownTool', { tool: name }), locale));
+      throw new McpProtocolError(-32602, translate(msg('mcp.omniUnknownTool', { tool: name }), locale));
     }
     return services.executor.metaCall(
       callCtx,
