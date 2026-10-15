@@ -106,7 +106,7 @@ Depois:
    ```
 
 > [!WARNING]
-> Os usuários do seed (`admin`/`admin`, `owner`/`owner`, `agente`/`agente`) e o token `mgw_dev-agent-token-…` são **somente para desenvolvimento local**. O seed se recusa a rodar com `NODE_ENV=production`. Admins de produção são criados com `pnpm db:create-admin <username>`.
+> Os usuários do seed (`admin`/`admin`, `owner`/`owner`, `agente`/`agente`) e o token `mgw_dev-agent-token-…` são **somente para desenvolvimento local**. O seed se recusa a rodar com `NODE_ENV=production`. Em produção, o primeiro admin e o primeiro tenant são criados na tela de setup da Admin UI (habilitada por `SETUP_TOKEN`, ADR-024) ou com `pnpm db:create-admin <username>`.
 
 ## Deploy
 

@@ -9,6 +9,7 @@ import { callRoutes } from './routes/calls';
 import { debugRoutes } from './routes/debug';
 import { lgpdRoutes } from './routes/lgpd';
 import { authRoutes } from './routes/auth';
+import { setupRoutes } from './routes/setup';
 import { uiRoutes } from './routes/ui';
 import { composerRoutes } from './routes/composer';
 import { compositeRoutes } from './routes/composites';
@@ -34,6 +35,7 @@ export const adminApi: FastifyPluginAsync<{ services: Services }> = async (app, 
   z.get('/openapi.json', { config: { public: true }, schema: { hide: true } }, async () => app.swagger());
 
   await z.register(authRoutes, { services });
+  await z.register(setupRoutes, { services });
   await z.register(tenantRoutes, { services });
   await z.register(userRoutes, { services });
   await z.register(credentialRoutes, { services });

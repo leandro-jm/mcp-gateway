@@ -23,10 +23,11 @@ The stack (gateway, crawler, admin-ui, Postgres with pgvector, Redis, MinIO and 
 ```bash
 curl -fsSLO https://raw.githubusercontent.com/leandro-jm/mcp-gateway/main/docker/docker-compose.prod.yml
 curl -fsSL https://raw.githubusercontent.com/leandro-jm/mcp-gateway/main/docker/prod.env.example -o .env
-# edit .env: PUBLIC_URL, POSTGRES_PASSWORD, GATEWAY_MASTER_KEY, S3_SECRET_KEY, METRICS_TOKEN
+# edit .env: PUBLIC_URL, POSTGRES_PASSWORD, GATEWAY_MASTER_KEY, S3_SECRET_KEY, METRICS_TOKEN, SETUP_TOKEN
 docker compose -f docker-compose.prod.yml --env-file .env up -d
-docker compose -f docker-compose.prod.yml exec gateway node dist/migrate.js create-admin admin
 ```
+
+Open the Admin UI (port 8080): on a fresh instance it shows a setup screen that asks for `SETUP_TOKEN` and creates the platform admin and the first tenant. Without `SETUP_TOKEN`, create the admin with `docker compose -f docker-compose.prod.yml exec gateway node dist/migrate.js create-admin admin`.
 
 Full guide (variables, TLS, Portainer, upgrades, backups): [`docs/deploy.md`](https://github.com/leandro-jm/mcp-gateway/blob/main/docs/deploy.md).
 

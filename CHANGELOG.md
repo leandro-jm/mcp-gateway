@@ -11,6 +11,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Generative UI on tool results via MCP Apps (ADR-022): per-tool views (table, chart, card, form, confirmation plan, map, diagram) from `@mcp-ui-kit`, inferred by the crawler and activated in the Admin UI; tenant appearance (accent, chart palette, basemap) with a contrast and color-blindness gate; `ui://mcp-gateway/*` resources; destructive tools with a plan view require a one-time human confirmation from 2026-07-28 clients with UI. Playground can simulate an MCP Apps client.
 - Public multi-arch (`linux/amd64`, `linux/arm64`) images on Docker Hub: `leandrojm/mcp-gateway`, `leandrojm/mcp-gateway-crawler` and `leandrojm/mcp-gateway-admin-ui`, published by CI on `v*` tags and by `pnpm docker:publish` (`scripts/docker-publish.sh`). `pnpm docker:build` builds them locally to try the production stack.
 - Portainer guide in `docs/deploy.md`: web editor, Git repository and webhook modes, first admin from the container console.
+- First-run setup in the Admin UI (ADR-024): on an instance without users, a setup screen guarded by the new `SETUP_TOKEN` variable creates the platform admin and the first tenant and signs in. A platform admin without tenants now gets a "create the first tenant" form instead of a dead end.
 - Admin UI **Tenants** page for the platform admin: create, rename, suspend/reactivate, switch to and remove tenants.
 - Admin UI **Getting started** guide (ADR-023): what the gateway is, an eight-step checklist up to the first agent call with auto-detected progress, how-to and examples for each step, optional next steps and a glossary. The home page opens it while essential steps are pending. `GET /admin/v1/me` now returns `publicUrl`.
 
@@ -20,6 +21,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `/mcp/omni` dynamic sessions remain available to 2025-era clients only; 2026-07-28 clients get the static mode.
 - **Breaking (deploy):** the production compose now takes `IMAGE_NAMESPACE` (default `leandrojm`, Docker Hub) instead of `IMAGE_PREFIX`. GHCR images were renamed to the same scheme: `ghcr.io/leandro-jm/mcp-gateway`, `mcp-gateway-crawler` and `mcp-gateway-admin-ui` (were `ghcr.io/leandro-jm/mcp-gateway/{gateway,crawler,admin-ui}`).
 - `@mcp-ui-kit/*` is consumed from npm instead of a sibling checkout, so the repo builds (and its images build) on its own.
+- MinIO image: `cgr.dev/chainguard/minio` in the compose files and tests, since `minio/minio` was removed from Docker Hub.
 - Admin UI top bar: the whole tenant crumb opens the switcher, and it only looks clickable when there is another tenant to switch to; the `Gateway` crumb is now a plain label.
 
 ## [0.1.0] - 2026-10-04

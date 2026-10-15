@@ -1090,6 +1090,24 @@ kbd {
   width: 100%;
   justify-content: center;
 }
+.login-card.wide {
+  max-width: 520px;
+}
+.setup-section {
+  margin: 8px 0 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+@media (max-width: 560px) {
+  .login-card.wide .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* charts (ADR-018): inline SVG over the theme tokens */
 .chart {

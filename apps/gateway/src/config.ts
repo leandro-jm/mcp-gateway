@@ -20,6 +20,11 @@ export const gatewayConfigSchema = z.object({
   AUTH_LOGIN_RATE_LIMIT: envInt(10),
   /** Login attempts per username every 15 minutes, whatever the IP (distributed brute force). */
   AUTH_LOGIN_USER_RATE_LIMIT: envInt(30),
+  /**
+   * First-run setup (ADR-024): while the instance has no user, the Admin UI creates the first admin and
+   * tenant if given this secret. Unset = setup disabled (use `create-admin`). Useless once a user exists.
+   */
+  SETUP_TOKEN: z.string().min(16, 'SETUP_TOKEN: at least 16 characters').optional(),
 
   /**
    * Proxies trusted for `X-Forwarded-For` (Fastify `trustProxy`): `false` (default), a hop count

@@ -10,7 +10,7 @@ Este guia sobe a stack de produção ([`docker/docker-compose.prod.yml`](../dock
 | `migrate` | imagem do gateway, `node dist/migrate.js up` | job one-shot |
 | `postgres` | `pgvector/pgvector:pg17` | interno |
 | `redis` | `redis:7-alpine` | interno |
-| `minio` | `minio/minio` | interno (artefatos) |
+| `minio` | `cgr.dev/chainguard/minio` (a MinIO deixou de publicar `minio/minio`) | interno (artefatos) |
 
 As imagens são **públicas no Docker Hub** e multi-arch (`linux/amd64` e `linux/arm64`), com as tags `X.Y.Z`, `X.Y`, `latest` e `sha-<commit>`. As mesmas imagens também saem no GHCR (`ghcr.io/leandro-jm/mcp-gateway…`): basta usar `IMAGE_NAMESPACE=ghcr.io/leandro-jm`.
 
@@ -28,7 +28,7 @@ O gateway autentica com **tokens opacos** guardados no Postgres (só o hash SHA-
 - `human`: entra na Admin UI com usuário e senha e recebe um token de sessão (`AUTH_SESSION_TTL_HOURS`).
 - `service`: agente ou consumidor (ex.: um orquestrador de agentes). Não tem senha; usa tokens de API gerados na Admin UI.
 
-Roles: `gateway-admin`, `tool-owner`, `agent` e `analytics-reader` (leitura de analytics e MCP de observabilidade, F15). Owners precisam do grupo igual ao `owner_team` das sources (ex.: `team-rh`). O primeiro admin é criado no passo 7.
+Roles: `gateway-admin`, `tool-owner`, `agent` e `analytics-reader` (leitura de analytics e MCP de observabilidade, F15). Owners precisam do grupo igual ao `owner_team` das sources (ex.: `team-rh`). O primeiro admin e o primeiro tenant são criados no passo 7, pela tela de setup da Admin UI ou pela CLI.
 
 ## 3. Variáveis
 Copie [`docker/prod.env.example`](../docker/prod.env.example) para `.env` (ou cadastre as variáveis na stack do Portainer):
@@ -41,6 +41,7 @@ Copie [`docker/prod.env.example`](../docker/prod.env.example) para `.env` (ou ca
 | `POSTGRES_PASSWORD` | sim | Senha do Postgres. |
 | `GATEWAY_MASTER_KEY` | sim | `openssl rand -base64 32`. **Guarde num cofre: sem ela as credenciais dos upstreams não podem ser decifradas.** |
 | `S3_SECRET_KEY` | sim | Senha do MinIO (artefatos). |
+| `SETUP_TOKEN` | recomendada no primeiro deploy | Habilita a tela de setup inicial da Admin UI (primeiro admin e primeiro tenant, ADR-024). `openssl rand -hex 16`. Vazio desliga o setup. Remova depois do setup. |
 | `AUTH_SESSION_TTL_HOURS` | não | Validade da sessão da Admin UI. Padrão 12. |
 | `AUTH_LOGIN_RATE_LIMIT` | não | Tentativas de login por usuário + IP a cada 5 min. Padrão 10. |
 | `NETWORK_ALLOW_PRIVATE` | não | **Mantenha `false`** (SSRF, ADR-003). Use `true` só se os upstreams estiverem em rede privada; nesse caso, configure também a allowlist do tenant (`settings.network.allowedHosts`). |
@@ -108,6 +109,15 @@ mcp-admin.empresa.com {
 Respostas MCP são JSON (stateless) e o modo Omni dinâmico usa SSE. Caddy e Traefik já fazem streaming sem buffer. No nginx, use `proxy_buffering off`. Com **várias réplicas** do gateway, o modo Omni dinâmico exige afinidade por `mcp-session-id` (ADR-009). O modo padrão não exige.
 
 ## 7. Primeiro admin, tenant e source
+**Pela Admin UI (recomendado, ADR-024)**
+1. Defina `SETUP_TOKEN` antes de subir a stack (`openssl rand -hex 16`, pelo menos 16 caracteres).
+2. Abra a Admin UI. Enquanto a instância não tiver nenhum usuário, ela mostra a tela **Configurar o MCP Gateway** no lugar do login.
+3. Informe o token de setup, o nome e o slug da organização (o primeiro tenant) e o usuário e a senha do administrador da plataforma.
+4. Clique em *Criar e entrar*. Você entra já logado, no tenant criado, na página de Primeiros passos.
+
+O setup só funciona uma vez: depois do primeiro usuário ele responde 409, mesmo com o token certo. Remova o `SETUP_TOKEN` do ambiente depois. Sem `SETUP_TOKEN`, a tela explica como habilitar o setup ou usar a CLI.
+
+**Pela CLI (alternativa)**
 Crie o admin de plataforma (sem tenant; escolhe o tenant pelo header `X-Tenant`). A senha gerada é impressa uma única vez:
 ```bash
 docker compose -f docker-compose.prod.yml --env-file .env exec gateway node dist/migrate.js create-admin admin
@@ -116,8 +126,10 @@ No **Portainer**:
 1. Abra *Containers → `<stack>-gateway-1` → Console*.
 2. Conecte com `/bin/sh` e rode `node dist/migrate.js create-admin admin`.
 
-Use o container `gateway`: o `migrate` termina logo depois de aplicar as migrations e não tem console.
-Faça login e crie o primeiro tenant:
+Use o container `gateway`: o `migrate` termina logo depois de aplicar as migrations e não tem console. No primeiro login, a Admin UI pede o primeiro tenant (nome e slug).
+
+**Pela API**
+Com o admin criado, o mesmo dá para fazer com curl (útil em automação):
 ```bash
 API=https://mcp.empresa.com/admin/v1
 TOKEN=$(curl -s -X POST $API/auth/login -H 'content-type: application/json' -d '{"username":"admin","password":"<senha>"}' | jq -r .token)

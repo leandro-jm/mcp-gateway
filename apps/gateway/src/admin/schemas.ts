@@ -761,6 +761,20 @@ export const tokenParams = z.object({ id: z.uuid(), tokenId: z.uuid() });
 export const loginSchema = z.object({ username: z.string().min(1), password: z.string().min(1) });
 export const loginResultSchema = z.object({ token: z.string(), expiresAt: isoDate });
 
+/** First-run setup (ADR-024). */
+export const setupStatusSchema = z.object({
+  needed: z.boolean().describe('The instance has no user yet'),
+  enabled: z.boolean().describe('SETUP_TOKEN is configured on the gateway'),
+});
+export const setupSchema = z.object({
+  setupToken: z.string().min(1).describe('Value of the SETUP_TOKEN environment variable'),
+  username: name64,
+  password,
+  locale: localeSchema.default('en'),
+  tenant: tenantCreateSchema.pick({ slug: true, name: true }),
+});
+export const setupResultSchema = loginResultSchema.extend({ tenant: z.string().describe('Slug of the tenant created') });
+
 // ------------------------------------------------------------- LLM settings (F14.3, ADR-015)
 export const llmProviderEnum = z.enum(['anthropic', 'openai', 'openai_compatible']);
 export const llmJsonModeEnum = z.enum(['schema', 'object']);

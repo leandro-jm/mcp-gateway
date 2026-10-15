@@ -42,7 +42,7 @@ export async function startRedis(): Promise<StartedRedis> {
 export async function startMinio(): Promise<StartedMinio> {
   const accessKey = 'testaccess';
   const secretKey = 'testsecret123';
-  const container = await new GenericContainer('minio/minio:latest')
+  const container = await new GenericContainer('cgr.dev/chainguard/minio:latest')
     .withCommand(['server', '/data'])
     .withEnvironment({ MINIO_ROOT_USER: accessKey, MINIO_ROOT_PASSWORD: secretKey })
     .withExposedPorts(9000)

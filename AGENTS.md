@@ -26,7 +26,7 @@ Multi-tenant MCP gateway that exposes REST/OpenAPI APIs as MCP tools. The full p
 - `pnpm --filter @mcp-gateway/site build:single`: the landing page as one self-contained HTML file (`apps/site/dist/mcp-gateway-landing.html`, works offline).
 - `pnpm --filter @mcp-gateway/site screens`: recaptures the Admin UI screenshots used by the landing page (needs the dev stack; `SITE_URL` also renders `og.png`).
 - `pnpm db:migrate` / `pnpm db:seed`: migrations and seed (require `DATABASE_URL`).
-- `pnpm db:create-admin <username>`: creates a platform admin and prints the generated password (production bootstrap).
+- `pnpm db:create-admin <username>`: creates a platform admin and prints the generated password (production bootstrap; the Admin UI setup screen, enabled by `SETUP_TOKEN`, does the same plus the first tenant, ADR-024).
 - `pnpm docker:build`: builds the three images for the native platform as `leandrojm/mcp-gateway*:local` (try them with `IMAGE_NAMESPACE=leandrojm TAG=local docker compose -f docker/docker-compose.prod.yml …`).
 - `pnpm docker:publish`: builds multi-arch images and pushes them to Docker Hub (`scripts/docker-publish.sh --help`; needs `docker login`). CI publishes the same images on `v*` tags.
 - `@mcp-ui-kit/*` comes from npm. To work on the kit at the same time, `pnpm link ../mcp-ui-kit/packages/<pkg>` inside the app and never commit the resulting `link:` (the image build refuses it).

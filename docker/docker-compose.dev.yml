@@ -28,7 +28,8 @@ services:
       retries: 30
 
   minio:
-    image: minio/minio:latest
+    # minio/minio was removed from Docker Hub; Chainguard builds the same server from source
+    image: cgr.dev/chainguard/minio:latest
     command: ['server', '/data', '--console-address', ':9001']
     environment:
       MINIO_ROOT_USER: gateway

@@ -1,9 +1,15 @@
-import { NotFound } from '@mcp-gateway/core';
-import { and, asc, desc, eq, isNull } from 'drizzle-orm';
+import { Conflict, NotFound } from '@mcp-gateway/core';
+import { msg } from '@mcp-gateway/i18n/server';
+import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
 import type { Db } from '../client';
 import { apiTokens, tenants, users } from '../schema';
 import { apiTokenColumns, type ApiToken, type ApiTokenInput } from './api-tokens';
+import type { Tenant } from './tenants';
 import { toUser, wrapUserConflict, type User, type UserInput } from './users';
+import { isUniqueViolation } from './util';
+
+/** Serializes concurrent first-run setups (ADR-024). */
+const SETUP_LOCK_KEY = 727_276;
 
 export interface AuthTenant {
   id: string;
@@ -112,6 +118,47 @@ export class AuthQueries {
     } catch (err) {
       return wrapUserConflict(err, input.username);
     }
+  }
+
+  /** Whether any user exists: the first-run setup (ADR-024) only acts on an empty instance. */
+  async hasUsers(): Promise<boolean> {
+    const [row] = await this.db.select({ id: users.id }).from(users).limit(1);
+    return Boolean(row);
+  }
+
+  /**
+   * First-run setup (ADR-024): creates the first tenant and a platform admin in one transaction.
+   * Returns `undefined` when a user already exists (another setup or the CLI got there first).
+   */
+  async bootstrap(input: { tenant: { slug: string; name: string }; admin: UserInput }): Promise<{ tenant: Tenant; user: User } | undefined> {
+    return this.db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(${SETUP_LOCK_KEY})`);
+      const [existing] = await tx.select({ id: users.id }).from(users).limit(1);
+      if (existing) return undefined;
+      let tenant: Tenant;
+      try {
+        [tenant] = (await tx
+          .insert(tenants)
+          .values(input.tenant)
+          .returning({
+            id: tenants.id,
+            slug: tenants.slug,
+            name: tenants.name,
+            status: tenants.status,
+            settings: tenants.settings,
+            createdAt: tenants.createdAt,
+            updatedAt: tenants.updatedAt,
+          })) as [Tenant];
+      } catch (err) {
+        if (isUniqueViolation(err)) throw new Conflict(msg('db.tenantExists', { slug: input.tenant.slug }));
+        throw err;
+      }
+      const [row] = await tx
+        .insert(users)
+        .values({ ...input.admin, tenantId: null, roles: ['gateway-admin'] })
+        .returning();
+      return { tenant, user: toUser(row!) };
+    });
   }
 
   async findUser(username: string): Promise<User | undefined> {

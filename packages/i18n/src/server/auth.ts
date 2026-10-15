@@ -17,6 +17,9 @@ export const auth = defineMessages('auth', {
     'auth.tenantInactive': 'tenant {tenant} is {status}',
     'auth.serviceUserNoPassword': 'service users have no password; use tokens',
     'auth.invalidMetricsToken': 'invalid metrics token',
+    'auth.setupDisabled': 'first-run setup is disabled: set SETUP_TOKEN on the gateway or create the admin with create-admin',
+    'auth.setupDone': 'this instance is already set up; sign in instead',
+    'auth.invalidSetupToken': 'invalid setup token',
   },
   'pt-BR': {
     'auth.invalidCredentials': 'usuário ou senha inválidos',
@@ -33,6 +36,9 @@ export const auth = defineMessages('auth', {
     'auth.tenantInactive': 'tenant {tenant} está {status}',
     'auth.serviceUserNoPassword': 'usuário service não tem senha; use tokens',
     'auth.invalidMetricsToken': 'token de métricas inválido',
+    'auth.setupDisabled': 'o setup inicial está desligado: defina SETUP_TOKEN no gateway ou crie o admin com create-admin',
+    'auth.setupDone': 'esta instância já foi configurada; faça login',
+    'auth.invalidSetupToken': 'token de setup inválido',
   },
   es: {
     'auth.invalidCredentials': 'usuario o contraseña inválidos',
@@ -49,5 +55,8 @@ export const auth = defineMessages('auth', {
     'auth.tenantInactive': 'el tenant {tenant} está {status}',
     'auth.serviceUserNoPassword': 'los usuarios service no tienen contraseña; use tokens',
     'auth.invalidMetricsToken': 'token de métricas inválido',
+    'auth.setupDisabled': 'el setup inicial está desactivado: defina SETUP_TOKEN en el gateway o cree el admin con create-admin',
+    'auth.setupDone': 'esta instancia ya está configurada; inicie sesión',
+    'auth.invalidSetupToken': 'token de setup inválido',
   },
 });

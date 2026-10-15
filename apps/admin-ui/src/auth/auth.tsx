@@ -1,11 +1,14 @@
-import { createContext, useContext, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { getLocale, useT } from '../i18n';
+import { fetchSetupStatus, SetupPage, type SetupStatus } from './setup';
 
 /**
  * Admin UI session (ADR-011): username/password login against the Admin API, which returns an
  * opaque session token. The token lives in `sessionStorage` (gone when the tab is closed).
  */
 const STORAGE_KEY = 'mcp-gw:session';
+/** Tenant selected in the UI (same key as the session provider). */
+const TENANT_KEY = 'mcp-gw:tenant';
 
 interface StoredSession {
   token: string;
@@ -51,6 +54,12 @@ const AuthContext = createContext<AuthState>({ token: null, logout: () => undefi
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(getToken);
+  // first run (ADR-024): an instance without users shows the setup instead of the login
+  const [setup, setSetup] = useState<SetupStatus | null | undefined>(undefined);
+  useEffect(() => {
+    if (token || setup !== undefined) return;
+    void fetchSetupStatus().then(setSetup);
+  }, [token, setup]);
 
   const value = useMemo<AuthState>(
     () => ({
@@ -68,6 +77,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [token],
   );
 
+  if (!token && setup === undefined) return null;
+  if (!token && setup?.needed) {
+    return (
+      <SetupPage
+        status={setup}
+        onDone={(r) => {
+          try {
+            localStorage.setItem(TENANT_KEY, r.tenant);
+          } catch {
+            /* storage unavailable: the session picks the first tenant */
+          }
+          writeSession({ token: r.token, expiresAt: r.expiresAt });
+          setToken(r.token);
+        }}
+      />
+    );
+  }
   if (!token) {
     return (
       <LoginPage
