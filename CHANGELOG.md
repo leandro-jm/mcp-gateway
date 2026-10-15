@@ -22,6 +22,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - **Breaking (deploy):** the production compose now takes `IMAGE_NAMESPACE` (default `leandrojm`, Docker Hub) instead of `IMAGE_PREFIX`. GHCR images were renamed to the same scheme: `ghcr.io/leandro-jm/mcp-gateway`, `mcp-gateway-crawler` and `mcp-gateway-admin-ui` (were `ghcr.io/leandro-jm/mcp-gateway/{gateway,crawler,admin-ui}`).
 - `@mcp-ui-kit/*` is consumed from npm instead of a sibling checkout, so the repo builds (and its images build) on its own.
 - MinIO image: `cgr.dev/chainguard/minio` in the compose files and tests, since `minio/minio` was removed from Docker Hub.
+- CI also publishes the `main` channel (`main` and `sha-<commit>` tags) to Docker Hub on every push to main, and an optional `deploy` job redeploys a Dokploy compose service through its API once the images are pushed. The production compose pulls the app images on every deploy (`pull_policy: always`), so `TAG=main` or `latest` always gets the current image.
 - Admin UI top bar: the whole tenant crumb opens the switcher, and it only looks clickable when there is another tenant to switch to; the `Gateway` crumb is now a plain label.
 
 ## [0.1.0] - 2026-10-04

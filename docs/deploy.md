@@ -87,6 +87,14 @@ docker compose -f docker-compose.prod.yml --env-file .env up -d --wait
 
 Para o Portainer o nome da stack vem da UI; a chave `name:` do compose só vale na linha de comando.
 
+**Dokploy** (ocupa as portas 80, 443 e 3000 da VPS com o Traefik dele; não convive com outro proxy nessas portas):
+1. *Create Service → Compose*, tipo **Docker Compose**. Não use *Stack*: o Swarm não aceita as condições do `depends_on` e reiniciaria o `migrate` em loop.
+2. *General*: provider GitHub (ou Git), repositório `leandro-jm/mcp-gateway`, branch `main`, *Compose Path* `./docker/docker-compose.prod.yml`.
+3. *Advanced*: ligue **Isolated Deployments**. Sem isso, só o serviço com domínio entra na rede do Traefik e a admin-ui deixa de enxergar o gateway.
+4. *Environment*: as variáveis do passo 3. Use `GATEWAY_PORT=127.0.0.1:14000` e `ADMIN_UI_PORT=127.0.0.1:18080`, porque quem expõe para fora é o Traefik.
+5. *Domains*: um domínio no serviço `admin-ui`, porta `8080`, com HTTPS (Let's Encrypt). Um domínio basta: o nginx da admin-ui repassa `/mcp` e `/admin` para o gateway, então `PUBLIC_URL` é esse mesmo domínio.
+6. *Deploy*. O deploy automático (canal `main` ou releases) está no passo 8.
+
 O serviço `migrate` aplica as migrations e termina. `gateway` e `crawler` só sobem depois dele (`service_completed_successfully`). O bucket de artefatos é criado pelo gateway no boot.
 
 ## 5. Verificar
@@ -152,9 +160,17 @@ O Composer pode montar tools compostas a partir de uma descrição em linguagem 
 
 ## 8. Atualizações
 1. O CI ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)) publica as imagens:
-   - em todo push: `sha-<commit>` e `<branch>`, no GHCR (só amd64);
+   - em todo push: `sha-<commit>` e `<branch>`, no GHCR;
+   - em push no `main`: também `main` e `sha-<commit>` no Docker Hub (amd64; a variável `MAIN_PLATFORMS` muda isso);
    - nas tags `vX.Y.Z`: `X.Y.Z`, `X.Y`, `latest` e `sha-<commit>`, no GHCR e no Docker Hub (amd64 e arm64), e sincroniza a descrição do Docker Hub com [`docker/dockerhub/README.md`](../docker/dockerhub/README.md).
-   - Para atualizar: troque `TAG` na stack (ou chame o webhook com `?TAG=`) e redeploye. O `migrate` roda antes do gateway.
+   - O Docker Hub exige os secrets `DOCKERHUB_USERNAME` e `DOCKERHUB_TOKEN`.
+   - Para atualizar: troque `TAG` na stack (ou chame o webhook com `?TAG=`) e redeploye. O `migrate` roda antes do gateway e aplica só as migrations novas.
+   - **Canal da stack (`TAG`)**: uma versão fixa (`0.2.0`), `latest` (a release mais nova) ou `main` (cada push no `main`, para homologação). Os serviços do app usam `pull_policy: always`, então cada deploy busca a imagem atual do canal.
+   - **Deploy contínuo no Dokploy**: o job `deploy` do CI chama `POST /api/compose.deploy` do Dokploy depois que as imagens estão no Docker Hub, em pushes no `main` e em tags. Para ligar:
+     1. No Dokploy, gere uma API key (*Settings → Profile → API/CLI*).
+     2. Copie o `composeId` do serviço (aparece na URL da página do serviço).
+     3. Cadastre no GitHub os secrets `DOKPLOY_URL` (ex.: `https://dokploy.empresa.com`), `DOKPLOY_API_KEY` e `DOKPLOY_COMPOSE_ID`. Sem eles, o job pula.
+     4. Desligue o *Auto Deploy* por push do GitHub no Dokploy. Ele dispararia no push, antes de a imagem nova existir, e faria um deploy da imagem antiga.
 2. O workflow **deploy** (manual) roda as migrations como **job separado**, com a imagem nova e `DATABASE_URL` do ambiente. Só depois chama o webhook do Portainer com a nova `TAG`.
    - Ele é um **exemplo opcional**. Para usá-lo, crie os environments `staging`/`production` no GitHub com os secrets `DATABASE_URL` e `PORTAINER_STACK_WEBHOOK`. Sem eles, o job `guard` pula o deploy, então forks não falham. Para outro orquestrador, troque o último job.
 3. As migrations têm lock (advisory lock) e são idempotentes. O `migrate` da stack não reaplica nada.
