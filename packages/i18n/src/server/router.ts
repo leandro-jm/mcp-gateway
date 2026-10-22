@@ -1,0 +1,44 @@
+import { defineMessages } from '../messages';
+
+/** Decision-model tool router (ADR-025): provider configuration and gate outcomes. */
+export const router = defineMessages('router', {
+  en: {
+    'router.notConfigured': 'no decision provider is configured for this tenant; a gateway-admin can set it up in Settings',
+    'router.platformDisabled': 'the tool router is disabled on this gateway (TOOL_ROUTER_ENABLED)',
+    'router.noApiKey': 'the decision provider has no API key configured',
+    'router.invalidKey': 'the decision provider rejected the API key',
+    'router.providerRateLimited': 'the decision provider is limiting requests; try again later',
+    'router.providerError': 'decision provider error: {error}',
+    'router.timeout': 'the decision provider did not answer in time',
+    'router.invalidResponse': 'the decision provider returned an invalid response',
+    'router.providerNotConfigured': 'configure a decision provider before enabling the tool router',
+    'router.gateDenied': 'the gateway blocked this call of {tool} as too risky for the current task',
+    'router.confirmationRequired': 'this call of {tool} needs confirmation by the user; ask the user to confirm it before trying again',
+  },
+  'pt-BR': {
+    'router.notConfigured': 'nenhum provedor de decisão configurado para este tenant; um gateway-admin pode configurar em Configurações',
+    'router.platformDisabled': 'o roteador de tools está desligado neste gateway (TOOL_ROUTER_ENABLED)',
+    'router.noApiKey': 'o provedor de decisão não tem API key configurada',
+    'router.invalidKey': 'o provedor de decisão recusou a API key',
+    'router.providerRateLimited': 'o provedor de decisão está limitando as requisições; tente mais tarde',
+    'router.providerError': 'erro do provedor de decisão: {error}',
+    'router.timeout': 'o provedor de decisão não respondeu a tempo',
+    'router.invalidResponse': 'o provedor de decisão devolveu uma resposta inválida',
+    'router.providerNotConfigured': 'configure um provedor de decisão antes de ligar o roteador de tools',
+    'router.gateDenied': 'o gateway bloqueou esta chamada de {tool} por ser arriscada demais para a tarefa atual',
+    'router.confirmationRequired': 'esta chamada de {tool} precisa de confirmação do usuário; peça ao usuário que confirme antes de tentar de novo',
+  },
+  es: {
+    'router.notConfigured': 'no hay un proveedor de decisión configurado para este tenant; un gateway-admin puede configurarlo en Configuración',
+    'router.platformDisabled': 'el enrutador de tools está desactivado en este gateway (TOOL_ROUTER_ENABLED)',
+    'router.noApiKey': 'el proveedor de decisión no tiene API key configurada',
+    'router.invalidKey': 'el proveedor de decisión rechazó la API key',
+    'router.providerRateLimited': 'el proveedor de decisión está limitando las solicitudes; inténtalo más tarde',
+    'router.providerError': 'error del proveedor de decisión: {error}',
+    'router.timeout': 'el proveedor de decisión no respondió a tiempo',
+    'router.invalidResponse': 'el proveedor de decisión devolvió una respuesta inválida',
+    'router.providerNotConfigured': 'configura un proveedor de decisión antes de activar el enrutador de tools',
+    'router.gateDenied': 'el gateway bloqueó esta llamada de {tool} por ser demasiado riesgosa para la tarea actual',
+    'router.confirmationRequired': 'esta llamada de {tool} necesita la confirmación del usuario; pide al usuario que la confirme antes de intentarlo de nuevo',
+  },
+});

@@ -61,6 +61,8 @@ export const userLocale = pgEnum('user_locale', ['en', 'pt-BR', 'es']);
 export const llmProvider = pgEnum('llm_provider', ['anthropic', 'openai', 'openai_compatible']);
 /** How an OpenAI-compatible provider is asked for JSON: strict `json_schema` or plain `json_object`. */
 export const llmJsonMode = pgEnum('llm_json_mode', ['schema', 'object']);
+/** Decision-model provider of the tool router (F19, ADR-025). */
+export const decisionProvider = pgEnum('decision_provider', ['openai_decisions', 'jev']);
 
 // ---------------------------------------------------------------- types
 export type { OperationRef, ToolAnnotations };
@@ -163,6 +165,22 @@ export const tenantLlmSettings = pgTable('tenant_llm_settings', {
   apiKeyHint: text('api_key_hint'),
   jsonMode: llmJsonMode('json_mode').notNull().default('schema'),
   maxGenerationsPerHour: integer('max_generations_per_hour').notNull().default(30),
+  updatedBy: text('updated_by'),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+/** Decision-model provider of the tool router (ADR-025); behavior lives in `tenants.settings.toolRouter`. */
+export const tenantDecisionSettings = pgTable('tenant_decision_settings', {
+  tenantId: uuid('tenant_id')
+    .primaryKey()
+    .references(() => tenants.id, { onDelete: 'cascade' }),
+  provider: decisionProvider('provider').notNull(),
+  model: text('model').notNull(),
+  /** Optional override (proxy or gateway in front of the provider); checked against the SSRF policy. */
+  baseUrl: text('base_url'),
+  apiKeyEncrypted: text('api_key_encrypted'),
+  apiKeyHint: text('api_key_hint'),
   updatedBy: text('updated_by'),
   createdAt: createdAt(),
   updatedAt: updatedAt(),

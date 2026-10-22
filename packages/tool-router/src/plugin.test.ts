@@ -6,7 +6,7 @@ import type { DecisionAnswer, DecisionProvider, DecisionRequest } from './model'
 import { mostRestrictive, subsetOf } from './plugin';
 
 /** Answers every question with the scripted answer for its name. */
-function stub(answers: Record<string, DecisionAnswer>, id: DecisionProvider['id'] = 'openai-decisions') {
+function stub(answers: Record<string, DecisionAnswer>, id: DecisionProvider['id'] = 'openai_decisions') {
   const seen: DecisionRequest[] = [];
   const provider: DecisionProvider = {
     id,
@@ -52,7 +52,7 @@ describe('decision-model plugin (F19.2)', () => {
     const { provider } = stub({ tool: { type: 'choice', choice: 't3', probabilities: { t3: 0.7, t1: 0.2, t2: 0.01 }, confidence: 0.7 } });
     const r = await createDecisionModelPlugin(provider, options).rerank!(ctx, { query: 'q', candidates: [tool('a'), tool('b'), tool('c')] });
     expect(r.value).toEqual(['c', 'a']);
-    expect(r.decision).toMatchObject({ plugin: 'decision-model', point: 'rerank', decision: 'applied', reason: 'ok', provider: 'openai-decisions', candidates: 3, kept: 2, confidence: 'medium' });
+    expect(r.decision).toMatchObject({ plugin: 'decision-model', point: 'rerank', decision: 'applied', reason: 'ok', provider: 'openai_decisions', candidates: 3, kept: 2, confidence: 'medium' });
   });
 
   it('rerank abstains on none', async () => {

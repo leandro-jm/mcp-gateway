@@ -4,9 +4,9 @@
  * OpenAI Decisions API and to TypeSafe Jev.
  */
 
-export type DecisionProviderId = 'openai-decisions' | 'jev';
+export type DecisionProviderId = 'openai_decisions' | 'jev';
 
-export const DECISION_PROVIDERS: readonly DecisionProviderId[] = ['openai-decisions', 'jev'];
+export const DECISION_PROVIDERS: readonly DecisionProviderId[] = ['openai_decisions', 'jev'];
 
 export interface ChoiceOption {
   value: string;
@@ -52,7 +52,7 @@ export interface DecisionProvider {
 }
 
 export const DEFAULT_DECISION_MODELS: Record<DecisionProviderId, string> = {
-  'openai-decisions': 'gpt-6-luna',
+  openai_decisions: 'gpt-6-luna',
   jev: 'jev-latest',
 };
 
@@ -61,7 +61,7 @@ export const DEFAULT_DECISION_MODELS: Record<DecisionProviderId, string> = {
  * not document a maximum number of choices, so 64 is a conservative assumption (ADR-025).
  */
 export const PROVIDER_LIMITS: Record<DecisionProviderId, { maxChoices: number; maxInputChars: number }> = {
-  'openai-decisions': { maxChoices: 64, maxInputChars: 200_000 },
+  openai_decisions: { maxChoices: 64, maxInputChars: 200_000 },
   jev: { maxChoices: 255, maxInputChars: 80_000 },
 };
 

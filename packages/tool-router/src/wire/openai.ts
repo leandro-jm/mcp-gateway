@@ -24,7 +24,7 @@ const responseSchema = z.looseObject({
 /** Parses the response; answers come back as an array, each echoing its question `name`. */
 export function fromOpenAiDecisionsBody(json: unknown, req: DecisionRequest): DecisionResponse {
   const parsed = responseSchema.safeParse(json);
-  if (!parsed.success) throw new DecisionWireError('openai-decisions: unexpected response shape');
+  if (!parsed.success) throw new DecisionWireError('openai_decisions: unexpected response shape');
   const byName = new Map(parsed.data.answers.map((a) => [a.name, a as Record<string, unknown>]));
   const answers: Record<string, DecisionAnswer> = {};
   for (const q of req.questions) {
