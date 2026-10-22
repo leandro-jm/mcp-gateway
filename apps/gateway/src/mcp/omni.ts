@@ -134,7 +134,7 @@ export function createOmniServer(deps: OmniDeps, getCtx: () => CallContext, sess
       }
     }
     // Omni savings (ADR-016 §11): what the native catalog would have cost
-    deps.executor.recordList(forRequest(current(), requestInfo(h, false)), tools, descriptorTokens([...all.values()]));
+    deps.executor.recordList(forRequest(current(), requestInfo(h, false)), tools, { fullCatalogTokens: descriptorTokens([...all.values()]) });
     return { tools } as never;
   });
 

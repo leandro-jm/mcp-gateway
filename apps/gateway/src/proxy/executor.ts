@@ -11,6 +11,7 @@ import {
   toSpanAttributes,
   type CallEndpoint,
   type EventToolKind,
+  type PluginDecision,
   type SessionSource,
 } from '@mcp-gateway/call-analytics';
 import { CompositeError, executeComposite, parseComposite } from '@mcp-gateway/composition';
@@ -263,13 +264,16 @@ export class ToolExecutor {
     return selectTools(ctx.snapshot, ctx.virtualServer);
   }
 
-  listTools(ctx: CallContext): McpToolDescriptor[] {
-    return this.catalog(ctx)
-      .filter((t) => t.state === 'enabled' && this.isAllowed(ctx, t))
-      .map((t) => {
-        const ui = clientHasUi(ctx.client) ? activeViews(ctx.snapshot, t.id) : undefined;
-        return toDescriptor(t, activeProjection(ctx.snapshot, t.id), { artifacts: this.deps.artifacts.enabled, locale: ctx.principal.locale, ...(ui ? { ui } : {}) });
-      });
+  /** Enabled tools the subject can see (list mode), in catalog order. */
+  visibleTools(ctx: CallContext): SnapshotTool[] {
+    return this.catalog(ctx).filter((t) => t.state === 'enabled' && this.isAllowed(ctx, t));
+  }
+
+  listTools(ctx: CallContext, tools: SnapshotTool[] = this.visibleTools(ctx)): McpToolDescriptor[] {
+    return tools.map((t) => {
+      const ui = clientHasUi(ctx.client) ? activeViews(ctx.snapshot, t.id) : undefined;
+      return toDescriptor(t, activeProjection(ctx.snapshot, t.id), { artifacts: this.deps.artifacts.enabled, locale: ctx.principal.locale, ...(ui ? { ui } : {}) });
+    });
   }
 
   findTool(ctx: CallContext, name: string): SnapshotTool {
@@ -486,11 +490,18 @@ export class ToolExecutor {
   }
 
   /** `tools/list` (analytics only): tokens the advertised catalog costs; Omni also reports the native one. */
-  recordList(ctx: CallContext, tools: unknown[], fullCatalogTokens?: number): void {
+  /**
+   * `list` event of a `tools/list`. `fullCatalogTokens` is what the unreduced catalog would cost
+   * (Omni, shortlist); `plugins` are the tool router decisions (ADR-025).
+   */
+  recordList(ctx: CallContext, tools: unknown[], opts: { fullCatalogTokens?: number; plugins?: PluginDecision[]; queryHash?: string } = {}): void {
     const rec = new CallRecorder(ctx, { kind: 'list', toolName: 'tools/list' });
     rec.catalogTokens(descriptorTokens(tools));
     rec.responseBytes(jsonBytes(tools));
-    if (fullCatalogTokens !== undefined) rec.meta({ fullCatalogTokens });
+    if (opts.fullCatalogTokens !== undefined || opts.queryHash) {
+      rec.meta({ ...(opts.fullCatalogTokens !== undefined ? { fullCatalogTokens: opts.fullCatalogTokens } : {}), ...(opts.queryHash ? { queryHash: opts.queryHash } : {}) });
+    }
+    for (const d of opts.plugins ?? []) rec.plugin(d);
     void this.finish(ctx, rec, undefined, undefined);
   }
 

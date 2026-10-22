@@ -29,19 +29,32 @@ export type ErrorStage =
   | 'protocol'
   | 'internal';
 
-/** Timed pipeline stages (milliseconds). `plugins` is reserved. */
+/** Timed pipeline stages (milliseconds). `plugins` is the tool router (ADR-025). */
 export const STAGES = ['authz', 'validation', 'pii', 'upstream', 'projection', 'artifact', 'plugins'] as const;
 export type Stage = (typeof STAGES)[number];
 
-/** Reserved for the plugin pipeline (not built yet). */
+/**
+ * One tool router hook (ADR-025): rerank on `search_tools` (meta event), shortlist on
+ * `tools/list` (list event) or gate on `tools/call`. Codes and counts only: never the query,
+ * intent or arguments sent to the provider, nor raw probabilities.
+ */
 export interface PluginDecision {
   plugin: string;
+  /** `applied`/`skipped` (rerank, shortlist) or the gate outcome. */
   decision: string;
+  /** Closed set: ok, low_confidence, none_option, refusal, invalid, too_many, timeout, error, circuit_open, budget, no_intent, human_confirmed, disabled. */
   reason?: string;
   ms?: number;
+  point?: 'rerank' | 'shortlist' | 'gate';
+  provider?: string;
+  model?: string;
+  confidence?: 'low' | 'medium' | 'high';
+  cached?: boolean;
+  candidates?: number;
+  kept?: number;
 }
 
-/** Reserved for the confirm gate (not built yet). */
+/** Tool router gate of a call (ADR-025); `required` = the gate ran for this tool. */
 export interface GateDecision {
   required: boolean;
   outcome: 'allow' | 'confirm' | 'deny';
@@ -154,7 +167,7 @@ export interface CallEvent {
   /** On `list` events: tokens of the advertised catalog. */
   catalogTokens?: number | null;
 
-  // reserved (ADR-016 §2)
+  // tool router (ADR-025); `taint` and `pinnedVersion` stay reserved (ADR-016 §2)
   plugins?: PluginDecision[] | null;
   gate?: GateDecision | null;
   taint?: TaintInfo | null;
