@@ -277,6 +277,7 @@ export function createServices(
     sink: callEvents,
     debug,
     allowPrivateNetworks: config.NETWORK_ALLOW_PRIVATE,
+    ...(router ? { router } : {}),
   });
   return {
     config,

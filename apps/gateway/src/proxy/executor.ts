@@ -55,6 +55,7 @@ import { NetworkError, UpstreamTimeout } from './rest-adapter';
 import { agentUpstreamMessage, errorResult, upstreamToToolResult, type ToolResult } from './result';
 import { activeViews, clientHasUi, ConfirmTokens, descriptorUiMeta, fieldErrors, resultUiMeta } from './ui';
 import type { ToolViews } from '@mcp-ui-kit/view-spec';
+import type { ToolRouter } from '../router';
 import type { UpstreamAdapter, UpstreamResult } from './types';
 
 export interface CallContext {
@@ -145,6 +146,8 @@ export interface ExecutorDeps {
   debug?: DebugCaptureService;
   /** Environment allows private networks (dev/test). The tenant can only restrict it. */
   allowPrivateNetworks: boolean;
+  /** Decision-model tool router (ADR-025): risk gate before the upstream; absent = no gate. */
+  router?: Pick<ToolRouter, 'gateApplies' | 'gate'>;
 }
 
 /** MCP protocol error (e.g. unknown tool); the transport returns it as a JSON-RPC error. */
@@ -402,6 +405,7 @@ export class ToolExecutor {
     if (!views) return this.execute(ctx, tool, rawArgs, rec);
     const locale = ctx.principal.locale;
     const origin = ctx.ui?.origin ? { origin: ctx.ui.origin } : {};
+    let runCtx = ctx;
 
     if (views.input?.kind === 'plan' && ctx.client?.era === 'modern') {
       const token = ctx.ui?.confirmToken;
@@ -413,10 +417,12 @@ export class ToolExecutor {
           _meta: resultUiMeta(ctx.snapshot, { views, phase: 'input', confirmToken: await this.confirmTokens.issue(ctx, tool.name) }),
         };
       }
+      // a human confirmed this call (server-side flag; never read from `_meta`): the router gate does not ask again
+      runCtx = { ...ctx, ui: { ...ctx.ui, confirmed: true } };
     }
 
     try {
-      const result = await this.execute(ctx, tool, rawArgs, rec);
+      const result = await this.execute(runCtx, tool, rawArgs, rec);
       if (result.isError || !views.result) return result;
       rec.meta({ ui: { phase: 'result', view: views.result.kind, ...origin } });
       const payload = { views, phase: 'result' as const, ...(rec.ev.artifactId ? { truncated: true } : {}) };
@@ -505,6 +511,16 @@ export class ToolExecutor {
     void this.finish(ctx, rec, undefined, undefined);
   }
 
+  /** Risk gate of the tool router: records the decision and denies when the outcome resolves to deny. */
+  private async gate(ctx: CallContext, tool: SnapshotTool, args: Record<string, unknown>, rec: CallRecorder): Promise<void> {
+    const g = await this.deps.router!.gate(ctx, tool, args);
+    rec.plugin(g.decision);
+    rec.gate({ required: true, outcome: g.outcome, reason: g.decision.reason });
+    if (g.effective === 'allow') return;
+    rec.deny('router_gate', { outcome: g.outcome });
+    throw new Forbidden(msg(g.message ?? 'router.gateDenied', { tool: tool.title ?? tool.name }), { reason: 'router_gate', outcome: g.outcome });
+  }
+
   protected async execute(ctx: CallContext, tool: SnapshotTool, rawArgs: unknown, rec: CallRecorder): Promise<ToolResult> {
     if (typeof rawArgs !== 'object' || rawArgs === null || Array.isArray(rawArgs)) {
       throw new ValidationError(msg('proxy.argsNotObject'));
@@ -556,6 +572,8 @@ export class ToolExecutor {
     await rec.stage('authz', () =>
       inSpan(this.deps.tracer, 'authz', ctx.traceCtx, { [LEGACY_ATTR.TOOL]: tool.name }, () => this.authorizeCall(ctx, tool, args, rec)),
     );
+    // tool router gate (ADR-025): after policy and validation, before any upstream byte; one gate per composite
+    if (this.deps.router?.gateApplies(ctx, tool)) await this.gate(ctx, tool, args, rec);
 
     const res = await rec.stage('upstream', () =>
       tool.kind === 'composite' ? this.runComposite(ctx, tool, args, rec) : this.invokeUpstream(ctx, tool, args, traffic),

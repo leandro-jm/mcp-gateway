@@ -1,8 +1,9 @@
 import { findValueMatches } from '@mcp-gateway/redaction';
-import { startFakeUpstream, type FakeUpstream } from '@mcp-gateway/testkit';
+import { startFakeDecisions, startFakeUpstream, type FakeDecisionsServer, type FakeUpstream } from '@mcp-gateway/testkit';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runAgentAnalytics } from '../../src/analytics/job';
 import { startHarness, type Harness } from '../harness';
+import { setProvider, setRouter } from '../router-helpers';
 import { mcpClient, seedRhTenant } from '../seed';
 
 const TABLES = [
@@ -17,15 +18,23 @@ const TABLES = [
   'call_subject_refs',
 ];
 
-/** F15.25: no table added by F15 holds clear-text PII, whatever the subject, client or arguments. */
+/**
+ * F15.25: no table added by F15 holds clear-text PII, whatever the subject, client or arguments.
+ * F19.8: with the tool router on (rerank and a gate on every call), neither the router columns
+ * nor what reaches the decision provider carry clear-text PII.
+ */
 describe('security: observability stores no clear-text PII', () => {
   let h: Harness;
   let up: FakeUpstream;
+  let decisions: FakeDecisionsServer;
 
   beforeAll(async () => {
-    h = await startHarness();
+    h = await startHarness({ env: { TOOL_ROUTER_ENABLED: 'true' } });
     up = await startFakeUpstream();
-    await seedRhTenant(h, up);
+    decisions = await startFakeDecisions();
+    const { tenantId } = await seedRhTenant(h, up);
+    await setProvider(h, tenantId, 'openai_decisions', decisions.url);
+    await setRouter(h, tenantId, { enabled: true, gate: { enabled: true, scope: 'all' } });
     const base = await h.app.listen({ port: 0, host: '127.0.0.1' });
     const colab = up.data.colaboradores[0]!;
     // PII everywhere: subject, client name, agent name, arguments and responses
@@ -49,6 +58,18 @@ describe('security: observability stores no clear-text PII', () => {
   afterAll(async () => {
     await h?.teardown();
     await up?.close();
+    await decisions?.close();
+  });
+
+  it('the decision provider only receives redacted text', () => {
+    expect(decisions.requests.length).toBeGreaterThan(10);
+    const sent = JSON.stringify(decisions.requests);
+    const leaks = findValueMatches(sent).filter((m) => ['cpf', 'cnpj', 'pis', 'email', 'telefone', 'cartao'].includes(m.detector.id));
+    expect(leaks.map((l) => `${l.detector.id}:${l.text}`)).toEqual([]);
+    for (const c of up.data.colaboradores.slice(0, 3)) {
+      expect(sent).not.toContain(c.cpf);
+      expect(sent).not.toContain(c.email);
+    }
   });
 
   it.each(TABLES)('%s', async (table) => {

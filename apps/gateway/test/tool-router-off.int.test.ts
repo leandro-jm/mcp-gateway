@@ -1,6 +1,8 @@
+import { generateDataKey } from '@mcp-gateway/core';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { errorPayload } from '../src/proxy/result';
 import { FakeDecisions } from './fake-decisions';
 import { startHarness, startInfra, type Harness, type Infra } from './harness';
 import { routerEvents, seedSyntheticTenant, setProvider, setRouter } from './router-helpers';
@@ -10,7 +12,7 @@ import { mcpClient } from './seed';
  * The router is optional (ADR-025): with the platform switch, the tenant switch or the point
  * switch off, the data plane behaves exactly as without it and the provider is never called.
  */
-describe('tool router off = behavior without the router (F19.4, F19.7)', () => {
+describe('tool router off = behavior without the router (F19.4, F19.7, F19.8)', () => {
   let infra: Infra;
   let off: Harness;
   let on: Harness;
@@ -21,8 +23,10 @@ describe('tool router off = behavior without the router (F19.4, F19.7)', () => {
 
   beforeAll(async () => {
     infra = await startInfra();
-    off = await startHarness({ infra, decisions: fake.factory });
-    on = await startHarness({ infra, env: { TOOL_ROUTER_ENABLED: 'true' }, decisions: fake.factory });
+    // same database: both instances need the same master key to read the tenant data keys
+    const GATEWAY_MASTER_KEY = generateDataKey().toString('base64');
+    off = await startHarness({ infra, env: { GATEWAY_MASTER_KEY }, decisions: fake.factory });
+    on = await startHarness({ infra, env: { GATEWAY_MASTER_KEY, TOOL_ROUTER_ENABLED: 'true' }, decisions: fake.factory });
     bases.off = await off.app.listen({ port: 0, host: '127.0.0.1' });
     bases.on = await on.app.listen({ port: 0, host: '127.0.0.1' });
     tenantId = await seedSyntheticTenant(on, 'acme');
@@ -46,7 +50,9 @@ describe('tool router off = behavior without the router (F19.4, F19.7)', () => {
     clients.push(omni, mcp);
     const search = await omni.callTool({ name: 'search_tools', arguments: { query: 'quando o colaborador vai tirar férias?', limit: 5 } });
     const list = await mcp.listTools();
-    return { search: search.structuredContent, list: list.tools.map((t) => t.name) };
+    // destructive call: no upstream behind the synthetic tools, so the outcome is the same error either way
+    const call = await mcp.callTool({ name: 'rh_ferias_delete', arguments: { id: 'x' } });
+    return { search: search.structuredContent, list: list.tools.map((t) => t.name), call: errorPayload(call as never).error };
   }
 
   it('the platform switch off does not even create the router', async () => {
