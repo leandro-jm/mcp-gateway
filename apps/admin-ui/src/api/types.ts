@@ -330,6 +330,54 @@ export interface LlmTestResult {
   error?: string;
 }
 
+// ------------------------------------------------------------- tool router (F19, ADR-025)
+export type DecisionProvider = 'openai_decisions' | 'jev';
+
+export interface ToolRouterSettings {
+  enabled: boolean;
+  maxDecisionsPerMinute: number;
+  cacheTtlSeconds: number;
+  rerank: { enabled: boolean; candidates: number; minConfidence: number; timeoutMs: number };
+  shortlist: {
+    enabled: boolean;
+    granularity: 'namespace' | 'tool';
+    candidates: number;
+    minConfidence: number;
+    mass: number;
+    maxNamespaces: number;
+    minTools: number;
+    maxTools: number;
+    timeoutMs: number;
+  };
+  gate: {
+    enabled: boolean;
+    scope: 'destructive' | 'non-readonly' | 'all';
+    argsMode: 'none' | 'redacted';
+    confirmAt: number;
+    denyAt: number;
+    onError: 'allow' | 'deny';
+    onConfirmWithoutUi: 'deny' | 'allow';
+    timeoutMs: number;
+  };
+}
+
+export interface DecisionProviderDto {
+  configured: boolean;
+  provider?: DecisionProvider;
+  model?: string;
+  baseUrl?: string | null;
+  hasApiKey?: boolean;
+  apiKeyHint?: string | null;
+  updatedBy?: string | null;
+  updatedAt?: string;
+}
+
+export interface ToolRouterView {
+  platformEnabled: boolean;
+  settings: ToolRouterSettings;
+  provider: DecisionProviderDto;
+}
+
 export interface CompositeGraph {
   nodes: Array<{ id: string; tool: string; level: number; conditional: boolean; foreach: boolean }>;
   edges: Array<{ from: string; to: string }>;
