@@ -1,4 +1,5 @@
-import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { FakeDecisions } from './fake-decisions';
 import { startHarness, startInfra, type Harness, type Infra } from './harness';
@@ -9,7 +10,7 @@ import { mcpClient } from './seed';
  * The router is optional (ADR-025): with the platform switch, the tenant switch or the point
  * switch off, the data plane behaves exactly as without it and the provider is never called.
  */
-describe('tool router off = behavior without the router (F19.4)', () => {
+describe('tool router off = behavior without the router (F19.4, F19.7)', () => {
   let infra: Infra;
   let off: Harness;
   let on: Harness;
@@ -39,7 +40,9 @@ describe('tool router off = behavior without the router (F19.4)', () => {
     await h.services.registry.invalidate(tenantId);
     const token = await h.token({ tenant: 'acme', sub: `agente-${which}` });
     const omni = await mcpClient(bases[which]!, token, '/mcp/omni');
-    const mcp = await mcpClient(bases[which]!, token);
+    // an intent is sent: with the router off it must be ignored
+    const mcp = new Client({ name: 'agente-teste', version: '1' });
+    await mcp.connect(new StreamableHTTPClientTransport(new URL(`${bases[which]}/mcp`), { requestInit: { headers: { authorization: `Bearer ${token}`, 'mcp-gateway-intent': 'ferias' } } }));
     clients.push(omni, mcp);
     const search = await omni.callTool({ name: 'search_tools', arguments: { query: 'quando o colaborador vai tirar férias?', limit: 5 } });
     const list = await mcp.listTools();

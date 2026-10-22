@@ -14,7 +14,7 @@ import type { Services } from '../services';
 import { createObservabilityServer } from './observability';
 import { outcomeHandler, parseOutcome, reportOutcome } from './outcomes';
 import { createMcpServer } from './server';
-import { withHeaderTrace } from './call-context';
+import { INTENT_HEADER, intentOf, withHeaderTrace } from './call-context';
 import { classify, McpSurface } from './surface';
 import { clientInfoOf, isStatelessSessionId, issueSessionId, parseSessionId, type AgentInfo } from './session-id';
 
@@ -35,7 +35,7 @@ interface Surfaces {
 function createSurfaces(deps: McpRouteDeps): Surfaces {
   const omniDeps = { executor: deps.executor, search: deps.search, artifacts: deps.services.artifacts, outcomes: outcomeHandler(deps.services), router: deps.services.router };
   return {
-    native: new McpSurface((ctx) => createMcpServer(deps.executor, ctx, deps.services.artifacts, outcomeHandler(deps.services))),
+    native: new McpSurface((ctx) => createMcpServer(deps.executor, ctx, deps.services.artifacts, outcomeHandler(deps.services), deps.services.router)),
     omni: new McpSurface((ctx) => createOmniServer(omniDeps, () => ctx, { dynamic: false, discovered: new Set() })),
     observability: new McpSurface((ctx) => createObservabilityServer(deps.services, ctx)),
   };
@@ -138,6 +138,8 @@ export async function resolveContext(
     sessionKey: session.key,
     identity: identityOf(req, serverSlug ? 'server' : 'mcp', session.source),
   };
+  const intent = intentOf(header(req, INTENT_HEADER), true);
+  if (intent) ctx.intent = intent;
   if (serverSlug) {
     const vs = findVirtualServer(snapshot, serverSlug);
     if (!vs) throw new NotFound('mcpServer', serverSlug);

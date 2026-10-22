@@ -32,10 +32,10 @@ export async function setProvider(h: Harness, tenantId: string, provider: 'opena
 export async function routerEvents(h: Harness, tenantId: string, kind?: string) {
   await h.services.callEvents.flush();
   const { rows } = await h.services.dbHandle.pool.query(
-    `SELECT kind, tool_name, plugins, gate, plugins_ms, meta, decision, error_code FROM call_events WHERE tenant_id = $1 ${kind ? 'AND kind = $2' : ''} ORDER BY ts`,
+    `SELECT kind, tool_name, plugins, gate, plugins_ms, meta, catalog_tokens, decision, error_code FROM call_events WHERE tenant_id = $1 ${kind ? 'AND kind = $2' : ''} ORDER BY ts`,
     kind ? [tenantId, kind] : [tenantId],
   );
-  return rows as Array<{ kind: string; tool_name: string; plugins: any[] | null; gate: any; plugins_ms: number | null; meta: any; decision: string; error_code: string | null }>;
+  return rows as Array<{ kind: string; tool_name: string; plugins: any[] | null; gate: any; plugins_ms: number | null; meta: any; catalog_tokens: number | null; decision: string; error_code: string | null }>;
 }
 
 /** Tool name inside a choice option description (`Title (name): …` or `name: …`). */
