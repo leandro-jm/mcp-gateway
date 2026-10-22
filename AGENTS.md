@@ -21,6 +21,8 @@ Multi-tenant MCP gateway that exposes REST/OpenAPI APIs as MCP tools. The full p
 - `pnpm dev:upstream`: fake HR upstream (port 4010).
 - `pnpm --filter @mcp-gateway/admin-ui dev`: Admin UI (port 5180, proxies to the gateway).
 - `pnpm --filter @mcp-gateway/crawler dev`: crawler worker in watch mode (needed for crawls in dev and for the import E2E).
+- `pnpm --filter @mcp-gateway/testkit fake-decisions`: fake decision provider (port 4020) speaking the OpenAI Decisions and Jev formats, for trying the tool router without a key (ADR-025).
+- `pnpm --filter @mcp-gateway/gateway router-eval`: measures the tool router rerank with a real provider on the F7.1 set (`ROUTER_EVAL_PROVIDER`, `ROUTER_EVAL_API_KEY`; needs the dev stack).
 - `pnpm --filter @mcp-gateway/admin-ui test:e2e`: UI E2E (Playwright) against the dev stack.
 - `pnpm --filter @mcp-gateway/site dev`: landing page (port 5190).
 - `pnpm --filter @mcp-gateway/site build:single`: the landing page as one self-contained HTML file (`apps/site/dist/mcp-gateway-landing.html`, works offline).

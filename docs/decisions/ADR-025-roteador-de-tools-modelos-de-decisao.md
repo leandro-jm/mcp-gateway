@@ -1,6 +1,6 @@
 # ADR-025: Roteador de tools com modelos de decisão (plugin opcional)
 
-- Status: proposto
+- Status: aceito
 - Data: 2026-10-22
 - Depende de: ADR-009, ADR-015, ADR-016, ADR-021, ADR-022
 - Estudo: [estudo-modelos-de-decisao.md](../tool-router/estudo-modelos-de-decisao.md)

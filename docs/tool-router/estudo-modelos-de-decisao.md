@@ -132,11 +132,11 @@ Com qualquer chave desligada, o comportamento é **idêntico ao de hoje**: nenhu
 
 | Ponto | Entrada típica | Custo por decisão (OpenAI) | Latência alvo |
 |---|---|---|---|
-| Rerank (20 candidatos × ~60 tokens) | ~1,5K tokens | ~US$ 0,00015 | p95 < 1,5 s |
+| Rerank (20 candidatos) | ~0,9K tokens (medido) | ~US$ 0,00009 | p95 < 1,5 s |
 | Shortlist por namespace | ~3,5K tokens | ~US$ 0,00035 | p95 < 2 s (com cache, uma vez por conexão) |
 | Gate (tool + argumentos compactados) | 0,5–1K tokens | ~US$ 0,0001 | p95 < 1,5 s |
 
-Exemplo: um tenant com 100 mil chamadas de escrita por mês e o gate ligado gasta cerca de US$ 10/mês em decisões. O custo relevante é a latência, não o dinheiro.
+Exemplo: um tenant com 100 mil chamadas de escrita por mês e o gate ligado gasta cerca de US$ 10/mês em decisões (estimativa por tamanho do pedido; o gate não foi medido com provedor real). O custo relevante é a latência, não o dinheiro.
 
 ## 8. Métricas de sucesso
 
@@ -144,6 +144,20 @@ Exemplo: um tenant com 100 mil chamadas de escrita por mês e o gate ligado gast
 - **Efeito no agente:** `searchMisses` (`re_search`, `not_in_results`, `validation_error`) antes e depois, a partir dos dados de call-analytics.
 - **Economia do shortlist:** `mcp_tokens_saved_total{mechanism="shortlist"}`.
 - **Saúde:** `mcp_router_decisions_total` por motivo e `mcp_router_duration_seconds`.
+
+### Resultados da avaliação offline (2026-10-22)
+
+Medição sobre o conjunto da F7.1 (200 tools sintéticas, 50 consultas). Os números estão na suíte `router-eval.int.test.ts`; o script `router-eval` mede provedores reais.
+
+| Medida | Valor |
+|---|---|
+| FTS, top-1 | 66% |
+| FTS, top-3 | 88% a 92% (empates no ranking variam entre execuções) |
+| Recall@20 da busca, que é o teto do rerank | 100% |
+| Top-1 com um provedor "oráculo" | 100%, igual ao recall@20 |
+| Tokens de entrada por decisão de rerank (20 candidatos) | ~885 |
+
+Há espaço real para o rerank: a tool certa está sempre entre os 20 candidatos, mas fica em primeiro lugar em só dois terços das consultas. A qualidade de cada provedor real ainda precisa ser medida com chave (`router-eval`). Os números entram aqui e em `docs/perf/` quando houver acesso.
 
 ## 9. Recomendação
 

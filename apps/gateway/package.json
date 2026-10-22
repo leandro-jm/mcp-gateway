@@ -17,7 +17,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "dev": "tsx watch --env-file-if-exists=.env src/main.ts",
     "start": "node dist/main.js",
-    "build": "tsup"
+    "build": "tsup",
+    "router-eval": "tsx --env-file-if-exists=.env scripts/router-eval.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

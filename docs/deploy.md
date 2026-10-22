@@ -53,6 +53,7 @@ Copie [`docker/prod.env.example`](../docker/prod.env.example) para `.env` (ou ca
 | `CALL_ROLLUPS_RETENTION_DAYS` | não | Retenção dos agregados que alimentam os dashboards. Padrão 400. |
 | `CALL_EVENTS_FLUSH_MS`, `CALL_EVENTS_BATCH_SIZE`, `CALL_EVENTS_BUFFER_MAX` | não | Writer em lote dos eventos (padrões 1000, 500 e 20000). Eventos descartados aparecem em `mcp_call_events_dropped_total`. |
 | `SUBJECT_INDEX_RETENTION_MONTHS` | não | Retenção do índice de titulares LGPD (ADR-017). Padrão 12. |
+| `TOOL_ROUTER_ENABLED` | não | Habilita o roteador de tools com modelos de decisão (ADR-025); cada tenant ainda liga o seu em Configurações. **Padrão `false`.** Guia em `docs/tool-router/guia.md`. |
 | `DEBUG_CAPTURE_ENABLED` | não | Habilita a captura de debug de payloads (cifrada, 24 h, só `gateway-admin`). **Padrão `false`.** Exige S3. |
 | `DEBUG_CAPTURE_MAX_MINUTES`, `DEBUG_CAPTURE_RETENTION_HOURS` | não | Duração máxima de uma captura (60) e retenção dos itens (24). |
 | `TRACE_UI_URL_TEMPLATE` | não | Link do explorador de chamadas para a UI de traces (ex.: `https://jaeger.empresa.com/trace/{traceId}`). |
