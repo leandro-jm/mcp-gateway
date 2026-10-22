@@ -30,6 +30,7 @@ import {
   CredentialsRepo,
   Keyring,
   LlmSettingsRepo,
+  DecisionSettingsRepo,
   SourcesRepo,
   TenantsRepo,
   ToolsRepo,
@@ -45,6 +46,7 @@ import { TokenVerifier } from './auth/tokens';
 import type { GatewayConfig } from './config';
 import { createLlmProvider, type LlmProviderFactory } from './llm';
 import type { Logger } from './logger';
+import { createDecisionProvider, RedisDecisionCache, ToolRouter, type DecisionCache, type DecisionProviderFactory } from './router';
 import { CredentialManager } from './proxy/credentials';
 import { ToolExecutor } from './proxy/executor';
 import { CircuitBreaker, RateLimiter } from './proxy/guards';
@@ -85,6 +87,7 @@ export interface Repos {
   apiTokens: ApiTokensRepo;
   auth: AuthQueries;
   llmSettings: LlmSettingsRepo;
+  decisionSettings: DecisionSettingsRepo;
   callEvents: CallEventsRepo;
   callEventWriter: CallEventWriter;
   rollups: RollupWriter;
@@ -115,6 +118,10 @@ export interface Services {
   artifacts: ArtifactService;
   /** Builds the tenant's LLM client for the natural-language composer (ADR-015). */
   llm: LlmProviderFactory;
+  /** Builds the tenant's decision-model client for the tool router (ADR-025). */
+  decisions: DecisionProviderFactory;
+  /** Decision-model tool router; absent when `TOOL_ROUTER_ENABLED` is off (no behavior change). */
+  router?: ToolRouter;
   metrics: Metrics;
   tracing: TracingHandle;
   /** Analytics sink for call events (ADR-016). */
@@ -176,6 +183,7 @@ export function createRepos(db: Db, keyring: Keyring): Repos {
     apiTokens: new ApiTokensRepo(db),
     auth: new AuthQueries(db),
     llmSettings: new LlmSettingsRepo(db, keyring),
+    decisionSettings: new DecisionSettingsRepo(db, keyring),
     callEvents: new CallEventsRepo(db),
     callEventWriter: new CallEventWriter(db),
     rollups: new RollupWriter(db),
@@ -190,7 +198,14 @@ export function createRepos(db: Db, keyring: Keyring): Repos {
 export function createServices(
   config: GatewayConfig,
   logger: Logger,
-  overrides: { embeddings?: EmbeddingProvider; spanProcessors?: SpanProcessor[]; llm?: LlmProviderFactory; callEventSink?: CallEventSink } = {},
+  overrides: {
+    embeddings?: EmbeddingProvider;
+    spanProcessors?: SpanProcessor[];
+    llm?: LlmProviderFactory;
+    callEventSink?: CallEventSink;
+    decisions?: DecisionProviderFactory;
+    decisionCache?: DecisionCache;
+  } = {},
 ): Services {
   const dbHandle = createDb(config.DATABASE_URL);
   const redis = new Redis(config.REDIS_URL, { maxRetriesPerRequest: null });
@@ -233,6 +248,21 @@ export function createServices(
     overrides.embeddings ??
     (config.EMBEDDINGS_URL ? new HttpEmbeddingProvider(config.EMBEDDINGS_URL, config.EMBEDDINGS_MODEL, config.EMBEDDINGS_API_KEY) : undefined);
   const search = new ToolSearch(repos.tools, logger, embeddings);
+  const decisions = overrides.decisions ?? createDecisionProvider;
+  const router = config.TOOL_ROUTER_ENABLED
+    ? new ToolRouter({
+        settingsRepo: repos.decisionSettings,
+        providers: decisions,
+        cache: overrides.decisionCache ?? new RedisDecisionCache(redis),
+        budget: rateLimiter,
+        circuit: new CircuitBreaker(),
+        pii,
+        logger,
+        allowPrivateNetworks: config.NETWORK_ALLOW_PRIVATE,
+        search,
+      })
+    : undefined;
+  if (router) registry.onInvalidate((tenantId) => router.forgetTenant(tenantId));
   const executor = new ToolExecutor({
     adapter: new RestAdapter(credentialManager),
     validator: new ArgValidator(),
@@ -267,6 +297,8 @@ export function createServices(
     sessions: new SessionStore(),
     artifacts,
     llm: overrides.llm ?? createLlmProvider,
+    decisions,
+    ...(router ? { router } : {}),
     metrics,
     tracing,
     callEvents,

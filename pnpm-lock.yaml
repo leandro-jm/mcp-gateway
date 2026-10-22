@@ -211,6 +211,9 @@ importers:
       '@mcp-gateway/redaction':
         specifier: workspace:*
         version: link:../../packages/redaction
+      '@mcp-gateway/tool-router':
+        specifier: workspace:*
+        version: link:../../packages/tool-router
       '@mcp-ui-kit/view-spec':
         specifier: ^0.1.0
         version: 0.1.0

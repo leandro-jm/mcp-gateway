@@ -4,3 +4,4 @@ export * from './postman-rh';
 export * from './upstream';
 export * from './containers';
 export * from './synthetic-tools';
+export * from './fake-decisions';

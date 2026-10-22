@@ -84,8 +84,13 @@ export interface CallContext {
   identity?: CallIdentity;
   /** What the MCP client declared for this request (ADR-021); informative only, never used for authorization. */
   client?: McpClientInfo;
-  /** UI hints of the request `_meta` (ADR-022): a view's confirmation token and self-declared origin. */
-  ui?: { confirmToken?: string; origin?: 'app' };
+  /**
+   * UI hints of the request `_meta` (ADR-022): a view's confirmation token and self-declared
+   * origin. `confirmed` is set by the server only, after consuming a valid token (never from `_meta`).
+   */
+  ui?: { confirmToken?: string; origin?: 'app'; confirmed?: boolean };
+  /** What the agent says it is working on (`_meta` or header; ADR-025). Untrusted free text, never logged. */
+  intent?: string;
 }
 
 /**

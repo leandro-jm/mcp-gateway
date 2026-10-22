@@ -8,6 +8,7 @@ import { loadConfig, type GatewayConfig } from '../src/config';
 import { createLogger } from '../src/logger';
 import type { SpanProcessor } from '@opentelemetry/sdk-trace-base';
 import type { LlmProviderFactory } from '../src/llm';
+import type { DecisionProviderFactory } from '../src/router';
 import type { EmbeddingProvider } from '../src/search/embeddings';
 import { createServices, type Services } from '../src/services';
 
@@ -124,7 +125,14 @@ export function s3Env(infra: Infra): Record<string, string> {
 }
 
 export async function startHarness(
-  opts: { infra?: Infra; env?: Record<string, string>; embeddings?: EmbeddingProvider; spanProcessors?: SpanProcessor[]; llm?: LlmProviderFactory } = {},
+  opts: {
+    infra?: Infra;
+    env?: Record<string, string>;
+    embeddings?: EmbeddingProvider;
+    spanProcessors?: SpanProcessor[];
+    llm?: LlmProviderFactory;
+    decisions?: DecisionProviderFactory;
+  } = {},
 ): Promise<Harness> {
   const infra = opts.infra ?? (await startInfra());
   const config = loadConfig({
@@ -152,6 +160,7 @@ export async function startHarness(
     ...(opts.embeddings ? { embeddings: opts.embeddings } : {}),
     ...(opts.spanProcessors ? { spanProcessors: opts.spanProcessors } : {}),
     ...(opts.llm ? { llm: opts.llm } : {}),
+    ...(opts.decisions ? { decisions: opts.decisions } : {}),
   });
   await migrateUp(services.dbHandle.pool);
   await services.start();
