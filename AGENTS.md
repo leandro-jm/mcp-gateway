@@ -34,7 +34,7 @@ Multi-tenant MCP gateway that exposes REST/OpenAPI APIs as MCP tools. The full p
 - Seed users (ADR-011, **development only**): `admin`/`admin` (platform), `owner`/`owner`, `agente`/`agente`, and the service user `agent-dev` with the token `mgw_dev-agent-token-somente-para-desenvolvimento`.
 
 ## Rules
-- **Pure packages** (`core`, `i18n`, `openapi-toolgen`, `api-import`, `policy`, `redaction`, `projection`, `composition`, `composer`, `call-analytics`) do no I/O. ESLint blocks fs/net/http/pg/redis/s3 imports in them.
+- **Pure packages** (`core`, `i18n`, `openapi-toolgen`, `api-import`, `policy`, `redaction`, `projection`, `composition`, `composer`, `call-analytics`, `tool-router`) do no I/O. ESLint blocks fs/net/http/pg/redis/s3 imports in them.
 - **Multi-tenant**: every repository function in `packages/db` takes an explicit `tenantId`. An architecture test enforces this.
 - **Auth**: users and opaque tokens in Postgres (ADR-011). Only the SHA-256 hash of a token is stored; the value is shown exactly once.
 - **No PII or credentials in logs**: use the `core` logger, which redacts sensitive keys.

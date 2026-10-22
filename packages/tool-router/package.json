@@ -1,0 +1,22 @@
+{
+  "name": "@mcp-gateway/tool-router",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "author": "Leandro Martins (https://github.com/leandro-jm)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leandro-jm/mcp-gateway.git",
+    "directory": "packages/tool-router"
+  },
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
+  }
+}
