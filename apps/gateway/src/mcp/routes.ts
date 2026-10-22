@@ -33,7 +33,7 @@ interface Surfaces {
 }
 
 function createSurfaces(deps: McpRouteDeps): Surfaces {
-  const omniDeps = { executor: deps.executor, search: deps.search, artifacts: deps.services.artifacts, outcomes: outcomeHandler(deps.services) };
+  const omniDeps = { executor: deps.executor, search: deps.search, artifacts: deps.services.artifacts, outcomes: outcomeHandler(deps.services), router: deps.services.router };
   return {
     native: new McpSurface((ctx) => createMcpServer(deps.executor, ctx, deps.services.artifacts, outcomeHandler(deps.services))),
     omni: new McpSurface((ctx) => createOmniServer(omniDeps, () => ctx, { dynamic: false, discovered: new Set() })),
@@ -238,7 +238,7 @@ async function handleOmni(
   const cls = await classify(req);
   // Dynamic sessions (list_changed on the GET stream) exist only for 2025-era clients (ADR-021).
   if (cls.legacy && wantsDynamic(req)) {
-    const omniDeps = { executor: deps.executor, search: deps.search, artifacts: deps.services.artifacts, outcomes: outcomeHandler(deps.services) };
+    const omniDeps = { executor: deps.executor, search: deps.search, artifacts: deps.services.artifacts, outcomes: outcomeHandler(deps.services), router: deps.services.router };
     const omni = { dynamic: true, discovered: new Set<string>() };
     const agent = clientInfoOf(req.body);
     const sessionCtx = { ...ctx, identity: { ...ctx.identity!, sessionSource: 'omni' as const, ...agentFields(agent) } };

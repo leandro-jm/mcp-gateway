@@ -11,6 +11,7 @@ import { registerResources, uiResources } from './resources';
 import { activeProjection, ProtocolError, toDescriptor, type CallContext, type ToolExecutor } from '../proxy/executor';
 import { describeTool } from '../proxy/effect';
 import { errorResult, type ToolResult } from '../proxy/result';
+import { toRoutable, type ToolRouter } from '../router';
 import type { ToolSearch } from '../search/tool-search';
 import { SERVER_INFO } from './server';
 
@@ -89,6 +90,8 @@ export interface OmniDeps {
   artifacts?: ArtifactService;
   /** `report_outcome` meta-tool (F15.22), when the tenant enables it. */
   outcomes?: OutcomeHandler;
+  /** Decision-model tool router (ADR-025): reranks `search_tools` when the tenant turns it on. */
+  router?: ToolRouter;
 }
 
 /**
@@ -169,7 +172,16 @@ export function createOmniServer(deps: OmniDeps, getCtx: () => CallContext, sess
     if (!query.trim()) return fail('VALIDATION_ERROR', msg('mcp.argRequired', { arg: 'query' }));
     const vis = visible();
     const allowed = deps.executor.catalog(ctx).filter((t) => t.state === 'enabled' && vis.has(t.name));
-    const results = await deps.search.search(ctx.tenantId, query, allowed, limit);
+    // tool router off: exactly the search as before (same pool, same order)
+    const router = deps.router?.enabledFor(ctx, 'rerank') ? deps.router : undefined;
+    const pool = router ? Math.max(limit, router.settings(ctx).rerank.candidates) : limit;
+    let results = await deps.search.search(ctx.tenantId, query, allowed, pool);
+    if (router) {
+      const reranked = await router.rerank(ctx, query, results.map((r) => toRoutable(r.tool)), limit);
+      rec.plugin(reranked.decision);
+      const byName = new Map(results.map((r) => [r.tool.name, r]));
+      results = reranked.names.flatMap((n) => byName.get(n) ?? []);
+    }
     const items = results.map((r) => ({
       name: r.tool.name,
       title: r.tool.title ?? r.tool.name,
