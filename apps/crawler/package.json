@@ -28,14 +28,14 @@
     "@mcp-gateway/openapi-toolgen": "workspace:*",
     "@mcp-gateway/projection": "workspace:*",
     "@mcp-ui-kit/view-spec": "^0.1.0",
-    "bullmq": "^6.3.11",
-    "drizzle-orm": "^0.45.3",
+    "bullmq": "^6.4.1",
+    "drizzle-orm": "^0.45.4",
     "ioredis": "^6.0.0",
     "pino": "^10.4.0",
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@mcp-gateway/testkit": "workspace:*",
-    "fastify": "^5.12.5"
+    "fastify": "^5.12.7"
   }
 }
