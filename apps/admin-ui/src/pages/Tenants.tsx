@@ -82,7 +82,7 @@ export function TenantsPage() {
                 <td>
                   <Badge kind={tn.status === 'active' ? 'enabled' : 'disabled'}>{t(STATUS_LABELS[tn.status])}</Badge>
                 </td>
-                <td className="muted">{fmtDate(tn.createdAt)}</td>
+                <td className="muted nowrap">{fmtDate(tn.createdAt)}</td>
                 <td onClick={(e) => e.stopPropagation()}>
                   {tn.slug !== tenant && (
                     <button className="btn sm ghost" aria-label={t('tenants.switchToNamed', { name: tn.name })} onClick={() => setTenant(tn.slug)}>

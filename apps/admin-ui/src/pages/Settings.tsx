@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { Activity, Palette, Sparkles } from 'lucide-react';
+import { Activity, Palette, Route, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import type { LlmProvider, LlmSettings, LlmTestResult, ObservabilitySettings } from '../api/types';
@@ -8,6 +8,7 @@ import { Badge, ErrorBox, Field, fmtDate, PageHeader, Tabs } from '../components
 import { useT } from '../i18n';
 import { useInvalidate, useTenantQuery } from '../lib/hooks';
 import { AppearancePanel } from './AppearancePanel';
+import { ToolRouterPanel } from './ToolRouterPanel';
 
 /** Anthropic models offered in the select; any other id can be typed. */
 export const ANTHROPIC_MODELS = ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-4-5'] as const;
@@ -33,23 +34,26 @@ const fromSettings = (s: LlmSettings | undefined): Form => ({
   removeKey: false,
 });
 
-/** Tenant settings (gateway-admin): the Composer LLM provider (ADR-015) and observability (ADR-016). */
+type SettingsTab = 'llm' | 'observability' | 'appearance' | 'router';
+
+/** Tenant settings (gateway-admin): Composer LLM (ADR-015), observability (ADR-016), appearance (ADR-022) and tool router (ADR-025). */
 export function SettingsPage() {
   const t = useT();
-  const [tab, setTab] = useState<'llm' | 'observability' | 'appearance'>('llm');
+  const [tab, setTab] = useState<SettingsTab>('llm');
   return (
     <>
       <PageHeader title={t('settings.title')} subtitle={t('settings.subtitle')} />
-      <Tabs<'llm' | 'observability' | 'appearance'>
+      <Tabs<SettingsTab>
         tabs={[
           { id: 'llm', label: t('settings.tabLlm'), icon: <Sparkles size={20} /> },
           { id: 'observability', label: t('settings.tabObservability'), icon: <Activity size={20} /> },
           { id: 'appearance', label: t('views.appearance'), icon: <Palette size={20} /> },
+          { id: 'router', label: t('router.tab'), icon: <Route size={20} /> },
         ]}
         value={tab}
         onChange={setTab}
       />
-      {tab === 'llm' ? <LlmSettingsPanel /> : tab === 'observability' ? <ObservabilitySettingsPanel /> : <AppearancePanel />}
+      {tab === 'llm' ? <LlmSettingsPanel /> : tab === 'observability' ? <ObservabilitySettingsPanel /> : tab === 'appearance' ? <AppearancePanel /> : <ToolRouterPanel />}
     </>
   );
 }

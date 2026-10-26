@@ -15,7 +15,8 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "fake-upstream": "tsx bin/fake-upstream.ts"
+    "fake-upstream": "tsx bin/fake-upstream.ts",
+    "fake-decisions": "tsx bin/fake-decisions.ts"
   },
   "dependencies": {
     "fastify": "^5.12.5",

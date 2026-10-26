@@ -67,7 +67,7 @@ export function AuditPage() {
             {(events.data?.items ?? []).map((e) => (
               <Fragment key={e.id}>
                 <tr className="clickable" onClick={() => setOpenId(openId === e.id ? null : e.id)}>
-                  <td className="muted">{fmtDate(e.ts)}</td>
+                  <td className="muted nowrap">{fmtDate(e.ts)}</td>
                   <td className="mono">{e.action}</td>
                   <td className="mono">{e.toolName ?? '—'}</td>
                   <td>{e.decision && <Badge kind={e.decision}>{enumLabel(t, DECISION_LABEL, e.decision)}</Badge>}</td>

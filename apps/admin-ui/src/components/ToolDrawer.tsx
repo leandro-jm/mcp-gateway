@@ -165,7 +165,7 @@ function Overview({ tool }: { tool: Tool }) {
             </Field>
           </div>
           <Field label={t('common.description')} hint={t('toolDrawer.descriptionHint')}>
-            <textarea className="textarea" style={{ fontFamily: 'var(--font-sans)', fontSize: 15 }} value={description} onChange={(e) => setDescription(e.target.value)} aria-label={t('common.description')} />
+            <textarea className="textarea" style={{ fontFamily: 'var(--font-sans)', fontSize: 14 }} value={description} onChange={(e) => setDescription(e.target.value)} aria-label={t('common.description')} />
           </Field>
           <Field label={t('toolDrawer.inputSchemaPatch')}>
             <Editor value={patch} onChange={setPatch} height="140px" label={t('toolDrawer.inputSchemaPatchEditor')} />
@@ -234,7 +234,7 @@ function Versions({ tool }: { tool: Tool }) {
                 )}
               </td>
               <td className="mono dim">{v.specHash?.slice(0, 10) ?? '—'}</td>
-              <td className="muted">{fmtDate(v.createdAt)}</td>
+              <td className="muted nowrap">{fmtDate(v.createdAt)}</td>
             </tr>
           ))}
         </tbody>

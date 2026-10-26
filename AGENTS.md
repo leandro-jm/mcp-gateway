@@ -21,6 +21,8 @@ Multi-tenant MCP gateway that exposes REST/OpenAPI APIs as MCP tools. The full p
 - `pnpm dev:upstream`: fake HR upstream (port 4010).
 - `pnpm --filter @mcp-gateway/admin-ui dev`: Admin UI (port 5180, proxies to the gateway).
 - `pnpm --filter @mcp-gateway/crawler dev`: crawler worker in watch mode (needed for crawls in dev and for the import E2E).
+- `pnpm --filter @mcp-gateway/testkit fake-decisions`: fake decision provider (port 4020) speaking the OpenAI Decisions and Jev formats, for trying the tool router without a key (ADR-025).
+- `pnpm --filter @mcp-gateway/gateway router-eval`: measures the tool router rerank with a real provider on the F7.1 set (`ROUTER_EVAL_PROVIDER`, `ROUTER_EVAL_API_KEY`; needs the dev stack).
 - `pnpm --filter @mcp-gateway/admin-ui test:e2e`: UI E2E (Playwright) against the dev stack.
 - `pnpm --filter @mcp-gateway/site dev`: landing page (port 5190).
 - `pnpm --filter @mcp-gateway/site build:single`: the landing page as one self-contained HTML file (`apps/site/dist/mcp-gateway-landing.html`, works offline).
@@ -34,7 +36,7 @@ Multi-tenant MCP gateway that exposes REST/OpenAPI APIs as MCP tools. The full p
 - Seed users (ADR-011, **development only**): `admin`/`admin` (platform), `owner`/`owner`, `agente`/`agente`, and the service user `agent-dev` with the token `mgw_dev-agent-token-somente-para-desenvolvimento`.
 
 ## Rules
-- **Pure packages** (`core`, `i18n`, `openapi-toolgen`, `api-import`, `policy`, `redaction`, `projection`, `composition`, `composer`, `call-analytics`) do no I/O. ESLint blocks fs/net/http/pg/redis/s3 imports in them.
+- **Pure packages** (`core`, `i18n`, `openapi-toolgen`, `api-import`, `policy`, `redaction`, `projection`, `composition`, `composer`, `call-analytics`, `tool-router`) do no I/O. ESLint blocks fs/net/http/pg/redis/s3 imports in them.
 - **Multi-tenant**: every repository function in `packages/db` takes an explicit `tenantId`. An architecture test enforces this.
 - **Auth**: users and opaque tokens in Postgres (ADR-011). Only the SHA-256 hash of a token is stored; the value is shown exactly once.
 - **No PII or credentials in logs**: use the `core` logger, which redacts sensitive keys.

@@ -17,7 +17,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "dev": "tsx watch --env-file-if-exists=.env src/main.ts",
     "start": "node dist/main.js",
-    "build": "tsup"
+    "build": "tsup",
+    "router-eval": "tsx --env-file-if-exists=.env scripts/router-eval.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
@@ -35,6 +36,7 @@
     "@mcp-gateway/policy": "workspace:*",
     "@mcp-gateway/projection": "workspace:*",
     "@mcp-gateway/redaction": "workspace:*",
+    "@mcp-gateway/tool-router": "workspace:*",
     "@mcp-ui-kit/view-spec": "^0.1.0",
     "@mcp-ui-kit/views": "^0.1.0",
     "@modelcontextprotocol/node": "^2.1.1",

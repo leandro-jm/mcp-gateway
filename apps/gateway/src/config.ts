@@ -40,6 +40,9 @@ export const gatewayConfigSchema = z.object({
   EMBEDDINGS_MODEL: z.string().default('text-embedding-3-small'),
   EMBEDDINGS_API_KEY: z.string().optional(),
 
+  /** Decision-model tool router (F19, ADR-025). Off: the router is not even created. */
+  TOOL_ROUTER_ENABLED: envBool(false),
+
   /** OpenTelemetry traces (OTLP/HTTP). Without an endpoint, spans are not exported. */
   OTEL_EXPORTER_OTLP_ENDPOINT: z.url().optional(),
   /** Link from the call explorer to the trace UI (e.g. `http://jaeger:16686/trace/{traceId}`). */

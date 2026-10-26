@@ -88,8 +88,8 @@ export function TokenList({ basePath }: { basePath: string }) {
             <tr key={tk.id}>
               <td className="mono">{tk.name}</td>
               <td className="mono dim">{tk.prefix}…</td>
-              <td className="muted">{fmtDate(tk.createdAt)}</td>
-              <td className="muted">{fmtDate(tk.lastUsedAt)}</td>
+              <td className="muted nowrap">{fmtDate(tk.createdAt)}</td>
+              <td className="muted nowrap">{fmtDate(tk.lastUsedAt)}</td>
               <td className="muted">{tk.expiresAt ? fmtDate(tk.expiresAt) : t('common.never')}</td>
               <td>
                 <button className="btn sm ghost" aria-label={t('common.tokenRevokeNamed', { name: tk.name })} onClick={() => revoke.mutate(tk.id)}>

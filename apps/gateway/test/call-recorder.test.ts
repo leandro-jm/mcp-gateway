@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest';
 import type { CallContext } from '../src/proxy/executor';
 import { CircuitOpen } from '../src/proxy/guards';
 import { UpstreamTimeout } from '../src/proxy/rest-adapter';
-import { toAuditInput } from '../src/telemetry/call-events/derive';
+import { recordCallMetrics, toAuditInput } from '../src/telemetry/call-events/derive';
+import { Metrics } from '../src/telemetry/metrics';
 import { CallRecorder, classifyError } from '../src/telemetry/call-events/recorder';
 
 const ctx = {
@@ -71,5 +72,30 @@ describe('CallRecorder (F15.7)', () => {
     rec.finish();
     expect(rec.ev.policyTrace).toBeUndefined();
     expect(toAuditInput(rec, 'tools/call').details).toEqual({ ruleId: 'r9' });
+  });
+});
+
+describe('tool router telemetry (F19.5)', () => {
+  it('appends plugin decisions, times them as the plugins stage and keeps the gate', () => {
+    const rec = new CallRecorder(ctx, { kind: 'tool', toolName: 'x' });
+    rec.plugin({ plugin: 'decision-model', point: 'gate', decision: 'deny', reason: 'ok', ms: 12, provider: 'openai_decisions', confidence: 'high' });
+    rec.gate({ required: true, outcome: 'deny', reason: 'ok' });
+    const ev = rec.finish();
+    expect(ev.plugins).toEqual([{ plugin: 'decision-model', point: 'gate', decision: 'deny', reason: 'ok', ms: 12, provider: 'openai_decisions', confidence: 'high' }]);
+    expect(ev.stages!.plugins).toBe(12);
+    expect(ev.gate).toEqual({ required: true, outcome: 'deny', reason: 'ok' });
+  });
+
+  it('derives router metrics and shortlist savings from the event', async () => {
+    const metrics = new Metrics();
+    const list = new CallRecorder({ ...ctx, identity: { endpoint: 'mcp', sessionSource: 'header' } } as CallContext, { kind: 'list', toolName: 'tools/list' });
+    list.catalogTokens(300);
+    list.meta({ fullCatalogTokens: 1000 });
+    list.plugin({ plugin: 'decision-model', point: 'shortlist', decision: 'applied', reason: 'ok', ms: 40, provider: 'jev' });
+    recordCallMetrics(metrics, list.finish());
+    const text = await metrics.registry.metrics();
+    expect(text).toContain('mcp_tokens_saved_total{tenant="acme",mechanism="shortlist"} 700');
+    expect(text).toContain('mcp_router_decisions_total{tenant="acme",point="shortlist",provider="jev",decision="applied",reason="ok"} 1');
+    expect(text).toContain('mcp_router_duration_seconds_count{tenant="acme",point="shortlist",provider="jev"} 1');
   });
 });

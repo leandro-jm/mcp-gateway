@@ -19,6 +19,7 @@ export * from './users';
 export * from './api-tokens';
 export * from './auth';
 export * from './llm-settings';
+export * from './decision-settings';
 export * from './call-events';
 export * from './rollups';
 export * from './analytics';

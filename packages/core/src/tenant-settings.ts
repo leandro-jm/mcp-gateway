@@ -165,3 +165,69 @@ export function readObservabilitySettings(settings: unknown): ObservabilitySetti
   const parsed = observabilitySettingsSchema.safeParse((settings as { observability?: unknown } | null)?.observability ?? {});
   return parsed.success ? parsed.data : observabilitySettingsSchema.parse({});
 }
+
+// ---------------------------------------------------------------- tool router (F19, ADR-025)
+
+const routerTimeout = (ms: number) => z.number().int().min(100).max(5000).default(ms);
+const probability = (p: number) => z.number().min(0).max(1).default(p);
+
+const routerRerankSchema = z.object({
+  enabled: z.boolean().default(true),
+  /** Search results the decision model chooses from (`search_tools` returns at most `limit`). */
+  candidates: z.number().int().min(5).max(50).default(20),
+  minConfidence: probability(0.35),
+  timeoutMs: routerTimeout(1500),
+});
+
+const routerShortlistSchema = z.object({
+  enabled: z.boolean().default(false),
+  /** `namespace`: choose tool groups (tag or name prefix); `tool`: choose among search candidates. */
+  granularity: z.enum(['namespace', 'tool']).default('namespace'),
+  candidates: z.number().int().min(10).max(100).default(50),
+  minConfidence: probability(0.35),
+  mass: z.number().min(0.5).max(1).default(0.9),
+  maxNamespaces: z.number().int().min(1).max(10).default(3),
+  minTools: z.number().int().min(1).max(50).default(5),
+  maxTools: z.number().int().min(1).max(200).default(30),
+  timeoutMs: routerTimeout(2000),
+});
+
+const routerGateSchema = z.object({
+  enabled: z.boolean().default(false),
+  scope: z.enum(['destructive', 'non-readonly', 'all']).default('non-readonly'),
+  /** `redacted`: PII-redacted argument values; `none`: argument names only. */
+  argsMode: z.enum(['none', 'redacted']).default('redacted'),
+  confirmAt: probability(0.5),
+  denyAt: probability(0.9),
+  /** Provider error or timeout. `allow` because policy already authorized the call. */
+  onError: z.enum(['allow', 'deny']).default('allow'),
+  /** A "confirm" outcome when no human confirmation (ADR-022) is possible. */
+  onConfirmWithoutUi: z.enum(['deny', 'allow']).default('deny'),
+  timeoutMs: routerTimeout(1500),
+});
+
+/**
+ * Decision-model tool router. Off by default; while off (here, per point or by the platform
+ * switch), the data plane behaves exactly as without the router.
+ */
+export const toolRouterSettingsSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    /** Decisions per tenant per minute; above it the router falls back (cost guard). */
+    maxDecisionsPerMinute: z.number().int().min(1).max(100_000).default(600),
+    /** Cache of rerank/shortlist decisions; 0 disables it. */
+    cacheTtlSeconds: z.number().int().min(0).max(86_400).default(600),
+    rerank: routerRerankSchema.default(() => routerRerankSchema.parse({})),
+    shortlist: routerShortlistSchema.default(() => routerShortlistSchema.parse({})),
+    gate: routerGateSchema.default(() => routerGateSchema.parse({})),
+  })
+  .refine((s) => s.gate.confirmAt <= s.gate.denyAt, { path: ['gate', 'confirmAt'], message: 'confirmAt must be <= denyAt' })
+  .refine((s) => s.shortlist.minTools <= s.shortlist.maxTools, { path: ['shortlist', 'minTools'], message: 'minTools must be <= maxTools' });
+
+export type ToolRouterSettings = z.output<typeof toolRouterSettingsSchema>;
+
+/** Invalid settings read as the defaults, which keep the router off. */
+export function readToolRouterSettings(settings: unknown): ToolRouterSettings {
+  const parsed = toolRouterSettingsSchema.safeParse((settings as { toolRouter?: unknown } | null)?.toolRouter ?? {});
+  return parsed.success ? parsed.data : toolRouterSettingsSchema.parse({});
+}

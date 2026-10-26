@@ -130,6 +130,9 @@ describe('security: tenant isolation', () => {
       ['GET', '/agent-insights/findings'],
       ['GET', '/debug-captures'],
       ['GET', '/settings/observability'],
+      ['GET', '/settings/tool-router'],
+      ['PUT', '/settings/tool-router/provider', { provider: 'openai_decisions', apiKey: 'sk-cross-tenant-000000000' }],
+      ['POST', '/settings/tool-router/test', {}],
       ['POST', '/analytics/query', { metric: 'calls', range: { last: '1h' } }],
       ['POST', '/lgpd/subject-access', { detector: 'cpf', value: up.data.colaboradores[0]!.cpf }],
     ] as Array<[string, string, unknown?]>) {

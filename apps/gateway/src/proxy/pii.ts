@@ -8,6 +8,7 @@ import {
   detectFieldName,
   matchesSelector,
   redact,
+  redactText,
   scanIdentifiers,
   VALUE_DETECTORS,
   withSynonyms,
@@ -137,6 +138,14 @@ export class PiiService {
   /** Version of the arguments that is safe for logs and audit. */
   async redactForLog<T>(ctx: PiiContext, tool: Pick<SnapshotTool, 'id' | 'sourceId'>, value: T): Promise<T> {
     return redact(value, await this.options(ctx, tool, 'request')).value;
+  }
+
+  /**
+   * Free text that leaves the gateway (tool router query and intent, ADR-025): value detectors
+   * only, no tokens stored. Tenant- and source-wide rules still apply; tool rules do not.
+   */
+  async redactText(ctx: PiiContext, text: string): Promise<string> {
+    return redactText(text, await this.options(ctx, { id: '', sourceId: null }, 'request')).value;
   }
 
   private async store(ctx: PiiContext, records: TokenRecord[]): Promise<void> {

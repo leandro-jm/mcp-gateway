@@ -809,6 +809,42 @@ export const llmTestResultSchema = z
   .object({ ok: z.boolean(), latencyMs: z.number(), error: z.string().optional() })
   .meta({ id: 'LlmTestResult' });
 
+// ---------------------------------------------------------------- tool router (F19, ADR-025)
+
+export const decisionProviderEnum = z.enum(['openai_decisions', 'jev']);
+
+export const decisionProviderSchema = z
+  .object({
+    configured: z.boolean(),
+    provider: decisionProviderEnum.optional(),
+    model: z.string().optional(),
+    baseUrl: z.string().nullable().optional(),
+    hasApiKey: z.boolean().optional(),
+    apiKeyHint: z.string().nullable().optional().describe('Last characters of the key; the key itself is write-only'),
+    updatedBy: z.string().nullable().optional(),
+    updatedAt: isoDate.optional(),
+  })
+  .meta({ id: 'DecisionProvider' });
+
+export const toolRouterSettingsBody = jsonObject.meta({ id: 'ToolRouterSettings' });
+
+export const toolRouterViewSchema = z
+  .object({
+    platformEnabled: z.boolean().describe('TOOL_ROUTER_ENABLED: when false the router never runs, whatever the tenant settings'),
+    settings: toolRouterSettingsBody,
+    provider: decisionProviderSchema,
+  })
+  .meta({ id: 'ToolRouter' });
+
+export const decisionProviderPutSchema = z.object({
+  provider: decisionProviderEnum,
+  model: z.string().trim().min(1).max(200).optional().describe('Default: gpt-6-luna (OpenAI Decisions) or jev-latest (Jev)'),
+  baseUrl: z.url({ protocol: /^https?$/ }).nullable().optional().describe("Override of the provider's public URL (proxy or gateway)"),
+  apiKey: z.string().trim().min(1).max(1000).nullable().optional().describe('Omit to keep the current key, null to remove it'),
+});
+
+export const decisionProviderTestSchema = decisionProviderPutSchema.partial();
+
 export const readinessQuery = z.object({
   roles: z
     .string()

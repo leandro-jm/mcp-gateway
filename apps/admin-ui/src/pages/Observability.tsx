@@ -181,7 +181,7 @@ function ToolsTab({ range }: { range: ViewRange }) {
                 <tr key={`${d.tool}-${d.at}`}>
                   <td className="mono">{d.tool}</td>
                   <td>{d.kind}</td>
-                  <td className="muted">{fmtDate(d.at)}</td>
+                  <td className="muted nowrap">{fmtDate(d.at)}</td>
                   <td className="mono">{pct(d.errorRateBefore)}</td>
                   <td className="mono">{pct(d.errorRateAfter)}</td>
                 </tr>
@@ -348,7 +348,7 @@ function AccessTable({ rows }: { rows: SubjectAccessReport['matches'] }) {
       <tbody>
         {rows.map((m) => (
           <tr key={`${m.callId}-${m.direction}`}>
-            <td className="muted">{fmtDate(m.ts)}</td>
+            <td className="muted nowrap">{fmtDate(m.ts)}</td>
             <td className="mono">{m.tool}</td>
             <td className="mono">{m.subject}</td>
             <td className="mono">{m.agentName ?? '—'}</td>

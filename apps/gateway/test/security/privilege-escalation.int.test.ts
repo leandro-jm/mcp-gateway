@@ -195,6 +195,25 @@ describe('security: privilege escalation', () => {
       expect((await call(reader, 'GET', '/platform/usage')).statusCode).toBe(403);
     });
 
+    it('tool router settings and its provider key are gateway-admin only (F19.9)', async () => {
+      const routes: Array<[string, string, unknown?]> = [
+        ['GET', '/settings/tool-router'],
+        ['PUT', '/settings/tool-router', { enabled: false }],
+        ['PUT', '/settings/tool-router/provider', { provider: 'openai_decisions', apiKey: 'sk-escalation-0000000000' }],
+        ['DELETE', '/settings/tool-router/provider'],
+        ['POST', '/settings/tool-router/test', {}],
+      ];
+      const others = {
+        agent: await h.token({ sub: 'router-agent', tenant: 'acme' }),
+        owner,
+        reader: await h.token({ sub: 'router-reader', tenant: 'acme', roles: ['analytics-reader'] }),
+      };
+      for (const [who, token] of Object.entries(others)) {
+        for (const [method, url, body] of routes) expect((await call(token, method, url, body)).statusCode, `${who} ${method} ${url}`).toBe(403);
+      }
+      expect((await call(tenantAdmin, 'GET', '/settings/tool-router')).statusCode).toBe(200);
+    });
+
     it('platform usage is for the platform admin only; a tenant admin gets 403', async () => {
       expect((await call(tenantAdmin, 'GET', '/platform/usage')).statusCode).toBe(403);
       expect((await call(platformAdmin, 'GET', '/platform/usage', undefined, null)).statusCode).toBe(200);

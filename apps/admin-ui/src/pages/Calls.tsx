@@ -90,7 +90,7 @@ function CallList({ onOpen }: { onOpen(id: string): void }) {
         <tbody>
           {rows.map((c) => (
             <tr key={c.callId} className="clickable" onClick={() => onOpen(c.callId)}>
-              <td className="muted">{fmtDate(c.ts)}</td>
+              <td className="muted nowrap">{fmtDate(c.ts)}</td>
               <td className="mono">{c.tool.name}</td>
               <td>
                 <Badge kind={c.decision}>{enumLabel(t, DECISION_LABEL, c.decision)}</Badge>
@@ -351,7 +351,7 @@ function Captures() {
               <td className="mono">
                 {c.capturedCount}/{c.maxCalls}
               </td>
-              <td className="muted">{fmtDate(c.expiresAt)}</td>
+              <td className="muted nowrap">{fmtDate(c.expiresAt)}</td>
               <td className="mono muted">{c.createdBy}</td>
               <td>
                 {c.status === 'active' && (

@@ -14,6 +14,7 @@ const PURE_PACKAGES = [
   'packages/composition',
   'packages/composer',
   'packages/call-analytics',
+  'packages/tool-router',
 ];
 
 const IO_MODULES = [

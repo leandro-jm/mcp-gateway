@@ -13,6 +13,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Portainer guide in `docs/deploy.md`: web editor, Git repository and webhook modes, first admin from the container console.
 - First-run setup in the Admin UI (ADR-024): on an instance without users, a setup screen guarded by the new `SETUP_TOKEN` variable creates the platform admin and the first tenant and signs in. A platform admin without tenants now gets a "create the first tenant" form instead of a dead end.
 - Admin UI **Tenants** page for the platform admin: create, rename, suspend/reactivate, switch to and remove tenants.
+- Optional decision-model tool router (ADR-025), off by default (`TOOL_ROUTER_ENABLED`, then per tenant and per point): reranks Omni `search_tools`, shortlists `tools/list` by an agent intent (`mcp-gateway-intent` header or request `_meta`) and gates risky `tools/call` before the upstream. Providers: OpenAI Decisions API and TypeSafe Jev (experimental) through one adapter (`@mcp-gateway/tool-router`). It only narrows what the policy allows, falls back to the previous behavior on any failure, sends PII-redacted text only, and records its decisions in the call event (`plugins`, `gate`) and in `mcp_router_*` metrics. New Admin API `/settings/tool-router` (+ `/provider`, `/test`), Admin UI **Settings → Tool router** tab, migration `0024_tenant_decision_settings`.
 - Admin UI **Getting started** guide (ADR-023): what the gateway is, an eight-step checklist up to the first agent call with auto-detected progress, how-to and examples for each step, optional next steps and a glossary. The home page opens it while essential steps are pending. `GET /admin/v1/me` now returns `publicUrl`.
 
 ### Changed
@@ -24,6 +25,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - MinIO image: `cgr.dev/chainguard/minio` in the compose files and tests, since `minio/minio` was removed from Docker Hub.
 - CI also publishes the `main` channel (`main` and `sha-<commit>` tags) to Docker Hub on every push to main, and an optional `deploy` job redeploys a Dokploy compose service through its API once the images are pushed. The production compose pulls the app images on every deploy (`pull_policy: always`), so `TAG=main` or `latest` always gets the current image.
 - Admin UI top bar: the whole tenant crumb opens the switcher, and it only looks clickable when there is another tenant to switch to; the `Gateway` crumb is now a plain label.
+- New visual language for the Admin UI and the landing page (ADR-026, replacing the look of ADR-005): neutral zinc palette with a monochrome accent (color only for state), Geist and Geist Mono fonts, rounded cards with a soft shadow, sentence-case headings and status pills with a dot. The Admin UI shell now has a full-height sidebar with the brand and labeled groups (Operate, Configure, Manage), a top bar with `tenant / current page` breadcrumb and an account menu, and a horizontal nav under 960px. Light and dark themes keep the same selector, with dark as the default.
 
 ## [0.1.0] - 2026-10-04
 

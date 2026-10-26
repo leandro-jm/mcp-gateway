@@ -7,6 +7,8 @@ import {
   type ErrorStage,
   type EventToolKind,
   type EventMeta,
+  type GateDecision,
+  type PluginDecision,
   type Stage,
 } from '@mcp-gateway/call-analytics';
 import { Forbidden, isGatewayError, RateLimited, ToolDisabled, ToolNotFound, UpstreamError, ValidationError } from '@mcp-gateway/core';
@@ -238,6 +240,16 @@ export class CallRecorder {
 
   meta(meta: EventMeta): void {
     this.ev.meta = meta;
+  }
+
+  /** Tool router hook (ADR-025); its time goes into the `plugins` stage. */
+  plugin(d: PluginDecision): void {
+    (this.ev.plugins ??= []).push(d);
+    if (d.ms !== undefined) this.addStage('plugins', d.ms);
+  }
+
+  gate(g: GateDecision): void {
+    this.ev.gate = g;
   }
 
   catalogTokens(n: number): void {

@@ -201,8 +201,7 @@ export function ComposerPage() {
           {(composites.data?.items ?? []).map((c) => (
             <button
               key={c.id}
-              className="nav-item"
-              style={{ background: selected?.id === c.id ? 'var(--surface-2)' : 'none', cursor: 'pointer', fontSize: 14, textAlign: 'left' }}
+              className={`nav-item ${selected?.id === c.id ? 'active' : ''}`}
               onClick={() => {
                 setSelected(c);
                 setSource(c.source ?? '');

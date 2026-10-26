@@ -104,7 +104,7 @@ test('theme picker: light, dark and system, persisted', async ({ page }) => {
   await page.getByRole('button', { name: 'Theme' }).click();
   await page.getByRole('menuitemradio', { name: 'Light' }).click();
   await expect(html).toHaveAttribute('data-theme', 'light');
-  expect(await bg()).toBe('rgb(255, 255, 255)');
+  expect(await bg()).toBe('rgb(250, 250, 250)');
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/tools-light.png` });
 
   // persists after reload (applied before first paint)
@@ -125,16 +125,16 @@ test('theme picker: light, dark and system, persisted', async ({ page }) => {
   await page.getByRole('button', { name: 'Theme' }).click();
   await page.getByRole('menuitemradio', { name: 'Dark' }).click();
   await expect(html).toHaveAttribute('data-theme', 'dark');
-  expect(await bg()).toBe('rgb(10, 10, 10)');
+  expect(await bg()).toBe('rgb(11, 11, 12)');
 
   // System: no data-theme, follows the OS prefers-color-scheme
   await page.getByRole('button', { name: 'Theme' }).click();
   await page.getByRole('menuitemradio', { name: 'System' }).click();
   await expect(html).not.toHaveAttribute('data-theme', /.+/);
   await page.emulateMedia({ colorScheme: 'light' });
-  expect(await bg()).toBe('rgb(255, 255, 255)');
+  expect(await bg()).toBe('rgb(250, 250, 250)');
   await page.emulateMedia({ colorScheme: 'dark' });
-  expect(await bg()).toBe('rgb(10, 10, 10)');
+  expect(await bg()).toBe('rgb(11, 11, 12)');
 });
 
 test('admin creates an agent (service user) and issues a token that works on /mcp', async ({ page, request }) => {

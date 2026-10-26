@@ -113,7 +113,7 @@ export function SourcesPage() {
                       </td>
                       <td className="muted">{s.ownerTeam ?? '—'}</td>
                       <td className="mono muted">{s.crawlSchedule ?? t('sources.scheduleManual')}</td>
-                      <td className="muted">{fmtDate(s.lastCrawlAt)}</td>
+                      <td className="muted nowrap">{fmtDate(s.lastCrawlAt)}</td>
                       <td onClick={(e) => e.stopPropagation()}>
                         <button className="btn sm" onClick={() => crawl.mutate(s.id)} disabled={crawl.isPending}>
                           <Play size={14} /> {t('sources.crawl')}
@@ -215,7 +215,7 @@ function SourceDrawer({ source, onClose }: { source: Source; onClose(): void }) 
                       .join(' · ')
                   )}
                 </td>
-                <td className="muted">{fmtDate(r.startedAt ?? r.createdAt)}</td>
+                <td className="muted nowrap">{fmtDate(r.startedAt ?? r.createdAt)}</td>
               </tr>
             ))}
           </tbody>
@@ -268,7 +268,7 @@ function CredentialsTab({ items }: { items: Credential[] }) {
                 <td>
                   <JsonView value={c.config} maxHeight={90} />
                 </td>
-                <td className="muted">{fmtDate(c.rotatedAt)}</td>
+                <td className="muted nowrap">{fmtDate(c.rotatedAt)}</td>
               </tr>
             ))}
           </tbody>

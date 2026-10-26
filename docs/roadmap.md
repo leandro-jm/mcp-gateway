@@ -102,6 +102,7 @@ mcp-gateway/
     policy/           # motor de autorização (puro)
     redaction/        # detectores e estratégias de PII (puro)
     projection/       # projeção de respostas (puro)
+    tool-router/      # roteador de tools com modelos de decisão (puro, F19)
     artifacts/        # store de artefatos (S3)
     testkit/          # upstream fake, fixtures OpenAPI, Testcontainers
   docs/
@@ -762,6 +763,47 @@ Objetivo: as tools do gateway abrem UI dentro do chat (tabela, gráfico, card, f
 - Rotas `/tools/:id/view` (+ `suggest`) e `/settings/theme`; aba View no drawer da tool (editor + prévia real); Playground com "simular cliente MCP Apps"; aba Aparência com prévia clara e escura; crawler sugere views para tools novas.
 - CA: specs e temas inválidos voltam 400 com os problemas; E2E do exemplo `chat-external` do kit (tabela, formulário, plano confirmado) contra a stack de dev.
 
+### F19 — Roteador de tools com modelos de decisão (ADR-025)
+
+Objetivo: um plugin opcional que usa modelos de decisão (OpenAI Decisions e TypeSafe Jev, por adaptador) para reordenar o `search_tools`, encurtar o `tools/list` conforme a intenção e passar chamadas de escrita por um gate de risco. Roda depois da política e só restringe. Desligado (padrão), o comportamento é idêntico ao anterior.
+
+**F19.1 Estudo, ADR e plano**
+- `docs/tool-router/estudo-modelos-de-decisao.md`, ADR-025 e marco M10.
+
+**F19.2 Pacote puro `tool-router`**
+- Modelo neutro de perguntas e respostas, wire OpenAI e Jev, construtores de perguntas, interpretação e contrato de plugin.
+- CA: round-trip dos dois formatos; a saída do plugin é sempre subconjunto da entrada; testes sem I/O.
+
+**F19.3 Configuração e segredos**
+- `settings.toolRouter` no `core`, env `TOOL_ROUTER_ENABLED`, migration 0024 (`tenant_decision_settings`, com down), repositório e catálogo i18n `router`.
+- CA: chave criptografada e amarrada ao tenant; leitor tolerante a configuração inválida.
+
+**F19.4 Adaptadores e serviço**
+- Adaptadores HTTP, `ToolRouter` (orçamento, circuit breaker, timeout, cache, fallback), redação de texto livre e fakes de teste.
+- CA: com qualquer chave desligada, `tools/list`, `search_tools` e `tools/call` são idênticos ao baseline e o provedor não é chamado.
+
+**F19.5 Telemetria**
+- `PluginDecision` estendido, `CallRecorder.plugin/gate`, `recordList` com opções e as métricas `mcp_router_*`.
+- CA: eventos sem texto de consulta, intenção ou argumentos.
+
+**F19.6 Rerank no Omni**
+- CA: a escolha do modelo sobe para o topo; uma falha devolve o resultado do FTS; uma tool negada pela política nunca aparece.
+
+**F19.7 Shortlist no `tools/list`**
+- Intenção por `_meta` ou pelo header `mcp-gateway-intent`, nas duas eras.
+- CA: sem intenção ou com falha, a lista é a completa; uma tool fora do shortlist continua chamável se a política permitir.
+
+**F19.8 Gate de risco no `tools/call`**
+- CA: deny não chama o upstream e gera auditoria `router_gate`; um confirm sem UI é negado com mensagem localizada; confirmação humana (ADR-022) pula o provedor; PII redigida no que vai ao provedor.
+
+**F19.9 Admin API e UI**
+- `/settings/tool-router` (+ `/provider` e `/test`) e a aba Roteador.
+- CA: a chave nunca é devolvida; suíte de segurança cobre as rotas.
+
+**F19.10 Avaliação e fechamento**
+- Avaliação offline com o `SEARCH_EVAL` (oráculo, gravado, sempre-falha), guia de operação, CHANGELOG e ADR-025 aceito.
+- CA: o oráculo atinge top-1 igual ao recall@20; o gravado não piora o top-3 do FTS.
+
 ---
 
 ## 5. Ordem e marcos
@@ -777,6 +819,7 @@ Objetivo: as tools do gateway abrem UI dentro do chat (tabela, gráfico, card, f
 | M7 — Agentes observáveis | F15 | Evento largo por chamada, visões por público, explorador, trajetórias, sugestão de compostas e MCP de observabilidade |
 | M8 — Spec MCP 2026-07-28 | F17 | Gateway atende clientes stateless da nova spec e clientes 2025 com o SDK v2 |
 | M9 — UI generativa | F18 | Resultados das tools viram tabela, gráfico, formulário e plano com confirmação em qualquer host MCP Apps |
+| M10 — Roteamento assistido | F19 | Modelos de decisão reordenam a busca, encurtam a lista de tools e passam escritas por um gate de risco, como plugin opcional |
 
 M2 é o mínimo para qualquer uso com dados reais de clientes.
 
@@ -799,6 +842,8 @@ M2 é o mínimo para qualquer uso com dados reais de clientes.
 - Compostas recursivas (composta chamando composta) e compensação/saga para composições com escrita.
 
 ## 8. Extension points já previstos
+
+- `ToolRouterPlugin` (F19, ADR-025): hooks `rerank`, `shortlist` e `gate`, com `decision-model` (OpenAI Decisions e Jev) como implementação padrão. Outros roteadores (embeddings próprios, regras) entram pelo mesmo registro.
 
 - `UpstreamAdapter` (interface) no tradutor: REST hoje; `GrpcAdapter` (via reflection) e `McpUpstreamAdapter` (federação com heartbeat) depois.
 - `SourceDiscoverer` no crawler: OpenAPI hoje; Protobuf e MCP heartbeat depois.

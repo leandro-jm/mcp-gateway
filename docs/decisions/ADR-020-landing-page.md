@@ -12,7 +12,7 @@ Com a publicação como open source (ADR-019), o projeto precisa de uma página 
 - O app entra no `pnpm check` (lint e typecheck) como os outros apps. Não tem backend nem chamadas de rede em tempo de execução.
 
 **Tema**
-- Reaproveita os tokens do ADR-005 (`tokens.css` copiado do Admin UI): escuro por padrão, acento laranja, IBM Plex Sans/Mono via `@fontsource`, bordas de 1px, cantos retos e sem sombras.
+- Reaproveita os tokens do Admin UI (`tokens.css` copiado), hoje definidos pelo ADR-026: escuro por padrão, acento monocromático, Geist e Geist Mono via `@fontsource`, raios de 8 e 10px e sombra sutil.
 - Seletor Sistema / Claro / Escuro, com a preferência em `localStorage` (`mcp-gw-site:theme`) aplicada antes da primeira pintura.
 
 **i18n**

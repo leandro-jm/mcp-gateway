@@ -32,6 +32,24 @@ export function withMetaTrace(ctx: CallContext, meta: unknown): CallContext {
 
 const str = (v: unknown, max: number): string | undefined => (typeof v === 'string' && v ? v.slice(0, max) : undefined);
 
+/** Agent intent for the tool router shortlist (ADR-025): request `_meta` first, then this header. */
+export const INTENT_META_KEY = 'io.github.leandro-jm.mcp-gateway/intent';
+export const INTENT_HEADER = 'mcp-gateway-intent';
+const MAX_INTENT_CHARS = 512;
+
+/** Untrusted free text, truncated; a percent-encoded header value (non-ASCII intent) is decoded. */
+export function intentOf(value: unknown, encoded = false): string | undefined {
+  let text = typeof value === 'string' ? value : undefined;
+  if (text && encoded && text.includes('%')) {
+    try {
+      text = decodeURIComponent(text);
+    } catch {
+      // not percent-encoded after all: keep it as sent
+    }
+  }
+  return str(text?.trim(), MAX_INTENT_CHARS);
+}
+
 /**
  * Client declared in a 2026-07-28 request envelope. Self-declared and untrusted: values are
  * truncated and only used for analytics and capability negotiation, never for authorization.
@@ -80,7 +98,8 @@ export function requestInfo(h: ServerContext, withSignal = true): RequestInfo {
  */
 export function forRequest(ctx: CallContext, req: RequestInfo): CallContext {
   const ui = uiRequestOf(req.meta);
-  const withTrace = withMetaTrace({ ...ctx, ...(req.signal ? { signal: req.signal } : {}), ...(ui ? { ui } : {}) }, req.meta);
+  const intent = intentOf((req.meta as Record<string, unknown> | undefined)?.[INTENT_META_KEY]);
+  const withTrace = withMetaTrace({ ...ctx, ...(req.signal ? { signal: req.signal } : {}), ...(ui ? { ui } : {}), ...(intent ? { intent } : {}) }, req.meta);
   const client = clientFromEnvelope(req.envelope);
   const withClient = client ? withModernClient(withTrace, client) : withTrace;
   const { requestId } = req;

@@ -47,9 +47,16 @@ export function recordCallMetrics(metrics: Metrics, ev: CallEvent): void {
   }
   if (ev.tokensSavedProjection) metrics.tokensSaved.inc({ tenant, mechanism: 'projection' }, ev.tokensSavedProjection);
   if (ev.tokensSavedArtifact) metrics.tokensSaved.inc({ tenant, mechanism: 'artifact' }, ev.tokensSavedArtifact);
-  if (ev.kind === 'list' && ev.viaOmni && ev.meta?.fullCatalogTokens != null && ev.catalogTokens != null) {
+  if (ev.kind === 'list' && ev.meta?.fullCatalogTokens != null && ev.catalogTokens != null) {
+    // the router shortlist reduces the native list; Omni replaces it with meta-tools
     const saved = ev.meta.fullCatalogTokens - ev.catalogTokens;
-    if (saved > 0) metrics.tokensSaved.inc({ tenant, mechanism: 'omni' }, saved);
+    if (saved > 0) metrics.tokensSaved.inc({ tenant, mechanism: ev.viaOmni ? 'omni' : 'shortlist' }, saved);
+  }
+  for (const d of ev.plugins ?? []) {
+    const point = d.point ?? 'unknown';
+    const provider = d.provider ?? 'none';
+    metrics.routerDecisions.inc({ tenant, point, provider, decision: d.decision, reason: d.reason ?? 'ok' });
+    if (d.ms !== undefined) metrics.routerDuration.observe({ tenant, point, provider }, d.ms / 1000);
   }
   for (const [detector, n] of Object.entries(ev.redactionsByDetector ?? {})) metrics.redactions.inc({ tenant, detector }, n);
   if (ev.bytesBeforeProjection != null && ev.bytesAfterProjection != null) {

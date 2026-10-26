@@ -95,7 +95,7 @@ export function UsersPage() {
                 <td>
                   <Badge kind={u.status === 'active' ? 'enabled' : 'disabled'}>{t(STATUS_LABELS[u.status])}</Badge>
                 </td>
-                <td className="muted">{fmtDate(u.createdAt)}</td>
+                <td className="muted nowrap">{fmtDate(u.createdAt)}</td>
                 <td onClick={(e) => e.stopPropagation()}>
                   {u.username !== me.sub && (
                     <button className="btn sm ghost" aria-label={t('common.removeNamed', { name: u.username })} onClick={() => confirm(t('common.confirmRemove', { name: u.username })) && remove.mutate(u.id)}>

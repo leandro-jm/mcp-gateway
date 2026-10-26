@@ -17,6 +17,8 @@ export class Metrics {
   readonly callErrors: Counter<'tenant' | 'stage'>;
   readonly tokensSaved: Counter<'tenant' | 'mechanism'>;
   readonly circuitOpen: Gauge<'tenant' | 'source'>;
+  readonly routerDecisions: Counter<'tenant' | 'point' | 'provider' | 'decision' | 'reason'>;
+  readonly routerDuration: Histogram<'tenant' | 'point' | 'provider'>;
   readonly callEventsWritten: Counter;
   readonly callEventsDropped: Counter<'reason'>;
   readonly callEventsBuffer: Gauge;
@@ -82,7 +84,7 @@ export class Metrics {
     });
     this.tokensSaved = new Counter({
       name: 'mcp_tokens_saved_total',
-      help: 'Estimated model-context tokens saved, by mechanism (projection, artifact, omni)',
+      help: 'Estimated model-context tokens saved, by mechanism (projection, artifact, omni, shortlist)',
       labelNames: ['tenant', 'mechanism'],
       registers: r,
     });
@@ -90,6 +92,20 @@ export class Metrics {
       name: 'mcp_circuit_open',
       help: 'Circuit breaker state per source in this process (1 = open)',
       labelNames: ['tenant', 'source'],
+      registers: r,
+    });
+    // tool router (F19, ADR-025)
+    this.routerDecisions = new Counter({
+      name: 'mcp_router_decisions_total',
+      help: 'Tool router decisions by hook point, provider, decision and reason',
+      labelNames: ['tenant', 'point', 'provider', 'decision', 'reason'],
+      registers: r,
+    });
+    this.routerDuration = new Histogram({
+      name: 'mcp_router_duration_seconds',
+      help: 'Time spent in the tool router per hook point (provider call, cache, fallback)',
+      labelNames: ['tenant', 'point', 'provider'],
+      buckets: LATENCY_BUCKETS,
       registers: r,
     });
     // call event sink (F15.6)

@@ -38,4 +38,5 @@ As tools nunca devolvem payload: só contagens, latências, regras de política,
 ## Dicas
 - Com centenas de tools, use `/mcp/omni` (cerca de 4% dos tokens de definição, medido na F7.2).
 - Para um time específico, crie um MCP na Admin UI (catálogo + instruções) e conecte em `/mcp/s/<slug>`.
+- Com o roteador de tools ligado no tenant (ADR-025), o header `mcp-gateway-intent` no `.mcp.json` faz o `tools/list` devolver só as tools relevantes para a tarefa (texto com acento vai percent-encoded, por exemplo `"mcp-gateway-intent": "f%C3%A9rias%20e%20ponto"`). Veja [docs/tool-router/guia.md](../tool-router/guia.md).
 - Tools destrutivas exigem allow explícito na política. O Claude só as vê se o usuário dono do token tiver permissão.

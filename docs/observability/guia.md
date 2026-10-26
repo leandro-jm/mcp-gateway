@@ -100,5 +100,13 @@ Conecte o Claude e pergunte "por que a tool X falhou mais esta semana?". A confi
 - Índice LGPD: ligado ou desligado, os identificadores indexados e o limite por chamada.
 - Onde a meta-tool `report_outcome` aparece.
 
+## Roteador de tools (F19)
+Com o roteador ligado (ADR-025), cada decisão entra no evento da chamada:
+- `plugins[]` (ponto, decisão, motivo, provedor, faixa de confiança);
+- `gate`, no `tools/call`;
+- `plugins_ms`, o tempo gasto.
+
+As métricas são `mcp_router_decisions_total`, `mcp_router_duration_seconds` e `mcp_tokens_saved_total{mechanism="shortlist"}`. Consulta, intenção e argumentos nunca entram no evento. Detalhes e PromQL em [docs/tool-router/guia.md](../tool-router/guia.md).
+
 ## Quando trocar o Postgres por ClickHouse
 Os eventos vão para o Postgres, particionados por dia, e os dashboards leem agregados por hora. Para volumes muito maiores, a troca fica atrás das interfaces `CallEventSink` (escrita) e `AnalyticsStore` (leitura) e não muda a API nem a UI (ADR-016): uma tabela MergeTree com o mesmo formato, com os rollups como materialized views.
