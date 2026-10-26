@@ -19,7 +19,7 @@
   "dependencies": {
     "@mcp-gateway/core": "workspace:*",
     "@mcp-gateway/i18n": "workspace:*",
-    "undici": "^8.11.2",
+    "undici": "^8.12.3",
     "yaml": "^2.9.1"
   }
 }
