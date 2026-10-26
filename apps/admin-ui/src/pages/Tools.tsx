@@ -112,7 +112,7 @@ export function ToolsPage() {
                   <tr key={tool.id} className="clickable" onClick={() => setParams({ open: tool.id })}>
                     <td>
                       <div className="mono">{tool.name}</div>
-                      <div className="muted" style={{ fontSize: 13, maxWidth: 520, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div className="muted" style={{ maxWidth: 380, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {tool.description}
                       </div>
                     </td>
@@ -123,9 +123,9 @@ export function ToolsPage() {
                       <KindBadge kind={tool.kind} />
                     </td>
                     <td className="mono muted">{tool.sourceId ? (sourceName.get(tool.sourceId) ?? '—') : '—'}</td>
-                    <td className="muted">{tool.ownerTeam ?? '—'}</td>
+                    <td className="muted nowrap">{tool.ownerTeam ?? '—'}</td>
                     <td className="mono">v{tool.version}</td>
-                    <td className="muted">{fmtDate(tool.updatedAt)}</td>
+                    <td className="muted nowrap">{fmtDate(tool.updatedAt)}</td>
                   </tr>
                 ))}
               </tbody>

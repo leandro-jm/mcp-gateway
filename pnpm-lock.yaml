@@ -59,10 +59,10 @@ importers:
       '@codemirror/view':
         specifier: ^6.43.13
         version: 6.43.13
-      '@fontsource/ibm-plex-mono':
+      '@fontsource/geist-mono':
         specifier: ^5.3.0
         version: 5.3.0
-      '@fontsource/ibm-plex-sans':
+      '@fontsource/geist-sans':
         specifier: ^5.3.0
         version: 5.3.0
       '@lezer/highlight':
@@ -302,10 +302,10 @@ importers:
 
   apps/site:
     dependencies:
-      '@fontsource/ibm-plex-mono':
+      '@fontsource/geist-mono':
         specifier: ^5.3.0
         version: 5.3.0
-      '@fontsource/ibm-plex-sans':
+      '@fontsource/geist-sans':
         specifier: ^5.3.0
         version: 5.3.0
       '@mcp-gateway/i18n':
@@ -1364,11 +1364,11 @@ packages:
   '@fastify/swagger@9.9.1':
     resolution: {integrity: sha512-RlpdOjU6NC29799y5v0beSlmEu8spEbx7cYNzVaCCihEM0xh9hIdxSQDzom2U9W9ar0KuMA6JnXuFCrcuz9B5A==}
 
-  '@fontsource/ibm-plex-mono@5.3.0':
-    resolution: {integrity: sha512-eTgnZjZEGk1QtD3ZstF+Vclo2HLAni8YMy34/DxllwZvyz1lR/1RF/xTiAquOBO7MvqBx8D2Ig2WCPMVfdZu7Q==}
+  '@fontsource/geist-mono@5.3.0':
+    resolution: {integrity: sha512-UtJ1BBBCVpMYdIcW7nEB45UAoAw5M53ZXs2t0ciPW+IokuAAIc56M8+kW5tXbRJCTpDw4XTtU7proT6NdQAHTg==}
 
-  '@fontsource/ibm-plex-sans@5.3.0':
-    resolution: {integrity: sha512-CbE4CbbEEZJX860XyUiRpsksXIQR8Rp2XDva2VO53NJox9tVNtusrysd2x5YkUEY3ErQ66W1IiiQL8/wihhw5w==}
+  '@fontsource/geist-sans@5.3.0':
+    resolution: {integrity: sha512-AmG7cE1AvE4NHROPaOl1sN+a02cB5xy6pA/ZV76HXqWTCsJTV2SCBc9DTFHfJqnVOODm7HhXIYtUIb75NP5QXQ==}
 
   '@grpc/grpc-js@1.14.5':
     resolution: {integrity: sha512-7VZM+SVdEcUUqSQeNI3zM8Qs/BhQKZndPo2h5VkYkAM8Iz0wJIa8mKV5ekQGqG8UUsnkQ0NMxIxwkIHYvj0qOw==}
@@ -4672,9 +4672,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@fontsource/ibm-plex-mono@5.3.0': {}
+  '@fontsource/geist-mono@5.3.0': {}
 
-  '@fontsource/ibm-plex-sans@5.3.0': {}
+  '@fontsource/geist-sans@5.3.0': {}
 
   '@grpc/grpc-js@1.14.5':
     dependencies:

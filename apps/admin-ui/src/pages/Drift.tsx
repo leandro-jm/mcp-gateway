@@ -70,7 +70,7 @@ export function DriftPage() {
           <tbody>
             {items.map((e) => (
               <tr key={e.id} className="clickable" onClick={() => setOpen(e.toolId)}>
-                <td className="muted">{fmtDate(e.createdAt)}</td>
+                <td className="muted nowrap">{fmtDate(e.createdAt)}</td>
                 <td>
                   <Badge kind={e.kind}>{enumLabel(t, DRIFT_KIND_LABEL, e.kind)}</Badge>
                 </td>

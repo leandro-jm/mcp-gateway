@@ -1,6 +1,6 @@
 # ADR-005: Tema e stack da Admin UI
 
-- Status: aceito
+- Status: substituído pelo ADR-026 (tokens, linguagem visual e layout); a stack continua valendo
 - Data: 2026-10-03
 
 ## Contexto

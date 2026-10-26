@@ -7,9 +7,9 @@ import CodeMirror from '@uiw/react-codemirror';
 import { useTheme } from '../theme/theme';
 
 const themeSpec = {
-    '&': { backgroundColor: 'var(--surface)', color: 'var(--text)', fontSize: '13px' },
+    '&': { backgroundColor: 'var(--surface)', color: 'var(--text)', fontSize: '12.5px' },
     '.cm-content': { fontFamily: 'var(--font-mono)', caretColor: 'var(--accent)' },
-    '.cm-gutters': { backgroundColor: 'var(--bg)', color: 'var(--text-3)', border: 'none', borderRight: '1px solid var(--border)' },
+    '.cm-gutters': { backgroundColor: 'var(--code-bg)', color: 'var(--text-3)', border: 'none', borderRight: '1px solid var(--border)' },
     '.cm-activeLine': { backgroundColor: 'var(--active-line)' },
     '.cm-activeLineGutter': { backgroundColor: 'transparent', color: 'var(--text-2)' },
     '&.cm-focused .cm-selectionBackground, .cm-selectionBackground': { backgroundColor: 'var(--selection) !important' },
@@ -19,10 +19,10 @@ const themeSpec = {
 const darkTheme = EditorView.theme(themeSpec, { dark: true });
 const lightTheme = EditorView.theme(themeSpec, { dark: false });
 
-/** Console-themed highlighting: strings in orange (accent), light keys, numbers/literals in gray. */
+/** Console-themed highlighting (ADR-026): strings in the info tone, keys in the text color, numbers/literals in gray. */
 const highlight = syntaxHighlighting(
   HighlightStyle.define([
-    { tag: [t.string, t.special(t.string)], color: 'var(--accent)' },
+    { tag: [t.string, t.special(t.string)], color: 'var(--info)' },
     { tag: [t.propertyName, t.definition(t.propertyName)], color: 'var(--code-key)' },
     { tag: [t.number, t.bool, t.null, t.atom], color: 'var(--code-literal)' },
     { tag: [t.keyword, t.operator], color: 'var(--text-2)' },

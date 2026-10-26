@@ -104,7 +104,8 @@ export function RefreshControls({ onRefresh, interval, setInterval: set }: { onR
 }
 
 export function Badge({ kind, children }: { kind?: string; children: ReactNode }) {
-  return <span className={`badge ${kind ?? ''}`}>{children}</span>;
+  // without a kind it is a neutral tag (outlined, no status dot)
+  return <span className={`badge ${kind ?? 'tag'}`}>{children}</span>;
 }
 
 export function Drawer({ title, subtitle, actions, onClose, children }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; onClose(): void; children: ReactNode }) {
@@ -148,7 +149,7 @@ export function useCopy(): [boolean, (text: string) => void] {
   ];
 }
 
-/** Code block with the "command" in white and the arguments in orange, as in the reference design. */
+/** Code block with the "command" in the text color and the arguments highlighted in the info tone. */
 export function CodeBlock({ code, highlightFirstWord = false }: { code: string; highlightFirstWord?: boolean }) {
   const t = useT();
   const [copied, copy] = useCopy();

@@ -84,7 +84,7 @@ function Findings({ range }: { range: ViewRange }) {
         <tbody>
           {(q.data?.items ?? []).map((f) => (
             <tr key={f.id}>
-              <td className="muted">{fmtDate(f.at)}</td>
+              <td className="muted nowrap">{fmtDate(f.at)}</td>
               <td>
                 <Badge kind="warn">{label(f.type)}</Badge>
               </td>
@@ -195,7 +195,7 @@ function Outcomes({ range }: { range: ViewRange }) {
         <tbody>
           {v.recent.map((o, i) => (
             <tr key={i}>
-              <td className="muted">{fmtDate(o.ts)}</td>
+              <td className="muted nowrap">{fmtDate(o.ts)}</td>
               <td>
                 <Badge kind={o.outcome === 'success' ? 'ok' : o.outcome === 'failure' ? 'error' : 'warn'}>{o.outcome}</Badge>
               </td>

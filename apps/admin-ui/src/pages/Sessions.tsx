@@ -56,8 +56,8 @@ export function SessionsPage() {
           <tbody>
             {(sessions.data?.items ?? []).map((s) => (
               <tr key={s.sessionKey} className={`clickable ${open === s.sessionKey ? 'selected' : ''}`} onClick={() => setParams({ session: s.sessionKey })}>
-                <td className="muted">{fmtDate(s.start)}</td>
-                <td className="muted">{fmtDate(s.end)}</td>
+                <td className="muted nowrap">{fmtDate(s.start)}</td>
+                <td className="muted nowrap">{fmtDate(s.end)}</td>
                 <td className="mono">{s.agentName ?? '—'}</td>
                 <td className="mono muted">{s.subject}</td>
                 <td className="mono muted">{s.endpoint}</td>
