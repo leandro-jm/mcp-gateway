@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { ArrowDown, Download, KeyRound, List, Play } from 'lucide-react';
+import { ArrowDown, Download, KeyRound, List, Pencil, Play } from 'lucide-react';
 import { useState } from 'react';
 import { api } from '../api/client';
 import { useSession } from '../api/session';
@@ -7,7 +7,7 @@ import type { CrawlRun, Credential, Page, Source } from '../api/types';
 import { Editor } from '../components/Editor';
 import { FORMAT_LABEL, ImportWizard } from '../components/ImportWizard';
 import { useToast } from '../components/toast';
-import { Badge, CodeBlock, Drawer, EmptyState, ErrorBox, fmtDate, JsonView, LivePill, PageHeader, RefreshControls, SearchBox, Tabs } from '../components/ui';
+import { Badge, CodeBlock, Drawer, EmptyState, ErrorBox, Field, fmtDate, JsonView, LivePill, PageHeader, RefreshControls, SearchBox, Tabs } from '../components/ui';
 import { useT, type UiMessageKey } from '../i18n';
 import { useAutoRefresh, useInvalidate, useTenantQuery } from '../lib/hooks';
 import { CRAWL_STATUS_LABEL, CRAWL_TRIGGER_LABEL, enumLabel, SOURCE_STATUS_LABEL } from '../lib/labels';
@@ -128,7 +128,7 @@ export function SourcesPage() {
         )}
         {tab === 'credentials' && <CredentialsTab items={credentials.data?.items ?? []} />}
       </div>
-      {open && <SourceDrawer source={open} onClose={() => setOpen(null)} />}
+      {open && <SourceDrawer source={open} credentials={credentials.data?.items ?? []} canEdit={me.isAdmin} onSaved={setOpen} onClose={() => setOpen(null)} />}
       {creating && (
         <ImportWizard
           credentials={credentials.data?.items ?? []}
@@ -153,25 +153,88 @@ async function downloadSpec(source: Source) {
   URL.revokeObjectURL(href);
 }
 
-function SourceDrawer({ source, onClose }: { source: Source; onClose(): void }) {
+type SourceForm = { baseUrl: string; credentialId: string; ownerTeam: string; crawlSchedule: string };
+
+const formOf = (s: Source): SourceForm => ({ baseUrl: s.baseUrl, credentialId: s.credentialId ?? '', ownerTeam: s.ownerTeam ?? '', crawlSchedule: s.crawlSchedule ?? '' });
+
+function SourceDrawer({ source, credentials, canEdit, onSaved, onClose }: { source: Source; credentials: Credential[]; canEdit: boolean; onSaved(s: Source): void; onClose(): void }) {
   const t = useT();
   const toast = useToast();
+  const invalidate = useInvalidate();
   const runs = useTenantQuery<{ items: CrawlRun[] }>(['sources', source.id, 'runs'], `/sources/${source.id}/crawl-runs`, { refetchMs: 4000 });
+  const [form, setForm] = useState<SourceForm | null>(null);
+  const set = (k: keyof SourceForm) => (e: { target: { value: string } }) => setForm((f) => f && { ...f, [k]: e.target.value });
+  const save = useMutation({
+    mutationFn: (f: SourceForm) =>
+      api<Source>(`/sources/${source.id}`, {
+        method: 'PATCH',
+        body: { baseUrl: f.baseUrl.trim(), credentialId: f.credentialId || null, ownerTeam: f.ownerTeam.trim() || null, crawlSchedule: f.crawlSchedule.trim() || null },
+      }),
+    onSuccess: (s) => {
+      toast('ok', t('sources.saved'));
+      setForm(null);
+      onSaved(s);
+      void invalidate('sources');
+    },
+  });
+  const credential = credentials.find((c) => c.id === source.credentialId);
   const meta = source.importMeta;
   return (
     <Drawer
       title={source.name}
       subtitle={<span className="mono muted">{source.baseUrl}</span>}
       actions={
-        source.hasInlineSpec ? (
-          <button className="btn sm" onClick={() => downloadSpec(source).catch((e: Error) => toast('error', e.message))}>
-            <Download size={14} /> {t('import.downloadSpec')}
-          </button>
-        ) : undefined
+        <>
+          {canEdit && !form && (
+            <button className="btn sm" onClick={() => setForm(formOf(source))}>
+              <Pencil size={14} /> {t('common.edit')}
+            </button>
+          )}
+          {source.hasInlineSpec && (
+            <button className="btn sm" onClick={() => downloadSpec(source).catch((e: Error) => toast('error', e.message))}>
+              <Download size={14} /> {t('import.downloadSpec')}
+            </button>
+          )}
+        </>
       }
       onClose={onClose}
     >
       <div className="drawer-body stack">
+        {form && (
+          <div className="stack">
+            <Field label={t('sources.baseUrl')}>
+              <input className="input mono" value={form.baseUrl} onChange={set('baseUrl')} aria-label={t('sources.baseUrl')} />
+            </Field>
+            <div className="grid-2">
+              <Field label={t('sources.credential')}>
+                <select className="select" value={form.credentialId} onChange={set('credentialId')} aria-label={t('sources.credential')}>
+                  <option value="">{t('common.none')}</option>
+                  {credentials.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.type})
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label={t('common.ownerTeam')}>
+                <input className="input" value={form.ownerTeam} onChange={set('ownerTeam')} aria-label={t('common.ownerTeam')} />
+              </Field>
+            </div>
+            <Field label={t('sources.scheduleCron')} hint={t('common.example', { example: '"0 */6 * * *"' })}>
+              <input className="input mono" value={form.crawlSchedule} onChange={set('crawlSchedule')} aria-label={t('sources.scheduleCron')} />
+            </Field>
+            <p className="hint">{t('sources.editHint')}</p>
+            <ErrorBox error={save.error} />
+            <div className="row">
+              <button className="btn" onClick={() => setForm(null)} disabled={save.isPending}>
+                {t('common.cancel')}
+              </button>
+              <button className="btn primary" onClick={() => save.mutate(form)} disabled={save.isPending || !form.baseUrl.trim()}>
+                {t('common.save')}
+              </button>
+            </div>
+          </div>
+        )}
         <dl className="kv">
           <dt>OpenAPI</dt>
           <dd className="mono">
@@ -185,7 +248,9 @@ function SourceDrawer({ source, onClose }: { source: Source; onClose(): void }) 
             </>
           )}
           <dt>{t('sources.credential')}</dt>
-          <dd className="mono">{source.credentialId ?? '—'}</dd>
+          <dd className="mono">{credential ? `${credential.name} (${credential.type})` : (source.credentialId ?? '—')}</dd>
+          <dt>{t('common.ownerTeam')}</dt>
+          <dd>{source.ownerTeam ?? '—'}</dd>
           <dt>{t('sources.schedule')}</dt>
           <dd className="mono">{source.crawlSchedule ?? t('sources.scheduleManual')}</dd>
         </dl>

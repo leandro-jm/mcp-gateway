@@ -44,6 +44,8 @@ export const sources = defineMessages('sources', {
     'sources.rotated': 'Rotated',
     'sources.newCredential': 'New credential',
     'sources.saveCredential': 'Save credential',
+    'sources.saved': 'Source updated',
+    'sources.editHint': 'Takes effect on the next call; tools, policies and views are kept.',
   },
   'pt-BR': {
     'sources.title': 'Sources',
@@ -87,6 +89,8 @@ export const sources = defineMessages('sources', {
     'sources.rotated': 'Rotação',
     'sources.newCredential': 'Nova credencial',
     'sources.saveCredential': 'Salvar credencial',
+    'sources.saved': 'Source atualizada',
+    'sources.editHint': 'Vale a partir da próxima chamada; tools, policies e views são mantidas.',
   },
   es: {
     'sources.title': 'Sources',
@@ -130,5 +134,7 @@ export const sources = defineMessages('sources', {
     'sources.rotated': 'Rotación',
     'sources.newCredential': 'Nueva credencial',
     'sources.saveCredential': 'Guardar credencial',
+    'sources.saved': 'Source actualizada',
+    'sources.editHint': 'Rige desde la próxima llamada; se conservan tools, policies y views.',
   },
 });
