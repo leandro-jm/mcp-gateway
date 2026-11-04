@@ -81,3 +81,6 @@ docker run --rm -v $PWD/perf/k6:/k6 -e TOKEN=$TOKEN grafana/k6 run /k6/gateway.j
 - **Achado da medição (corrigido na F15.25):** a primeira rodada deu p95 de ~8,8 ms de overhead e p99 de 34 ms. O writer montava um `INSERT` com dezenas de milhares de parâmetros a cada flush e travava o event loop. Ele passou a enviar o lote como um único parâmetro JSON (`json_populate_recordset`).
 
 O resumo bruto do k6 está em [`k6-2026-10-04-f15.txt`](./k6-2026-10-04-f15.txt).
+
+## Benchmark de agentes (2026-11-04)
+Acerto, latência e custo de agentes Claude sobre 162 tools, em quatro modos do gateway (ADR-027): [`agent-bench-2026-11-04.md`](./agent-bench-2026-11-04.md).

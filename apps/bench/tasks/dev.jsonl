@@ -1,0 +1,5 @@
+{"id":"d01","group":"single","prompt":"Mostre os dados cadastrais do colaborador col-00001.","intent":"dados cadastrais de colaboradores","expected":[{"tool":"rh_colaborador_get","args":{"id":"col-00001"}}]}
+{"id":"d02","group":"multi","prompt":"Veja as marcações de ponto do colaborador col-00002 e depois a escala de trabalho dele.","intent":"ponto e escalas dos colaboradores","expected":[{"tool":"rh_marcacoes_list","args":{"colaborador":"col-00002"}},{"tool":"rh_escalas_list","args":{"colaborador":"col-00002"}}]}
+{"id":"d03","group":"ambiguous","prompt":"Liste os colaboradores ativos da unidade 3.","intent":"lista de colaboradores","expected":[{"tool":"rh_colaboradores_list","args":{"ativo":true,"unidade_id":"3"}}]}
+{"id":"d04","group":"none","prompt":"Qual é a previsão do tempo para amanhã em São Paulo?","intent":"previsão do tempo","expected":[]}
+{"id":"d05","group":"single","prompt":"Registre uma entrada de ponto para o colaborador col-00004 em 2026-11-03T08:00:00-03:00.","intent":"registro de ponto","expected":[{"tool":"rh_marcacao_create","args":{"colaborador_id":"col-00004","tipo":"entrada"}}]}

@@ -1,0 +1,25 @@
+{
+  "name": "@mcp-gateway/bench",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "author": "Leandro Martins (https://github.com/leandro-jm)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leandro-jm/mcp-gateway.git",
+    "directory": "apps/bench"
+  },
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "env:setup": "tsx --env-file-if-exists=.env scripts/setup.ts",
+    "env:restore": "tsx --env-file-if-exists=.env scripts/restore.ts",
+    "tasks:draft": "tsx --env-file-if-exists=.env scripts/tasks-draft.ts",
+    "bench": "tsx --env-file-if-exists=.env scripts/run.ts",
+    "report": "tsx --env-file-if-exists=.env scripts/report.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "@modelcontextprotocol/sdk": "^1.32.0"
+  }
+}
