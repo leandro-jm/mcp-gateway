@@ -1,7 +1,8 @@
 # Admin UI: static build (Vite) served by nginx, proxying /admin, /mcp and /sdk to the gateway.
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH CI=true
-RUN corepack enable
+# Node 25+ no longer bundles corepack (ADR-028).
+RUN npm install -g corepack@0.36.0 && corepack enable
 WORKDIR /repo
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY apps ./apps

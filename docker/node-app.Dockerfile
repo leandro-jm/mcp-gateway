@@ -2,12 +2,13 @@
 #   build  → installs the workspace, bundles the app (tsup) and isolates production deps (pnpm deploy)
 #   runtime → production node_modules + bundle + migrations only
 # Usage: docker build -f docker/node-app.Dockerfile --build-arg APP=gateway -t mcp-gateway-gateway .
-ARG NODE_VERSION=22-alpine
+ARG NODE_VERSION=26-alpine
 
 FROM node:${NODE_VERSION} AS build
 ARG APP
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH CI=true
-RUN corepack enable
+# Node 25+ no longer bundles corepack (ADR-028).
+RUN npm install -g corepack@0.36.0 && corepack enable
 WORKDIR /repo
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY apps ./apps

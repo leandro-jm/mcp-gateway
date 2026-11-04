@@ -8,7 +8,7 @@ Thanks for your interest! Bug reports, docs fixes and pull requests are welcome.
 - Security issues: **do not open a public issue**. See [SECURITY.md](SECURITY.md).
 
 ## Development setup
-Requirements: Node.js ≥ 22.12, pnpm 11 (`corepack enable`), Docker.
+Requirements: Node.js ≥ 26, pnpm 11 (`npm i -g corepack && corepack enable`), Docker.
 
 ```bash
 pnpm install

@@ -4,7 +4,7 @@ export const quickstart = defineMessages('quickstart', {
   en: {
     'quickstart.label': 'Quickstart',
     'quickstart.title': 'Up and running in minutes.',
-    'quickstart.lead': 'Requirements: Node.js 22.12 or newer, pnpm 11 (corepack enable) and Docker.',
+    'quickstart.lead': 'Requirements: Node.js 26 or newer, pnpm 11 (npm i -g corepack && corepack enable) and Docker.',
     'quickstart.tabLocal': 'Local dev',
     'quickstart.tabDocker': 'Docker (production)',
     'quickstart.tabConnect': 'Connect an agent',
@@ -26,7 +26,7 @@ export const quickstart = defineMessages('quickstart', {
   'pt-BR': {
     'quickstart.label': 'Começo rápido',
     'quickstart.title': 'Rodando em poucos minutos.',
-    'quickstart.lead': 'Requisitos: Node.js 22.12 ou mais novo, pnpm 11 (corepack enable) e Docker.',
+    'quickstart.lead': 'Requisitos: Node.js 26 ou mais novo, pnpm 11 (npm i -g corepack && corepack enable) e Docker.',
     'quickstart.tabLocal': 'Dev local',
     'quickstart.tabDocker': 'Docker (produção)',
     'quickstart.tabConnect': 'Conectar um agente',
@@ -48,7 +48,7 @@ export const quickstart = defineMessages('quickstart', {
   es: {
     'quickstart.label': 'Inicio rápido',
     'quickstart.title': 'Funcionando en minutos.',
-    'quickstart.lead': 'Requisitos: Node.js 22.12 o superior, pnpm 11 (corepack enable) y Docker.',
+    'quickstart.lead': 'Requisitos: Node.js 26 o superior, pnpm 11 (npm i -g corepack && corepack enable) y Docker.',
     'quickstart.tabLocal': 'Dev local',
     'quickstart.tabDocker': 'Docker (producción)',
     'quickstart.tabConnect': 'Conectar un agente',

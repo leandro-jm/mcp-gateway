@@ -17,6 +17,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Admin UI **Getting started** guide (ADR-023): what the gateway is, an eight-step checklist up to the first agent call with auto-detected progress, how-to and examples for each step, optional next steps and a glossary. The home page opens it while essential steps are pending. `GET /admin/v1/me` now returns `publicUrl`.
 
 ### Changed
+- Runtime moved from Node 22 to Node 26 LTS (ADR-028): `engines.node >= 26`, `.nvmrc`, `node:26-alpine` images, CI and the `tsup` target. CI actions bumped to their Node 24 runtime majors (`actions/checkout@v7`, `actions/setup-node@v7`, `pnpm/action-setup@v6`, Docker actions), removing the Node 20 deprecation warnings.
 - MCP SDK moved from `@modelcontextprotocol/sdk` 1.x to `@modelcontextprotocol/server` / `@modelcontextprotocol/node` 2.x.
 - `resources/read` of a missing or expired artifact now answers `-32602` with `data.uri` (was `-32002`), as the 2026-07-28 revision requires.
 - `/mcp/omni` dynamic sessions remain available to 2025-era clients only; 2026-07-28 clients get the static mode.

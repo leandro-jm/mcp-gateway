@@ -60,11 +60,11 @@ flowchart LR
   API --- PG
 ```
 
-Stack: Node 22, TypeScript, Fastify, the official MCP SDK, Postgres (Drizzle, optional pgvector), Redis (BullMQ), S3-compatible storage, OpenTelemetry and Vitest with Testcontainers.
+Stack: Node 26, TypeScript, Fastify, the official MCP SDK, Postgres (Drizzle, optional pgvector), Redis (BullMQ), S3-compatible storage, OpenTelemetry and Vitest with Testcontainers.
 
 ## Quickstart (local development)
 
-Requirements: **Node.js ≥ 22.12**, **pnpm 11** (`corepack enable`) and **Docker**.
+Requirements: **Node.js ≥ 26**, **pnpm 11** (`npm i -g corepack && corepack enable`) and **Docker**.
 
 ```bash
 git clone https://github.com/leandro-jm/mcp-gateway.git
