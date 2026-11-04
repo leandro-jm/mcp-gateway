@@ -1,6 +1,6 @@
 # ADR-004: Node 22 como alvo, Node 26 no desenvolvimento local
 
-- Status: aceito
+- Status: substituído pelo ADR-028
 - Data: 2026-10-03
 
 ## Contexto

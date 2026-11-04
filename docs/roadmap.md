@@ -73,7 +73,7 @@
 
 ### 2.2 Stack
 
-- Node 22 LTS, TypeScript estrito, pnpm workspaces
+- Node 26 LTS, TypeScript estrito, pnpm workspaces
 - HTTP: Fastify
 - MCP: `@modelcontextprotocol/server` + `@modelcontextprotocol/node` 2.x (transport Streamable HTTP, stateless; spec 2026-07-28 e clientes 2025, ADR-021)
 - Validação: Zod (+ conversão JSON Schema ↔ Zod onde necessário; Ajv para validar args contra schema gerado)
