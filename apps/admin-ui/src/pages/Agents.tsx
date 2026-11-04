@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router';
 import { api } from '../api/client';
 import { useSession } from '../api/session';
 import type { AgentFinding, CompositeSuggestion, OutcomesView, ViewRange } from '../api/types';
-import { BarChart, Graph } from '../components/charts';
+import { BarChart, Graph, StatCard } from '../components/charts';
 import { useToast } from '../components/toast';
 import { Badge, ErrorBox, fmtDate, fmtNumber, JsonView, PageHeader, Tabs } from '../components/ui';
 import { useT, type T } from '../i18n';
@@ -158,7 +158,7 @@ function CoUsage({ range }: { range: ViewRange }) {
   const t = useT();
   const q = useTenantQuery<{ nodes: string[]; edges: Array<{ from: string; to: string; count: number }> }>(['analytics', 'co-usage', range], `/analytics/co-usage?last=${range}`);
   if (!q.data) return <ErrorBox error={q.error} />;
-  return <Graph title={t('agents.coUsageTitle')} nodes={q.data.nodes.slice(0, 30)} edges={q.data.edges.map((e) => ({ from: e.from, to: e.to, weight: e.count }))} />;
+  return <Graph title={t('agents.coUsageTitle')} weightLabel={t('agents.coUsageWeight')} nodes={q.data.nodes} edges={q.data.edges.map((e) => ({ from: e.from, to: e.to, weight: e.count }))} />;
 }
 
 function Outcomes({ range }: { range: ViewRange }) {
@@ -168,19 +168,19 @@ function Outcomes({ range }: { range: ViewRange }) {
   if (!v) return <ErrorBox error={q.error} />;
   if (!v.recent.length) return <div className="muted" style={{ padding: 16 }}>{t('agents.noOutcomes')}</div>;
   const pct = (n: number | null) => Math.round((n ?? 0) * 100);
+  // status color only at the ends: a low success rate is a problem, a high one is healthy
+  const tone = (n: number) => (n < 50 ? ('bad' as const) : n >= 90 ? ('good' as const) : undefined);
+  const rate = (label: string, r: number | null) => ({ label, value: pct(r), tone: tone(pct(r)) });
   return (
     <>
       <div className="stat-grid">
         {Object.entries(v.totals).map(([k, n]) => (
-          <div key={k} className="stat-card">
-            <div className="stat-label">{k}</div>
-            <div className="stat-value">{fmtNumber(n)}</div>
-          </div>
+          <StatCard key={k} label={k} value={fmtNumber(n)} />
         ))}
       </div>
       <div className="chart-grid-2">
-        <BarChart title={t('agents.successByTool')} color={2} format={(n) => `${n}%`} data={v.byTool.map((x) => ({ label: x.tool, value: pct(x.successRate) }))} />
-        <BarChart title={t('agents.successByServer')} color={2} format={(n) => `${n}%`} data={v.byVirtualServer.filter((x) => x.virtualServer).map((x) => ({ label: x.virtualServer!, value: pct(x.successRate) }))} />
+        <BarChart title={t('agents.successByTool')} color={2} max={100} format={(n) => `${n}%`} data={v.byTool.map((x) => rate(x.tool, x.successRate))} />
+        <BarChart title={t('agents.successByServer')} color={2} max={100} format={(n) => `${n}%`} data={v.byVirtualServer.filter((x) => x.virtualServer).map((x) => rate(x.virtualServer!, x.successRate))} />
       </div>
       <table className="table">
         <thead>

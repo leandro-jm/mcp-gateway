@@ -25,6 +25,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - MinIO image: `cgr.dev/chainguard/minio` in the compose files and tests, since `minio/minio` was removed from Docker Hub.
 - CI also publishes the `main` channel (`main` and `sha-<commit>` tags) to Docker Hub on every push to main, and an optional `deploy` job redeploys a Dokploy compose service through its API once the images are pushed. The production compose pulls the app images on every deploy (`pull_policy: always`), so `TAG=main` or `latest` always gets the current image.
 - Admin UI top bar: the whole tenant crumb opens the switcher, and it only looks clickable when there is another tenant to switch to; the `Gateway` crumb is now a plain label.
+- Admin UI charts now use Apache ECharts (ADR-028, replacing ADR-018), tree-shaken and lazy-loaded. Changes on the chart screens:
+  - Every chart follows the light/dark theme live and still flips to a table.
+  - Charts have crosshair tooltips, zoom on long series and clickable legends.
+  - Separate latency and call-volume charts, with trend sparklines on the SRE cards.
+  - A usage × error-rate scatter that filters the tools table, and per-agent adoption as stacked bars.
+  - Drift impact and volume anomalies shown as before → after charts.
+  - A force-directed co-usage graph you can zoom and drag.
+  - A true per-call waterfall, with the gateway overhead shown apart.
+  - A clickable session timeline that follows the replay.
+  - The dark-mode chart palette was re-stepped for contrast and color-blind separation.
 - New visual language for the Admin UI and the landing page (ADR-026, replacing the look of ADR-005): neutral zinc palette with a monochrome accent (color only for state), Geist and Geist Mono fonts, rounded cards with a soft shadow, sentence-case headings and status pills with a dot. The Admin UI shell now has a full-height sidebar with the brand and labeled groups (Operate, Configure, Manage), a top bar with `tenant / current page` breadcrumb and an account menu, and a horizontal nav under 960px. Light and dark themes keep the same selector, with dark as the default.
 
 ## [0.1.0] - 2026-10-04

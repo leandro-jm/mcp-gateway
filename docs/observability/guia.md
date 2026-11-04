@@ -1,6 +1,6 @@
 # Guia de observabilidade de agentes (F15)
 
-Este guia mostra como usar o que a F15 entrega: as visões por público, o explorador de chamadas, a captura de debug, o índice de titulares LGPD, as sessões, os insights de agente e o MCP de observabilidade. As decisões estão nos ADR-016, ADR-017 e ADR-018. A parte operacional (métricas, traces, alertas) está no [README](./README.md).
+Este guia mostra como usar o que a F15 entrega: as visões por público, o explorador de chamadas, a captura de debug, o índice de titulares LGPD, as sessões, os insights de agente e o MCP de observabilidade. As decisões estão nos ADR-016, ADR-017 e ADR-028 (gráficos, que substitui o ADR-018). A parte operacional (métricas, traces, alertas) está no [README](./README.md).
 
 ## Quem vê o quê
 
@@ -15,18 +15,24 @@ Este guia mostra como usar o que a F15 entrega: as visões por público, o explo
 - **Operação.**
   - O overhead do gateway (latência total menos a do upstream) separado da latência do upstream: é o número que mostra que o gateway não atrapalha.
   - Também: erros do upstream por source, falhas por etapa, chamadas recusadas por circuit breaker e o tempo médio de cada etapa.
+  - Os cards mostram a tendência no período, e a latência e o volume de chamadas aparecem em gráficos separados.
 - **Tools.**
-  - Uso por tool e por agente, erros, retries e erros de validação.
+  - Uso por tool e por agente, erros, retries e erros de validação. Na dispersão de uso × taxa de erro, cada bolha é uma tool e o tamanho é o número de agentes. Clicar numa bolha filtra a tabela.
   - Tools habilitadas que ninguém usou no período: são candidatas a desabilitar ou a ganhar uma descrição melhor.
-  - O impacto de cada drift na taxa de erro (7 dias antes × depois).
+  - O impacto de cada drift na taxa de erro (7 dias antes × depois), num gráfico de antes → depois por tool.
 - **Segurança.**
   - Negações por tool e por regra de política, e redactions por tipo de dado.
-  - Anomalias de volume: a última hora comparada com a mesma hora nas quatro semanas anteriores, por client e por agente.
+  - Anomalias de volume: a última hora comparada com a mesma hora nas quatro semanas anteriores, por client e por agente, num gráfico de habitual → última hora.
   - A consulta LGPD (só admin).
 - **FinOps.**
   - Tokens economizados por projeção, artefatos e Omni, convertidos em dinheiro com o preço do tenant (Configurações → Observabilidade).
   - O card "sem o gateway × com o gateway" e o uso por client, agente e usuário (chargeback).
   - Tokens são estimados (bytes ÷ 4): servem para comparar, não para faturar.
+- **Em todos os gráficos:**
+  - passar o mouse mostra os valores;
+  - séries longas aceitam zoom, arrastando o controle abaixo do gráfico ou com Shift + roda do mouse;
+  - clicar num item da legenda esconde ou mostra a série;
+  - o botão de tabela mostra os mesmos dados em linhas.
 
 Os mesmos números saem da Admin API: `GET /admin/v1/analytics/{sre,tools,security,finops}`. Para qualquer outra pergunta, use `POST /admin/v1/analytics/query`:
 
@@ -40,7 +46,7 @@ Os mesmos números saem da Admin API: `GET /admin/v1/analytics/{sre,tools,securi
 
 ## Explorador de chamadas (Admin UI → Chamadas)
 Cada chamada mostra:
-- o tempo por etapa;
+- o tempo por etapa, em waterfall: cada etapa começa onde a anterior terminou, e o overhead total do gateway aparece ao lado;
 - a regra de política que decidiu, com o trace das regras numa negação;
 - se a política mudou desde então, caso em que a decisão de hoje aparece ao lado;
 - as redactions por tipo, quanto a projeção cortou, os tokens, os steps de compostas e o link para o trace.
@@ -67,11 +73,11 @@ Em **Observabilidade → Segurança**, informe o identificador (CPF, CNPJ, PIS, 
 API: `POST /admin/v1/lgpd/subject-access` com `{ "detector": "cpf", "value": "…" }`.
 
 ## Sessões e insights de agente
-- **Sessões.** Cada sessão (clientes que devolvem o `mcp-session-id`) aparece como uma linha do tempo, com uma faixa por tool. É possível avançar passo a passo ou reproduzir a sessão, como num debugger do agente.
+- **Sessões.** Cada sessão (clientes que devolvem o `mcp-session-id`) aparece como uma linha do tempo, com uma faixa por tool e a cor da decisão. É possível avançar passo a passo, clicar numa chamada para ir até ela ou reproduzir a sessão, como num debugger do agente.
 - **Insights de agente:**
   - **Padrões:** loop (mesma tool com os mesmos argumentos), vai e volta entre tools sem progresso, busca errada (o agente chamou uma tool que o `search_tools` não devolveu, ou buscou de novo) e abandono (a última chamada de uma tool falhou).
   - **Sugestões:** sequências frequentes ("A → B → C" em várias sessões de usuários diferentes) viram um rascunho de composta. **Criar rascunho** salva a composta desabilitada e a abre no Composer; **Refinar com linguagem natural** leva o pedido para o composer com LLM.
-  - **Co-uso:** o grafo de tools usadas uma depois da outra, útil para montar MCP servers.
+  - **Co-uso:** o grafo de tools usadas uma depois da outra, útil para montar MCP servers. Dá para dar zoom e arrastar os nós, e passar o mouse num nó destaca os vizinhos.
   - **Resultados:** a taxa de sucesso real por tool e por MCP server, quando os clientes informam o resultado.
 - **Atualização:** o job roda a cada 15 minutos. Um admin pode rodá-lo na hora com `POST /admin/v1/agent-insights/refresh`.
 

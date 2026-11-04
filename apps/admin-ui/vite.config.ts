@@ -7,6 +7,9 @@ export default defineConfig({
   plugins: [react()],
   // one React for the whole app, also when @mcp-ui-kit/* is pnpm-linked from a local checkout
   resolve: { dedupe: ['react', 'react-dom'] },
+  // the lazy `charts` chunk carries the tree-shaken ECharts (~660 kB, ~225 kB gzip; ADR-028),
+  // loaded only by the pages that draw charts
+  build: { chunkSizeWarningLimit: 700 },
   server: {
     port: 5180,
     strictPort: true,

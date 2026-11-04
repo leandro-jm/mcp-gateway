@@ -1,13 +1,13 @@
-import { formatNumber } from '@mcp-gateway/i18n';
 import { useMutation } from '@tanstack/react-query';
 import { Activity, Boxes, Coins, ShieldAlert } from 'lucide-react';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { api } from '../api/client';
 import { useSession } from '../api/session';
 import type { FinopsView, SecurityView, SreView, SubjectAccessReport, ToolsView, ViewRange } from '../api/types';
-import { BarChart, LineChart, StackedBar, StatCard } from '../components/charts';
+import { BarChart, Breakdown, Dumbbell, LineChart, ScatterChart, StackedBar, StatCard } from '../components/charts';
 import { Badge, CodeBlock, ErrorBox, fmtDate, fmtNumber, PageHeader, Tabs } from '../components/ui';
-import { getLocale, useT, type T } from '../i18n';
+import { useT, type T } from '../i18n';
+import { compact, hourLabel, money, ms, pct } from '../lib/format';
 import { useTenantQuery } from '../lib/hooks';
 
 type Tab = 'sre' | 'tools' | 'security' | 'finops';
@@ -18,11 +18,6 @@ const RANGES: Array<{ id: ViewRange; label: Parameters<T>[0] }> = [
   { id: '7d', label: 'observability.range7d' },
   { id: '30d', label: 'observability.range30d' },
 ];
-
-const ms = (v: number | null | undefined) => (v == null ? '—' : `${fmtNumber(Math.round(v))} ms`);
-const pct = (v: number | null | undefined) => (v == null ? '—' : formatNumber(getLocale(), v, { style: 'percent', maximumFractionDigits: 1 }));
-const money = (v: number, currency: string) => formatNumber(getLocale(), v, { style: 'currency', currency });
-const hourLabel = (iso: string) => new Date(iso).toLocaleString(getLocale(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
 /** Observability (F15.16): one tab per audience. Tool owners only see the Tools tab, filtered to their tools. */
 export function ObservabilityPage() {
@@ -72,26 +67,28 @@ function SreTab({ range }: { range: ViewRange }) {
   const v = q.data;
   if (!v) return <ErrorBox error={q.error} />;
   const stageNames = ['authz', 'validation', 'pii', 'upstream', 'projection', 'artifact'];
+  const buckets = v.overTime.map((p) => hourLabel(p.ts));
   return (
     <>
       <div className="stat-grid">
-        <StatCard label={t('observability.statCalls')} value={fmtNumber(v.totals.calls)} trend={v.overTime.map((p) => p.calls)} />
+        <StatCard label={t('observability.statCalls')} value={fmtNumber(v.totals.calls)} trend={v.overTime.map((p) => p.calls)} trendLabels={buckets} formatTrend={fmtNumber} />
         <StatCard label={t('observability.statErrorRate')} value={pct(v.totals.errorRate)} tone={(v.totals.errorRate ?? 0) > 0.05 ? 'bad' : undefined} />
-        <StatCard label={t('observability.statLatencyP95')} value={ms(v.totals.latencyP95)} />
-        <StatCard label={t('observability.statOverheadP95')} value={ms(v.totals.overheadP95)} hint={t('observability.statOverheadHint')} />
-        <StatCard label={t('observability.statUpstreamAvg')} value={ms(v.totals.upstreamAvg)} />
+        <StatCard label={t('observability.statLatencyP95')} value={ms(v.totals.latencyP95)} trend={v.overTime.map((p) => p.latencyP95)} trendLabels={buckets} formatTrend={ms} />
+        <StatCard label={t('observability.statOverheadP95')} value={ms(v.totals.overheadP95)} hint={t('observability.statOverheadHint')} trend={v.overTime.map((p) => p.overheadP95)} trendLabels={buckets} formatTrend={ms} />
+        <StatCard label={t('observability.statUpstreamAvg')} value={ms(v.totals.upstreamAvg)} trend={v.overTime.map((p) => p.upstreamAvg)} trendLabels={buckets} formatTrend={ms} />
       </div>
       <div className="chart-grid-2">
         <LineChart
           title={t('observability.chartOverTime')}
           formatX={hourLabel}
-          formatY={(n) => `${Math.round(n)}`}
+          formatY={ms}
           series={[
             { name: t('observability.seriesLatency'), points: v.overTime.map((p) => ({ x: p.ts, y: p.latencyP95 })) },
             { name: t('observability.seriesOverhead'), points: v.overTime.map((p) => ({ x: p.ts, y: p.overheadP95 })) },
             { name: t('observability.seriesUpstream'), points: v.overTime.map((p) => ({ x: p.ts, y: p.upstreamAvg })) },
           ]}
         />
+        <LineChart title={t('observability.chartCallsOverTime')} mark="bar" formatX={hourLabel} formatY={compact} series={[{ name: t('observability.statCalls'), points: v.overTime.map((p) => ({ x: p.ts, y: p.calls })) }]} />
         <StackedBar
           title={t('observability.chartStages')}
           format={ms}
@@ -108,13 +105,42 @@ function SreTab({ range }: { range: ViewRange }) {
 function ToolsTab({ range }: { range: ViewRange }) {
   const t = useT();
   const q = useTenantQuery<ToolsView>(['analytics', 'tools', range], `/analytics/tools?last=${range}`);
+  const [selected, setSelected] = useState<string | null>(null);
   const v = q.data;
   if (!v) return <ErrorBox error={q.error} />;
+  const usage = selected ? v.usage.filter((u) => u.tool === selected) : v.usage;
   return (
     <>
+      <div className="chart-grid-2">
+        <ScatterChart
+          title={t('observability.chartUsageErrors')}
+          desc={t('observability.chartUsageErrorsHint')}
+          xLabel={t('observability.colCalls')}
+          yLabel={t('observability.statErrorRate')}
+          sizeLabel={t('observability.colAgents')}
+          formatX={compact}
+          formatY={pct}
+          selected={selected}
+          onSelect={setSelected}
+          points={v.usage.map((u) => ({ label: u.tool, x: u.calls, y: u.calls ? u.errors / u.calls : 0, size: u.agents }))}
+        />
+        <Breakdown
+          title={t('observability.byAgentTitle')}
+          categoryLabel={t('observability.colTool')}
+          seriesLabel={t('observability.colAgent')}
+          format={fmtNumber}
+          rows={v.byAgent.map((b) => ({ category: b.tool ?? '—', series: b.agent ?? t('observability.unknown'), value: b.calls }))}
+        />
+      </div>
       <div className="panel">
         <div className="panel-head">
           <span className="panel-title">{t('observability.usageTitle')}</span>
+          <span className="spacer" />
+          {selected && (
+            <button className="btn sm ghost" onClick={() => setSelected(null)}>
+              {t('observability.clearFilter', { tool: selected })}
+            </button>
+          )}
         </div>
         <table className="table" data-testid="tools-usage">
           <thead>
@@ -128,7 +154,7 @@ function ToolsTab({ range }: { range: ViewRange }) {
             </tr>
           </thead>
           <tbody>
-            {v.usage.map((u) => (
+            {usage.map((u) => (
               <tr key={u.tool}>
                 <td className="mono">{u.tool}</td>
                 <td className="mono">{fmtNumber(u.calls)}</td>
@@ -142,7 +168,22 @@ function ToolsTab({ range }: { range: ViewRange }) {
         </table>
       </div>
       <div className="chart-grid-2" style={{ marginTop: 16 }}>
-        <BarChart title={t('observability.byAgentTitle')} data={v.byAgent.map((b) => ({ label: `${b.tool ?? '—'} · ${b.agent ?? t('observability.unknown')}`, value: b.calls }))} />
+        {v.driftImpact.length ? (
+          <Dumbbell
+            title={t('observability.driftTitle')}
+            beforeLabel={t('observability.colBefore')}
+            afterLabel={t('observability.colAfter')}
+            format={pct}
+            rows={v.driftImpact.map((d) => ({ label: d.tool, hint: `${d.kind} · ${fmtDate(d.at)}`, before: d.errorRateBefore, after: d.errorRateAfter }))}
+          />
+        ) : (
+          <div className="panel">
+            <div className="panel-head">
+              <span className="panel-title">{t('observability.driftTitle')}</span>
+            </div>
+            <div className="panel-body muted">{t('observability.driftNone')}</div>
+          </div>
+        )}
         <div className="panel">
           <div className="panel-head">
             <span className="panel-title">{t('observability.neverUsedTitle')}</span>
@@ -160,37 +201,6 @@ function ToolsTab({ range }: { range: ViewRange }) {
             )}
           </div>
         </div>
-      </div>
-      <div className="panel">
-        <div className="panel-head">
-          <span className="panel-title">{t('observability.driftTitle')}</span>
-        </div>
-        {v.driftImpact.length ? (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>{t('observability.colTool')}</th>
-                <th>{t('observability.colDriftKind')}</th>
-                <th>{t('observability.colWhen')}</th>
-                <th>{t('observability.colBefore')}</th>
-                <th>{t('observability.colAfter')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {v.driftImpact.map((d) => (
-                <tr key={`${d.tool}-${d.at}`}>
-                  <td className="mono">{d.tool}</td>
-                  <td>{d.kind}</td>
-                  <td className="muted nowrap">{fmtDate(d.at)}</td>
-                  <td className="mono">{pct(d.errorRateBefore)}</td>
-                  <td className="mono">{pct(d.errorRateAfter)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div className="panel-body muted">{t('observability.driftNone')}</div>
-        )}
       </div>
     </>
   );
@@ -232,37 +242,22 @@ function SecurityTab({ range, admin }: { range: ViewRange; admin: boolean }) {
           </tbody>
         </table>
       </div>
-      <div className="panel">
-        <div className="panel-head">
-          <span className="panel-title">{t('observability.anomaliesTitle')}</span>
-        </div>
-        {v.anomalies.length ? (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>{t('observability.colKey')}</th>
-                <th>{t('observability.colDimension')}</th>
-                <th>{t('observability.colCalls')}</th>
-                <th>{t('observability.colBaseline')}</th>
-                <th>{t('observability.colScore')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {v.anomalies.map((a) => (
-                <tr key={`${a.dimension}-${a.key}`}>
-                  <td className="mono">{a.key}</td>
-                  <td>{a.dimension}</td>
-                  <td className="mono">{fmtNumber(a.calls)}</td>
-                  <td className="mono">{fmtNumber(a.baseline)}</td>
-                  <td className="mono">{fmtNumber(a.score)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
+      {v.anomalies.length ? (
+        <Dumbbell
+          title={t('observability.anomaliesTitle')}
+          beforeLabel={t('observability.colBaseline')}
+          afterLabel={t('observability.anomaliesLastHour')}
+          format={fmtNumber}
+          rows={v.anomalies.map((a) => ({ label: a.key, hint: `${a.dimension} · ${t('observability.colScore')} ${fmtNumber(a.score)}`, before: a.baseline, after: a.calls }))}
+        />
+      ) : (
+        <div className="panel">
+          <div className="panel-head">
+            <span className="panel-title">{t('observability.anomaliesTitle')}</span>
+          </div>
           <div className="panel-body muted">{t('observability.anomaliesNone')}</div>
-        )}
-      </div>
+        </div>
+      )}
       {admin && <LgpdPanel />}
     </>
   );
@@ -379,6 +374,15 @@ function FinopsTab({ range }: { range: ViewRange }) {
         <StatCard label={t('observability.cardMoney')} value={money(v.beforeAfter.moneySaved, v.pricing.currency)} tone="good" hint={t('observability.estimateNote')} />
       </div>
       <div className="chart-grid-2">
+        <BarChart
+          title={t('observability.chartBeforeAfter')}
+          sort={false}
+          format={tokens}
+          data={[
+            { label: t('observability.cardWithout'), value: v.beforeAfter.withoutGateway },
+            { label: t('observability.cardWith'), value: v.beforeAfter.withGateway },
+          ]}
+        />
         <BarChart
           title={t('observability.chartSavedByMechanism')}
           color={2}

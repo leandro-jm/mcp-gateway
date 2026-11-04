@@ -30,6 +30,17 @@ test('admin sees every audience tab, the LGPD lookup and localized labels', asyn
   for (const tab of ['Operations', 'Tools', 'Security', 'FinOps']) await expect(page.getByRole('tab', { name: tab })).toBeVisible();
   await expect(page.getByTestId('observability-sre')).toContainText('Gateway overhead p95');
 
+  // ADR-028: charts render (ECharts, SVG), show a tooltip on hover and flip to the same data as a table
+  const latency = page.locator('.chart').filter({ hasText: 'Latency over time' });
+  await expect(latency.locator('.chart-canvas svg')).toBeVisible();
+  const box = (await latency.locator('.chart-canvas').boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(latency.locator('.chart-canvas > div').nth(1)).toContainText('total p95');
+  await latency.getByRole('button', { name: 'Show as table' }).click();
+  await expect(latency.locator('table tbody tr').first()).toBeVisible();
+  await latency.getByRole('button', { name: 'Show as chart' }).click();
+  await expect(latency.locator('.chart-canvas svg')).toBeVisible();
+
   await page.getByRole('tab', { name: 'Tools' }).click();
   await expect(page.getByTestId('observability-tools')).toContainText('Usage per tool');
 

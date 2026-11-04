@@ -2,8 +2,10 @@ import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import type { CallSummary, SessionSummary, Trajectory, ViewRange } from '../api/types';
+import { Swimlane } from '../components/charts';
 import { Badge, ErrorBox, fmtDate, fmtNumber, PageHeader } from '../components/ui';
-import { getLocale, useT, type T } from '../i18n';
+import { useT, type T } from '../i18n';
+import { timeLabel } from '../lib/format';
 import { DECISION_LABEL, enumLabel } from '../lib/labels';
 import { useTenantQuery } from '../lib/hooks';
 
@@ -13,7 +15,11 @@ const RANGES: Array<{ id: ViewRange; label: Parameters<T>[0] }> = [
   { id: '30d', label: 'observability.range30d' },
 ];
 
-const DECISION_COLOR: Record<string, string> = { allow: 'var(--success)', deny: 'var(--warning)', error: 'var(--danger)' };
+const DECISION_TONE = [
+  { id: 'allow', tone: 'success' },
+  { id: 'deny', tone: 'warning' },
+  { id: 'error', tone: 'danger' },
+] as const;
 
 /** Sessions (F15.24): one row per agent session; the trajectory replays it call by call. */
 export function SessionsPage() {
@@ -106,7 +112,20 @@ function TrajectoryView({ sessionKey, range }: { sessionKey: string; range: View
         </button>
       </div>
       <div className="panel-body stack">
-        <Swimlane events={events} current={step} flagged={flagged} onPick={setStep} />
+        <Swimlane
+          title={t('agents.timelineByTool')}
+          laneLabel={t('agents.colTool')}
+          groupLabel={t('observability.colDecision')}
+          current={step}
+          onPick={setStep}
+          groups={DECISION_TONE.map((d) => ({ ...d, label: enumLabel(t, DECISION_LABEL, d.id) }))}
+          points={events.map((e) => ({
+            lane: e.tool.name,
+            group: e.decision,
+            flagged: flagged.has(e.callId),
+            tip: `${enumLabel(t, DECISION_LABEL, e.decision)} · ${fmtNumber(e.latencyMs)} ms · ${timeLabel(e.ts)}`,
+          }))}
+        />
         {current && <StepDetail e={current} />}
         {q.data.findings.length > 0 && (
           <>
@@ -125,39 +144,6 @@ function TrajectoryView({ sessionKey, range }: { sessionKey: string; range: View
   );
 }
 
-/** One lane per tool, calls placed in order; color = decision, ring = current step. */
-function Swimlane({ events, current, flagged, onPick }: { events: CallSummary[]; current: number; flagged: Set<string>; onPick(i: number): void }) {
-  const lanes = [...new Set(events.map((e) => e.tool.name))];
-  const W = 900;
-  const laneH = 26;
-  const left = 200;
-  const H = lanes.length * laneH + 10;
-  const x = (i: number) => left + (events.length <= 1 ? (W - left) / 2 : (i / (events.length - 1)) * (W - left - 16));
-  return (
-    <svg className="chart-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="timeline">
-      {lanes.map((l, i) => (
-        <g key={l}>
-          <line x1={left} x2={W} y1={i * laneH + laneH / 2} y2={i * laneH + laneH / 2} className="chart-grid" />
-          <text x={left - 8} y={i * laneH + laneH / 2 + 4} textAnchor="end" className="chart-label">
-            {l.length > 28 ? `${l.slice(0, 27)}…` : l}
-          </text>
-        </g>
-      ))}
-      {events.map((e, i) => {
-        const y = lanes.indexOf(e.tool.name) * laneH + laneH / 2;
-        return (
-          <g key={e.callId} onClick={() => onPick(i)} style={{ cursor: 'pointer' }}>
-            {i === current && <circle cx={x(i)} cy={y} r={9} fill="none" stroke="var(--accent)" strokeWidth={2} />}
-            <circle cx={x(i)} cy={y} r={flagged.has(e.callId) ? 6 : 5} fill={DECISION_COLOR[e.decision] ?? 'var(--text-2)'}>
-              <title>{`${i + 1}. ${e.tool.name} · ${e.decision} · ${e.latencyMs} ms`}</title>
-            </circle>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
 function StepDetail({ e }: { e: CallSummary }) {
   const t = useT();
   return (
@@ -167,7 +153,7 @@ function StepDetail({ e }: { e: CallSummary }) {
         {e.tool.name} <Badge kind={e.decision}>{enumLabel(t, DECISION_LABEL, e.decision)}</Badge>
       </dd>
       <dt>{t('agents.colWhen')}</dt>
-      <dd>{new Date(e.ts).toLocaleTimeString(getLocale())}</dd>
+      <dd>{timeLabel(e.ts)}</dd>
       <dt>{t('calls.colLatency')}</dt>
       <dd className="mono">{fmtNumber(e.latencyMs)} ms</dd>
       {e.error && (

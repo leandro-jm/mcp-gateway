@@ -1,6 +1,6 @@
 import { defineMessages } from '@mcp-gateway/i18n';
 
-/** Chart primitives (ADR-018): accessibility labels and the table fallback. */
+/** Charts (ADR-028): controls, tooltips and the table fallback. */
 export const charts = defineMessages('charts', {
   en: {
     'charts.showTable': 'Show as table',
@@ -9,7 +9,16 @@ export const charts = defineMessages('charts', {
     'charts.colLabel': 'Item',
     'charts.colValue': 'Value',
     'charts.colTime': 'Time',
+    'charts.colFrom': 'From',
+    'charts.colTo': 'To',
+    'charts.colStep': 'Step',
     'charts.total': 'Total',
+    'charts.others': 'Others',
+    'charts.resetZoom': 'Reset zoom',
+    'charts.zoomHint': 'Drag the slider or hold Shift and scroll to zoom',
+    'charts.startsAt': 'starts at',
+    'charts.weight': 'Together',
+    'charts.step': 'Step',
   },
   'pt-BR': {
     'charts.showTable': 'Ver como tabela',
@@ -18,7 +27,16 @@ export const charts = defineMessages('charts', {
     'charts.colLabel': 'Item',
     'charts.colValue': 'Valor',
     'charts.colTime': 'Horário',
+    'charts.colFrom': 'De',
+    'charts.colTo': 'Para',
+    'charts.colStep': 'Passo',
     'charts.total': 'Total',
+    'charts.others': 'Outros',
+    'charts.resetZoom': 'Desfazer zoom',
+    'charts.zoomHint': 'Arraste o controle ou segure Shift e role para dar zoom',
+    'charts.startsAt': 'começa em',
+    'charts.weight': 'Juntas',
+    'charts.step': 'Passo',
   },
   es: {
     'charts.showTable': 'Ver como tabla',
@@ -27,6 +45,15 @@ export const charts = defineMessages('charts', {
     'charts.colLabel': 'Ítem',
     'charts.colValue': 'Valor',
     'charts.colTime': 'Hora',
+    'charts.colFrom': 'De',
+    'charts.colTo': 'A',
+    'charts.colStep': 'Paso',
     'charts.total': 'Total',
+    'charts.others': 'Otros',
+    'charts.resetZoom': 'Deshacer zoom',
+    'charts.zoomHint': 'Arrastra el control o mantén Shift y desplaza para hacer zoom',
+    'charts.startsAt': 'empieza en',
+    'charts.weight': 'Juntas',
+    'charts.step': 'Paso',
   },
 });
