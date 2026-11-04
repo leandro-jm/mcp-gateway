@@ -5,10 +5,13 @@ import { api } from '../api/client';
 import { useSession } from '../api/session';
 import type { FinopsView, SecurityView, SreView, SubjectAccessReport, ToolsView, ViewRange } from '../api/types';
 import { BarChart, Breakdown, Dumbbell, LineChart, ScatterChart, StackedBar, StatCard } from '../components/charts';
+import { Pagination } from '../components/Pagination';
+import { DashboardSkeleton } from '../components/Skeleton';
 import { Badge, CodeBlock, ErrorBox, fmtDate, fmtNumber, PageHeader, Tabs } from '../components/ui';
 import { useT, type T } from '../i18n';
 import { compact, hourLabel, money, ms, pct } from '../lib/format';
 import { useTenantQuery } from '../lib/hooks';
+import { usePagination } from '../lib/pagination';
 
 type Tab = 'sre' | 'tools' | 'security' | 'finops';
 
@@ -65,7 +68,7 @@ function SreTab({ range }: { range: ViewRange }) {
   const t = useT();
   const q = useTenantQuery<SreView>(['analytics', 'sre', range], `/analytics/sre?last=${range}`);
   const v = q.data;
-  if (!v) return <ErrorBox error={q.error} />;
+  if (!v) return q.isLoading ? <DashboardSkeleton stats={5} charts={6} /> : <ErrorBox error={q.error} />;
   const stageNames = ['authz', 'validation', 'pii', 'upstream', 'projection', 'artifact'];
   const buckets = v.overTime.map((p) => hourLabel(p.ts));
   return (
@@ -107,8 +110,10 @@ function ToolsTab({ range }: { range: ViewRange }) {
   const q = useTenantQuery<ToolsView>(['analytics', 'tools', range], `/analytics/tools?last=${range}`);
   const [selected, setSelected] = useState<string | null>(null);
   const v = q.data;
-  if (!v) return <ErrorBox error={q.error} />;
-  const usage = selected ? v.usage.filter((u) => u.tool === selected) : v.usage;
+  const all = v?.usage ?? [];
+  const usage = selected ? all.filter((u) => u.tool === selected) : all;
+  const { rows, pager } = usePagination(usage, { compact: true, reset: [selected, range] });
+  if (!v) return q.isLoading ? <DashboardSkeleton stats={0} charts={2} /> : <ErrorBox error={q.error} />;
   return (
     <>
       <div className="chart-grid-2">
@@ -154,7 +159,7 @@ function ToolsTab({ range }: { range: ViewRange }) {
             </tr>
           </thead>
           <tbody>
-            {usage.map((u) => (
+            {rows.map((u) => (
               <tr key={u.tool}>
                 <td className="mono">{u.tool}</td>
                 <td className="mono">{fmtNumber(u.calls)}</td>
@@ -166,6 +171,7 @@ function ToolsTab({ range }: { range: ViewRange }) {
             ))}
           </tbody>
         </table>
+        <Pagination {...pager} />
       </div>
       <div className="chart-grid-2" style={{ marginTop: 16 }}>
         {v.driftImpact.length ? (
@@ -210,38 +216,14 @@ function SecurityTab({ range, admin }: { range: ViewRange; admin: boolean }) {
   const t = useT();
   const q = useTenantQuery<SecurityView>(['analytics', 'security', range], `/analytics/security?last=${range}`);
   const v = q.data;
-  if (!v) return <ErrorBox error={q.error} />;
+  if (!v) return q.isLoading ? <DashboardSkeleton stats={0} charts={2} /> : <ErrorBox error={q.error} />;
   return (
     <>
       <div className="chart-grid-2">
         <BarChart title={t('observability.chartDenials')} color={4} data={v.denials.map((d) => ({ label: d.tool ?? '—', value: d.calls }))} />
         <BarChart title={t('observability.chartRedactions')} color={1} data={Object.entries(v.redactionsByDetector).sort((a, b) => b[1] - a[1]).map(([label, value]) => ({ label, value }))} />
       </div>
-      <div className="panel">
-        <div className="panel-head">
-          <span className="panel-title">{t('observability.denialsByRule')}</span>
-        </div>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>{t('observability.colRule')}</th>
-              <th>{t('observability.colReason')}</th>
-              <th>{t('observability.colTool')}</th>
-              <th>{t('observability.colCalls')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {v.denialsByRule.map((d) => (
-              <tr key={`${d.ruleId}-${d.tool}-${d.reason}`}>
-                <td className="mono muted">{d.ruleId ?? '—'}</td>
-                <td>{d.reason ?? '—'}</td>
-                <td className="mono">{d.tool}</td>
-                <td className="mono">{fmtNumber(d.calls)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <DenialsByRule items={v.denialsByRule} />
       {v.anomalies.length ? (
         <Dumbbell
           title={t('observability.anomaliesTitle')}
@@ -260,6 +242,39 @@ function SecurityTab({ range, admin }: { range: ViewRange; admin: boolean }) {
       )}
       {admin && <LgpdPanel />}
     </>
+  );
+}
+
+function DenialsByRule({ items }: { items: SecurityView['denialsByRule'] }) {
+  const t = useT();
+  const { rows, pager } = usePagination(items, { compact: true });
+  return (
+    <div className="panel">
+      <div className="panel-head">
+        <span className="panel-title">{t('observability.denialsByRule')}</span>
+      </div>
+      <table className="table">
+        <thead>
+          <tr>
+            <th>{t('observability.colRule')}</th>
+            <th>{t('observability.colReason')}</th>
+            <th>{t('observability.colTool')}</th>
+            <th>{t('observability.colCalls')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((d) => (
+            <tr key={`${d.ruleId}-${d.tool}-${d.reason}`}>
+              <td className="mono muted">{d.ruleId ?? '—'}</td>
+              <td>{d.reason ?? '—'}</td>
+              <td className="mono">{d.tool}</td>
+              <td className="mono">{fmtNumber(d.calls)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <Pagination {...pager} />
+    </div>
   );
 }
 
@@ -311,11 +326,11 @@ function LgpdPanel() {
                 </div>
               ))}
             </div>
-            {r.matches.length > 0 && <AccessTable rows={r.matches} />}
+            {r.matches.length > 0 && <AccessTable items={r.matches} />}
             {r.possibleMatches.length > 0 && (
               <>
                 <div className="label">{t('observability.lgpdPossible')}</div>
-                <AccessTable rows={r.possibleMatches} />
+                <AccessTable items={r.possibleMatches} />
               </>
             )}
           </>
@@ -325,37 +340,41 @@ function LgpdPanel() {
   );
 }
 
-function AccessTable({ rows }: { rows: SubjectAccessReport['matches'] }) {
+function AccessTable({ items }: { items: SubjectAccessReport['matches'] }) {
   const t = useT();
+  const { rows, pager } = usePagination(items, { compact: true });
   return (
-    <table className="table">
-      <thead>
-        <tr>
-          <th>{t('observability.colWhen')}</th>
-          <th>{t('observability.colTool')}</th>
-          <th>{t('observability.colSubject')}</th>
-          <th>{t('observability.colAgent')}</th>
-          <th>{t('observability.colClient')}</th>
-          <th>{t('observability.colDirection')}</th>
-          <th>{t('observability.colDecision')}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((m) => (
-          <tr key={`${m.callId}-${m.direction}`}>
-            <td className="muted nowrap">{fmtDate(m.ts)}</td>
-            <td className="mono">{m.tool}</td>
-            <td className="mono">{m.subject}</td>
-            <td className="mono">{m.agentName ?? '—'}</td>
-            <td className="mono">{m.clientId ?? '—'}</td>
-            <td>{m.direction === 'request' ? t('observability.directionRequest') : t('observability.directionResponse')}</td>
-            <td>
-              <Badge kind={m.decision}>{m.decision}</Badge>
-            </td>
+    <div>
+      <table className="table">
+        <thead>
+          <tr>
+            <th>{t('observability.colWhen')}</th>
+            <th>{t('observability.colTool')}</th>
+            <th>{t('observability.colSubject')}</th>
+            <th>{t('observability.colAgent')}</th>
+            <th>{t('observability.colClient')}</th>
+            <th>{t('observability.colDirection')}</th>
+            <th>{t('observability.colDecision')}</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((m) => (
+            <tr key={`${m.callId}-${m.direction}`}>
+              <td className="muted nowrap">{fmtDate(m.ts)}</td>
+              <td className="mono">{m.tool}</td>
+              <td className="mono">{m.subject}</td>
+              <td className="mono">{m.agentName ?? '—'}</td>
+              <td className="mono">{m.clientId ?? '—'}</td>
+              <td>{m.direction === 'request' ? t('observability.directionRequest') : t('observability.directionResponse')}</td>
+              <td>
+                <Badge kind={m.decision}>{m.decision}</Badge>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <Pagination {...pager} />
+    </div>
   );
 }
 
@@ -363,7 +382,7 @@ function FinopsTab({ range }: { range: ViewRange }) {
   const t = useT();
   const q = useTenantQuery<FinopsView>(['analytics', 'finops', range], `/analytics/finops?last=${range}`);
   const v = q.data;
-  if (!v) return <ErrorBox error={q.error} />;
+  if (!v) return q.isLoading ? <DashboardSkeleton stats={4} charts={2} /> : <ErrorBox error={q.error} />;
   const tokens = (n: number) => t('observability.tokens', { count: fmtNumber(n) });
   return (
     <>
@@ -393,16 +412,17 @@ function FinopsTab({ range }: { range: ViewRange }) {
             { label: t('observability.mechOmni'), value: v.tokens.savedByMechanism.omni },
           ]}
         />
-        <UsageTable title={t('observability.usageByClient')} rows={v.usageByClient} />
-        <UsageTable title={t('observability.usageByAgent')} rows={v.usageByAgent} />
-        <UsageTable title={t('observability.usageBySubject')} rows={v.usageBySubject} />
+        <UsageTable title={t('observability.usageByClient')} items={v.usageByClient} />
+        <UsageTable title={t('observability.usageByAgent')} items={v.usageByAgent} />
+        <UsageTable title={t('observability.usageBySubject')} items={v.usageBySubject} />
       </div>
     </>
   );
 }
 
-function UsageTable({ title, rows }: { title: string; rows: FinopsView['usageByClient'] }) {
+function UsageTable({ title, items }: { title: string; items: FinopsView['usageByClient'] }) {
   const t = useT();
+  const { rows, pager } = usePagination(items, { compact: true });
   return (
     <div className="panel">
       <div className="panel-head">
@@ -430,6 +450,7 @@ function UsageTable({ title, rows }: { title: string; rows: FinopsView['usageByC
           ))}
         </tbody>
       </table>
+      <Pagination {...pager} />
     </div>
   );
 }

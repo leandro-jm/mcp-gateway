@@ -1381,6 +1381,103 @@ kbd {
   }
 }
 
+/* ---------------------------------------------------------------- skeletons (ADR-029) */
+.skeleton {
+  display: block;
+  max-width: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 50%, var(--surface-2) 75%);
+  background-size: 300% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+.count-label .skeleton {
+  display: inline-block;
+  vertical-align: middle;
+}
+.table tbody tr.skeleton-row:hover td {
+  background: transparent;
+}
+.skeleton-text {
+  display: grid;
+  gap: 10px;
+  padding: 8px 0;
+}
+.skeleton-card {
+  min-height: 120px;
+}
+
+/* ---------------------------------------------------------------- pagination (ADR-029) */
+.pager {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 12px 0 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.panel > .pager,
+.drawer-body .panel .pager,
+.chart .pager {
+  padding: 10px 16px 12px;
+  border-top: 1px solid var(--border);
+}
+.chart .pager {
+  padding: 10px 0 0;
+}
+.pager .spacer {
+  flex: 1;
+}
+.pager-range {
+  font-variant-numeric: tabular-nums;
+}
+.pager-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.pager-size .select {
+  width: auto;
+  height: 28px;
+  min-height: 28px;
+  font-size: 13px;
+}
+.pager-pages {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.pager-page {
+  min-width: 28px;
+  padding: 0 6px;
+  font-variant-numeric: tabular-nums;
+}
+.pager-page.active {
+  border-color: var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+.pager-gap {
+  min-width: 20px;
+  text-align: center;
+  color: var(--text-3);
+}
+
 /* ---------------------------------------------------------------- menu (theme/language/account) */
 .menu-anchor {
   position: relative;

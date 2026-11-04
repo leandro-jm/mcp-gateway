@@ -4,9 +4,12 @@ import { useState } from 'react';
 import { api } from '../api/client';
 import { useSession } from '../api/session';
 import type { Page, Tenant } from '../api/types';
+import { Pagination } from '../components/Pagination';
+import { Skeleton, SkeletonRows } from '../components/Skeleton';
 import { useToast } from '../components/toast';
 import { Badge, Drawer, ErrorBox, Field, fmtDate, LivePill, PageHeader, SearchBox, Tabs } from '../components/ui';
 import { useT, type UiMessageKey } from '../i18n';
+import { usePagination } from '../lib/pagination';
 
 const STATUS_LABELS: Record<Tenant['status'], UiMessageKey> = { active: 'tenants.statusActive', suspended: 'tenants.statusSuspended' };
 
@@ -34,6 +37,9 @@ export function TenantsPage() {
       void qc.invalidateQueries({ queryKey: ['tenants'] });
     },
   });
+  const needle = q.toLowerCase();
+  const items = (list.data?.items ?? []).filter((tn) => !needle || tn.slug.includes(needle) || tn.name.toLowerCase().includes(needle));
+  const { rows, pager } = usePagination(items, { reset: q });
   if (!platformAdmin) {
     return (
       <div className="content">
@@ -41,8 +47,6 @@ export function TenantsPage() {
       </div>
     );
   }
-  const needle = q.toLowerCase();
-  const items = (list.data?.items ?? []).filter((tn) => !needle || tn.slug.includes(needle) || tn.name.toLowerCase().includes(needle));
   return (
     <>
       <PageHeader title={t('tenants.title')} subtitle={t('tenants.subtitle')} right={<LivePill value={list.data?.total ?? 0} label={t('tenants.title')} />} />
@@ -50,14 +54,14 @@ export function TenantsPage() {
       <div className="content">
         <div className="toolbar">
           <SearchBox value={q} onChange={setQ} placeholder={t('tenants.search')} />
-          <span className="count-label">{t('tenants.count', { count: items.length })}</span>
+          <span className="count-label">{list.isLoading ? <Skeleton width={72} /> : t('tenants.count', { count: items.length })}</span>
           <span className="spacer" />
           <button className="btn primary" onClick={() => setEdit('new')}>
             {t('tenants.new')}
           </button>
         </div>
         <ErrorBox error={list.error ?? remove.error} />
-        <table className="table">
+        <table className="table" aria-busy={list.isLoading}>
           <thead>
             <tr>
               <th>{t('tenants.colTenant')}</th>
@@ -67,7 +71,8 @@ export function TenantsPage() {
             </tr>
           </thead>
           <tbody>
-            {items.map((tn) => (
+            {list.isLoading && <SkeletonRows cols={4} />}
+            {rows.map((tn) => (
               <tr key={tn.id} className="clickable" onClick={() => setEdit(tn)}>
                 <td>
                   <span className="mono">{tn.slug}</span>
@@ -101,6 +106,7 @@ export function TenantsPage() {
             ))}
           </tbody>
         </table>
+        <Pagination {...pager} />
       </div>
       {edit && <TenantEditor tenant={edit === 'new' ? null : edit} onClose={() => setEdit(null)} />}
     </>

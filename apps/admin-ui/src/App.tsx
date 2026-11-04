@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { Shell } from './components/Shell';
-import { useT } from './i18n';
+import { PageSkeleton } from './components/Skeleton';
 import { useOnboarding } from './lib/onboarding';
 
 // Pages with editors (CodeMirror) are loaded on demand.
@@ -27,17 +27,15 @@ const SettingsPage = lazy(() => import('./pages/Settings').then((m) => ({ defaul
 
 /** The app opens on the getting-started guide while its essential steps are pending (ADR-023). */
 function HomeRedirect() {
-  const t = useT();
   const onboarding = useOnboarding();
-  if (onboarding.isLoading) return <div className="loading content">{t('common.loading')}</div>;
+  if (onboarding.isLoading) return <PageSkeleton />;
   return <Navigate to={onboarding.essentialComplete || onboarding.dismissed ? '/tools' : '/onboarding'} replace />;
 }
 
 export function App() {
-  const t = useT();
   return (
     <Shell>
-      <Suspense fallback={<div className="loading content">{t('common.loading')}</div>}>
+      <Suspense fallback={<PageSkeleton />}>
         <Routes>
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/onboarding" element={<OnboardingPage />} />

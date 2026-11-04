@@ -6,11 +6,14 @@ import { api } from '../api/client';
 import { useSession } from '../api/session';
 import type { Page, User } from '../api/types';
 import { Editor } from '../components/Editor';
+import { Pagination } from '../components/Pagination';
+import { Skeleton, SkeletonRows } from '../components/Skeleton';
 import { TokenList } from '../components/TokenList';
 import { useToast } from '../components/toast';
 import { Badge, Drawer, ErrorBox, Field, fmtDate, LivePill, PageHeader, SearchBox, Tabs } from '../components/ui';
 import { useI18n, useT, type UiMessageKey } from '../i18n';
 import { useInvalidate, useTenantQuery } from '../lib/hooks';
+import { usePagination } from '../lib/pagination';
 import { rich } from '../lib/rich';
 import { parseJson } from '../lib/schema';
 
@@ -40,6 +43,8 @@ export function UsersPage() {
       void invalidate('users');
     },
   });
+  const items = (users.data?.items ?? []).filter((u) => !q || u.username.includes(q) || (u.displayName ?? '').toLowerCase().includes(q.toLowerCase()));
+  const { rows, pager } = usePagination(items, { reset: q });
   if (!me.isAdmin) {
     return (
       <div className="content">
@@ -47,7 +52,6 @@ export function UsersPage() {
       </div>
     );
   }
-  const items = (users.data?.items ?? []).filter((u) => !q || u.username.includes(q) || (u.displayName ?? '').toLowerCase().includes(q.toLowerCase()));
   return (
     <>
       <PageHeader
@@ -59,14 +63,14 @@ export function UsersPage() {
       <div className="content">
         <div className="toolbar">
           <SearchBox value={q} onChange={setQ} placeholder={t('users.search')} />
-          <span className="count-label">{t('users.count', { count: items.length })}</span>
+          <span className="count-label">{users.isLoading ? <Skeleton width={72} /> : t('users.count', { count: items.length })}</span>
           <span className="spacer" />
           <button className="btn primary" onClick={() => setEdit('new')}>
             {t('users.new')}
           </button>
         </div>
         <ErrorBox error={users.error ?? remove.error} />
-        <table className="table">
+        <table className="table" aria-busy={users.isLoading}>
           <thead>
             <tr>
               <th>{t('users.colUser')}</th>
@@ -80,7 +84,8 @@ export function UsersPage() {
             </tr>
           </thead>
           <tbody>
-            {items.map((u) => (
+            {users.isLoading && <SkeletonRows cols={8} />}
+            {rows.map((u) => (
               <tr key={u.id} className="clickable" onClick={() => setEdit(u)}>
                 <td>
                   <span className="mono">{u.username}</span>
@@ -107,6 +112,7 @@ export function UsersPage() {
             ))}
           </tbody>
         </table>
+        <Pagination {...pager} />
       </div>
       {edit && <UserEditor user={edit === 'new' ? null : edit} onClose={() => setEdit(null)} />}
     </>

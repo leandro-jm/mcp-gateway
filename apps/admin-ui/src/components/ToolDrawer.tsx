@@ -7,11 +7,14 @@ import { useSession } from '../api/session';
 import type { Decision, PlaygroundResult, Projection, Tool, ToolVersion } from '../api/types';
 import { getLocale, useT } from '../i18n';
 import { useInvalidate } from '../lib/hooks';
+import { usePagination } from '../lib/pagination';
 import { DECISION_LABEL, DRIFT_KIND_LABEL, enumLabel, TOOL_KIND_LABEL, TOOL_STATE_LABEL } from '../lib/labels';
 import { rich } from '../lib/rich';
 import { argsSkeleton, lines, parseJson } from '../lib/schema';
 import { DiffView } from './DiffView';
 import { Editor } from './Editor';
+import { Pagination } from './Pagination';
+import { Skeleton, SkeletonRows, TextSkeleton } from './Skeleton';
 import { useToast } from './toast';
 import { ViewTab } from './ViewTab';
 import { Badge, Drawer, ErrorBox, Field, fmtBytes, fmtDate, JsonView, Tabs } from './ui';
@@ -70,7 +73,7 @@ export function ToolDrawer({ toolId, onClose }: { toolId: string; onClose(): voi
 
   return (
     <Drawer
-      title={tl?.name ?? '…'}
+      title={tl?.name ?? <Skeleton width={220} height={20} />}
       onClose={onClose}
       actions={actions}
       subtitle={
@@ -105,6 +108,7 @@ export function ToolDrawer({ toolId, onClose }: { toolId: string; onClose(): voi
       />
       <div className="drawer-body">
         {tool.error ? <ErrorBox error={tool.error} /> : null}
+        {tool.isLoading && <TextSkeleton lines={6} />}
         {tl && tab === 'overview' && <Overview tool={tl} />}
         {tl && tab === 'versions' && <Versions tool={tl} />}
         {tl && tab === 'projection' && <ProjectionTab tool={tl} />}
@@ -209,9 +213,11 @@ function Versions({ tool }: { tool: Tool }) {
   }, [versions.data]);
   const a = items.find((v) => v.version === from);
   const b = items.find((v) => v.version === to);
+  // the compare selects below keep using every version, not just the visible page
+  const { rows, pager } = usePagination(items, { compact: true });
   return (
     <div className="stack">
-      <table className="table">
+      <table className="table" aria-busy={versions.isLoading}>
         <thead>
           <tr>
             <th>{t('common.version')}</th>
@@ -221,7 +227,8 @@ function Versions({ tool }: { tool: Tool }) {
           </tr>
         </thead>
         <tbody>
-          {items.map((v) => (
+          {versions.isLoading && <SkeletonRows cols={4} rows={3} />}
+          {rows.map((v) => (
             <tr key={v.version}>
               <td className="mono">v{v.version}</td>
               <td>
@@ -239,6 +246,7 @@ function Versions({ tool }: { tool: Tool }) {
           ))}
         </tbody>
       </table>
+      <Pagination {...pager} />
       {items.length > 1 && (
         <>
           <div className="row">
@@ -337,7 +345,7 @@ function ProjectionTab({ tool }: { tool: Tool }) {
     },
   });
 
-  if (!loaded) return <div className="loading">{t('toolDrawer.loadingProjection')}</div>;
+  if (!loaded) return <TextSkeleton lines={6} />;
   return (
     <div className="stack">
       {current.data?.status === 'suggested' && (

@@ -7,11 +7,14 @@ import { useSession } from '../api/session';
 import type { ComposerProposal, Composite, CompositeReadiness, CompositeValidation, LlmSettings } from '../api/types';
 import { Dag } from '../components/Dag';
 import { Editor } from '../components/Editor';
+import { Pagination } from '../components/Pagination';
 import { PublishWizard } from '../components/PublishWizard';
+import { TableSkeleton, TextSkeleton } from '../components/Skeleton';
 import { useToast } from '../components/toast';
 import { Badge, ErrorBox, Field, fmtNumber, JsonView, PageHeader, Tabs } from '../components/ui';
 import { useT, type UiMessageKey } from '../i18n';
 import { useInvalidate, useTenantQuery } from '../lib/hooks';
+import { usePagination } from '../lib/pagination';
 import { parseJson } from '../lib/schema';
 
 const TEMPLATE = `name: rh_resumo_colaborador
@@ -173,6 +176,7 @@ export function ComposerPage() {
   const disabledSteps = (readiness.data?.steps ?? []).filter((s) => s.toolId && s.state !== 'enabled');
   const dryRunStatus = dryRun.data ? Object.fromEntries(Object.entries(dryRun.data.steps).map(([id, st]) => [id, st.status])) : undefined;
   const llmReady = llm.data?.configured === true;
+  const dryRunSteps = usePagination(dryRun.data ? Object.entries(dryRun.data.steps) : [], { reset: dryRun.submittedAt, compact: true });
 
   return (
     <>
@@ -198,6 +202,7 @@ export function ComposerPage() {
             {t('composer.newComposite')}
           </button>
           <div className="label">{t('composer.composites')}</div>
+          {composites.isLoading && <TextSkeleton lines={4} />}
           {(composites.data?.items ?? []).map((c) => (
             <button
               key={c.id}
@@ -248,6 +253,7 @@ export function ComposerPage() {
               {generate.isPending && <span className="hint">{t('composer.generating')}</span>}
             </div>
             <ErrorBox error={generate.error} />
+            {generate.isPending && <TextSkeleton lines={5} />}
             {proposal && (
               <div className="panel" data-testid="proposal">
                 <div className="panel-head">
@@ -404,6 +410,7 @@ export function ComposerPage() {
                     {t('composer.runDryRun')}
                   </button>
                   <ErrorBox error={dryRun.error} />
+                  {dryRun.isPending && !dryRun.data && <TableSkeleton cols={4} rows={3} />}
                   {dryRun.data && (
                     <>
                       <table className="table">
@@ -416,7 +423,7 @@ export function ComposerPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {Object.entries(dryRun.data.steps).map(([id, s]) => (
+                          {dryRunSteps.rows.map(([id, s]) => (
                             <tr key={id}>
                               <td className="mono">{id}</td>
                               <td>
@@ -430,6 +437,7 @@ export function ComposerPage() {
                           ))}
                         </tbody>
                       </table>
+                      <Pagination {...dryRunSteps.pager} />
                       <div className="label">{t('composer.finalOutput')}</div>
                       <JsonView value={dryRun.data.output} />
                     </>

@@ -5,10 +5,13 @@ import { api } from '../api/client';
 import { useSession } from '../api/session';
 import type { PiiRule } from '../api/types';
 import { Editor } from '../components/Editor';
+import { Pagination } from '../components/Pagination';
+import { SkeletonRows } from '../components/Skeleton';
 import { useToast } from '../components/toast';
 import { Badge, ErrorBox, Field, fmtNumber, JsonView, PageHeader, Tabs } from '../components/ui';
 import { useT, type UiMessageKey } from '../i18n';
 import { useInvalidate, useTenantQuery } from '../lib/hooks';
+import { usePagination } from '../lib/pagination';
 import { parseJson } from '../lib/schema';
 
 type Tab = 'rules' | 'preview';
@@ -54,6 +57,7 @@ export function PiiPage() {
     },
   });
   const ids = [...new Set((detectors.data?.items ?? []).map((d) => d.id)), 'field'];
+  const { rows, pager } = usePagination(rules.data?.items ?? [], { reset: tab });
   return (
     <>
       <PageHeader title={t('pii.title')} subtitle={t('pii.subtitle')} />
@@ -68,7 +72,9 @@ export function PiiPage() {
       <div className="content stack">
         {tab === 'rules' && (
           <>
-            <table className="table">
+            <ErrorBox error={rules.error} />
+            <div>
+            <table className="table" aria-busy={rules.isLoading}>
               <thead>
                 <tr>
                   <th>{t('pii.colDetector')}</th>
@@ -80,7 +86,8 @@ export function PiiPage() {
                 </tr>
               </thead>
               <tbody>
-                {(rules.data?.items ?? []).map((r) => (
+                {rules.isLoading && <SkeletonRows cols={6} rows={4} />}
+                {rows.map((r) => (
                   <tr key={r.id}>
                     <td className="mono">{r.detector}</td>
                     <td>
@@ -102,6 +109,8 @@ export function PiiPage() {
                 ))}
               </tbody>
             </table>
+            <Pagination {...pager} />
+            </div>
             {me.isAdmin && (
               <div className="panel">
                 <div className="panel-head">

@@ -2,6 +2,7 @@ import { ArrowRight, CheckCircle2, ChevronDown, ChevronRight, Circle, PartyPoppe
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useSession } from '../api/session';
+import { Skeleton, TextSkeleton } from '../components/Skeleton';
 import { Badge, CodeBlock, LivePill, PageHeader, Tabs } from '../components/ui';
 import { useT, type T, type UiMessageKey } from '../i18n';
 import { omniSnippets, useOnboarding, type ExtraId, type StepId, type StepStatus } from '../lib/onboarding';
@@ -84,10 +85,12 @@ export function OnboardingPage() {
   const [open, setOpen] = useState<StepId | null | undefined>(undefined);
   const openId = open === undefined ? (ob.steps.find((s) => !s.done)?.id ?? null) : open;
   const pct = Math.round((ob.done / ob.total) * 100);
+  // progress is unknown until every check answers: skeletons instead of a misleading 0/N (ADR-029)
+  const loading = ob.isLoading;
 
   return (
     <>
-      <PageHeader title={t('onboarding.title')} subtitle={t('onboarding.subtitle')} right={<LivePill value={`${ob.done}/${ob.total}`} label={t('onboarding.liveLabel')} />} />
+      <PageHeader title={t('onboarding.title')} subtitle={t('onboarding.subtitle')} right={<LivePill value={loading ? '—' : `${ob.done}/${ob.total}`} label={t('onboarding.liveLabel')} />} />
       <div className="content stack onb">
         <section className="panel">
           <div className="panel-head">
@@ -124,33 +127,41 @@ export function OnboardingPage() {
         <section className="panel">
           <div className="panel-head">
             <span className="panel-title">{t('onboarding.checklistTitle')}</span>
-            <span className="muted">{t('onboarding.progress', { done: ob.done, total: ob.total })}</span>
+            {loading ? <Skeleton width={120} /> : <span className="muted">{t('onboarding.progress', { done: ob.done, total: ob.total })}</span>}
           </div>
           <div className="panel-body stack">
-            <div className="onb-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={t('onboarding.progress', { done: ob.done, total: ob.total })}>
-              <span style={{ width: `${pct}%` }} />
-            </div>
+            {loading ? (
+              <Skeleton height={8} />
+            ) : (
+              <div className="onb-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={t('onboarding.progress', { done: ob.done, total: ob.total })}>
+                <span style={{ width: `${pct}%` }} />
+              </div>
+            )}
             <p className="muted">{t('onboarding.checklistHint')}</p>
             <p className="hint">{rich(t, 'onboarding.exampleNote', { command: <span className="mono">pnpm dev:upstream</span> })}</p>
-            {ob.essentialComplete && (
+            {!loading && ob.essentialComplete && (
               <div className="alert ok row">
                 <PartyPopper size={18} />
                 <span>{t('onboarding.allDone')}</span>
               </div>
             )}
-            <ol className="onb-steps" data-testid="onboarding-steps">
-              {ob.steps.map((s, i) => (
-                <StepCard
-                  key={s.id}
-                  n={i + 1}
-                  step={s}
-                  open={openId === s.id}
-                  onToggle={() => setOpen(openId === s.id ? null : s.id)}
-                  onMark={(v) => ob.setMarked(s.id, v)}
-                  publicUrl={me.publicUrl}
-                />
-              ))}
-            </ol>
+            {loading ? (
+              <TextSkeleton lines={8} />
+            ) : (
+              <ol className="onb-steps" data-testid="onboarding-steps">
+                {ob.steps.map((s, i) => (
+                  <StepCard
+                    key={s.id}
+                    n={i + 1}
+                    step={s}
+                    open={openId === s.id}
+                    onToggle={() => setOpen(openId === s.id ? null : s.id)}
+                    onMark={(v) => ob.setMarked(s.id, v)}
+                    publicUrl={me.publicUrl}
+                  />
+                ))}
+              </ol>
+            )}
           </div>
         </section>
 
@@ -160,9 +171,7 @@ export function OnboardingPage() {
             <span className="muted">{t('onboarding.extrasHint')}</span>
           </div>
           <div className="panel-body onb-grid">
-            {ob.extras.map((s) => (
-              <ExtraCard key={s.id} step={s} onMark={(v) => ob.setMarked(s.id, v)} />
-            ))}
+            {loading ? <TextSkeleton lines={4} /> : ob.extras.map((s) => <ExtraCard key={s.id} step={s} onMark={(v) => ob.setMarked(s.id, v)} />)}
           </div>
         </section>
 

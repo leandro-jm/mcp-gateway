@@ -5,11 +5,14 @@ import { api } from '../api/client';
 import { useSession } from '../api/session';
 import type { Decision, Page, Policy, Tool } from '../api/types';
 import { Editor } from '../components/Editor';
+import { Pagination } from '../components/Pagination';
+import { Skeleton, SkeletonRows } from '../components/Skeleton';
 import { useToast } from '../components/toast';
 import { Badge, Drawer, ErrorBox, Field, LivePill, PageHeader, Tabs } from '../components/ui';
 import { useT } from '../i18n';
 import { useInvalidate, useTenantQuery } from '../lib/hooks';
 import { EFFECT_LABEL, enumLabel } from '../lib/labels';
+import { usePagination } from '../lib/pagination';
 import { parseJson } from '../lib/schema';
 
 type Tab = 'list' | 'simulate';
@@ -33,6 +36,7 @@ export function PoliciesPage() {
     },
   });
   const items = policies.data?.items ?? [];
+  const { rows, pager } = usePagination(items);
   return (
     <>
       <PageHeader title={t('policies.title')} subtitle={t('policies.subtitle')} right={<LivePill value={items.length} label={t('policies.rules')} />} />
@@ -49,7 +53,7 @@ export function PoliciesPage() {
           <>
             <div className="toolbar">
               <span className="count-label" style={{ paddingLeft: 0 }}>
-                {t('policies.count', { count: items.length })}
+                {policies.isLoading ? <Skeleton width={72} /> : t('policies.count', { count: items.length })}
               </span>
               <span className="spacer" />
               {me.isAdmin && (
@@ -59,7 +63,7 @@ export function PoliciesPage() {
               )}
             </div>
             <ErrorBox error={policies.error} />
-            <table className="table">
+            <table className="table" aria-busy={policies.isLoading}>
               <thead>
                 <tr>
                   <th>{t('common.effect')}</th>
@@ -72,7 +76,8 @@ export function PoliciesPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((p) => (
+                {policies.isLoading && <SkeletonRows cols={7} />}
+                {rows.map((p) => (
                   <tr key={p.id} className={me.isAdmin ? 'clickable' : ''} onClick={() => me.isAdmin && setEdit(p)}>
                     <td>
                       <Badge kind={p.effect}>{enumLabel(t, EFFECT_LABEL, p.effect)}</Badge>
@@ -98,6 +103,7 @@ export function PoliciesPage() {
                 ))}
               </tbody>
             </table>
+            <Pagination {...pager} />
           </>
         )}
         {tab === 'simulate' && <Simulator />}
@@ -204,18 +210,23 @@ export function Simulator({ defaultTool }: { defaultTool?: string }) {
     },
   });
   const d = sim.data;
+  const trace = usePagination(d?.trace ?? [], { compact: true, reset: sim.submittedAt });
   return (
     <div className="grid-2" style={{ alignItems: 'start' }}>
       <div className="panel">
         <div className="panel-body">
           <Field label={t('common.tool')}>
-            <select className="select mono" value={tool} onChange={(e) => setTool(e.target.value)} aria-label={t('policies.simulatedTool')}>
-              {(tools.data?.items ?? []).map((tl) => (
-                <option key={tl.id} value={tl.name}>
-                  {tl.name}
-                </option>
-              ))}
-            </select>
+            {tools.isLoading ? (
+              <Skeleton height={34} style={{ borderRadius: 'var(--radius)' }} />
+            ) : (
+              <select className="select mono" value={tool} onChange={(e) => setTool(e.target.value)} aria-label={t('policies.simulatedTool')}>
+                {(tools.data?.items ?? []).map((tl) => (
+                  <option key={tl.id} value={tl.name}>
+                    {tl.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </Field>
           <div className="grid-2">
             <Field label={t('common.roles')}>
@@ -234,7 +245,7 @@ export function Simulator({ defaultTool }: { defaultTool?: string }) {
           <Field label={t('policies.argsField')}>
             <Editor value={args} onChange={setArgs} height="90px" label={t('policies.argsField')} />
           </Field>
-          <button className="btn primary" onClick={() => sim.mutate()} disabled={sim.isPending}>
+          <button className="btn primary" onClick={() => sim.mutate()} disabled={sim.isPending || tools.isLoading}>
             {t('common.simulate')}
           </button>
         </div>
@@ -267,7 +278,7 @@ export function Simulator({ defaultTool }: { defaultTool?: string }) {
                 </tr>
               </thead>
               <tbody>
-                {d.trace.map((r) => (
+                {trace.rows.map((r) => (
                   <tr key={r.ruleId}>
                     <td className="mono dim">{r.ruleId.slice(0, 8)}</td>
                     <td>
@@ -279,6 +290,7 @@ export function Simulator({ defaultTool }: { defaultTool?: string }) {
                 ))}
               </tbody>
             </table>
+            <Pagination {...trace.pager} />
           </>
         )}
       </div>

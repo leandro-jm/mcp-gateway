@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
 import { api } from '../api/client';
 import type { DecisionProvider, DecisionProviderDto, LlmTestResult, ToolRouterSettings, ToolRouterView } from '../api/types';
+import { TextSkeleton } from '../components/Skeleton';
 import { useToast } from '../components/toast';
 import { Badge, ErrorBox, Field, fmtDate } from '../components/ui';
 import { useT } from '../i18n';
@@ -32,6 +33,14 @@ export function ToolRouterPanel() {
   return (
     <div className="content stack" style={{ maxWidth: 820 }}>
       <ErrorBox error={view.error} />
+      {view.isLoading &&
+        [0, 1].map((i) => (
+          <div key={i} className="panel">
+            <div className="panel-body">
+              <TextSkeleton lines={6} />
+            </div>
+          </div>
+        ))}
       {view.data && (
         <>
           {!view.data.platformEnabled && <div className="alert warn">{t('router.platformOff')}</div>}

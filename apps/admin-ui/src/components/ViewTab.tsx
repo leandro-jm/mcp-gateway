@@ -7,6 +7,7 @@ import { useT } from '../i18n';
 import { useInvalidate } from '../lib/hooks';
 import { argsSkeleton, parseJson } from '../lib/schema';
 import { Editor } from './Editor';
+import { ChartSkeleton, TextSkeleton } from './Skeleton';
 import { useToast } from './toast';
 import { ToolUiPreview } from './ToolUiPreview';
 import { ErrorBox, Field } from './ui';
@@ -77,6 +78,7 @@ export function ViewTab({ tool }: { tool: Tool }) {
   });
 
   const issues = current.data?.issues ?? [];
+  if (!loaded) return current.error ? <ErrorBox error={current.error} /> : <TextSkeleton lines={6} />;
   return (
     <div className="stack">
       <p className="hint">{t('views.intro')}</p>
@@ -129,7 +131,8 @@ export function ViewTab({ tool }: { tool: Tool }) {
             {t('views.previewRun')}
           </button>
           <ErrorBox error={preview.error} />
-          {preview.data && <ToolUiPreview result={preview.data.r.result} args={preview.data.args} subject={subject} />}
+          {preview.isPending && <ChartSkeleton height={160} />}
+          {preview.data && !preview.isPending && <ToolUiPreview result={preview.data.r.result} args={preview.data.args} subject={subject} />}
         </div>
       </div>
     </div>

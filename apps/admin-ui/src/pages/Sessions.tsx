@@ -3,11 +3,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import type { CallSummary, SessionSummary, Trajectory, ViewRange } from '../api/types';
 import { Swimlane } from '../components/charts';
+import { Pagination } from '../components/Pagination';
+import { ChartSkeleton, SkeletonRows } from '../components/Skeleton';
 import { Badge, ErrorBox, fmtDate, fmtNumber, PageHeader } from '../components/ui';
 import { useT, type T } from '../i18n';
 import { timeLabel } from '../lib/format';
 import { DECISION_LABEL, enumLabel } from '../lib/labels';
 import { useTenantQuery } from '../lib/hooks';
+import { usePagination } from '../lib/pagination';
 
 const RANGES: Array<{ id: ViewRange; label: Parameters<T>[0] }> = [
   { id: '24h', label: 'observability.range24h' },
@@ -28,6 +31,16 @@ export function SessionsPage() {
   const [range, setRange] = useState<ViewRange>('24h');
   const sessions = useTenantQuery<{ items: SessionSummary[] }>(['sessions', range], `/sessions?last=${range}`);
   const open = params.get('session');
+  const items = sessions.data?.items ?? [];
+  const { rows, pager } = usePagination(items, { reset: range });
+  // a link to `?session=` opens the page that holds that row, once per session and range
+  const openIndex = open ? items.findIndex((s) => s.sessionKey === open) : -1;
+  const target = openIndex >= 0 ? `${range}:${open}` : null;
+  const [jumped, setJumped] = useState<string | null>(null);
+  if (target && target !== jumped) {
+    setJumped(target);
+    pager.onPage(Math.floor(openIndex / pager.pageSize));
+  }
   return (
     <>
       <PageHeader
@@ -46,7 +59,7 @@ export function SessionsPage() {
       <div className="content">
         <ErrorBox error={sessions.error} />
         {open && <TrajectoryView sessionKey={open} range={range} />}
-        <table className="table" data-testid="sessions-table">
+        <table className="table" data-testid="sessions-table" aria-busy={sessions.isLoading}>
           <thead>
             <tr>
               <th>{t('agents.colStart')}</th>
@@ -60,7 +73,8 @@ export function SessionsPage() {
             </tr>
           </thead>
           <tbody>
-            {(sessions.data?.items ?? []).map((s) => (
+            {sessions.isLoading && <SkeletonRows cols={8} />}
+            {rows.map((s) => (
               <tr key={s.sessionKey} className={`clickable ${open === s.sessionKey ? 'selected' : ''}`} onClick={() => setParams({ session: s.sessionKey })}>
                 <td className="muted nowrap">{fmtDate(s.start)}</td>
                 <td className="muted nowrap">{fmtDate(s.end)}</td>
@@ -74,6 +88,7 @@ export function SessionsPage() {
             ))}
           </tbody>
         </table>
+        <Pagination {...pager} />
         {sessions.data && !sessions.data.items.length && <div className="muted" style={{ padding: 16 }}>{t('agents.noSessions')}</div>}
       </div>
     </>
@@ -92,7 +107,7 @@ function TrajectoryView({ sessionKey, range }: { sessionKey: string; range: View
     const id = setInterval(() => setStep((s) => (s + 1 < events.length ? s + 1 : (setPlaying(false), s))), 900);
     return () => clearInterval(id);
   }, [playing, events.length]);
-  if (!q.data) return <ErrorBox error={q.error} />;
+  if (!q.data) return q.isLoading ? <ChartSkeleton height={200} /> : <ErrorBox error={q.error} />;
   const current = events[step];
   const flagged = new Set(q.data.findings.flatMap((f) => [f.firstCallId]));
   return (

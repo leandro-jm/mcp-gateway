@@ -6,10 +6,13 @@ import { api } from '../api/client';
 import { useSession } from '../api/session';
 import type { AgentFinding, CompositeSuggestion, OutcomesView, ViewRange } from '../api/types';
 import { BarChart, Graph, StatCard } from '../components/charts';
+import { Pagination } from '../components/Pagination';
+import { ChartSkeleton, DashboardSkeleton, SkeletonRows, TextSkeleton } from '../components/Skeleton';
 import { useToast } from '../components/toast';
 import { Badge, ErrorBox, fmtDate, fmtNumber, JsonView, PageHeader, Tabs } from '../components/ui';
 import { useT, type T } from '../i18n';
 import { useInvalidate, useTenantQuery } from '../lib/hooks';
+import { usePagination } from '../lib/pagination';
 
 type Tab = 'findings' | 'suggestions' | 'co-usage' | 'outcomes';
 const TYPES: Array<{ id: AgentFinding['type']; label: Parameters<T>[0] }> = [
@@ -55,6 +58,7 @@ function Findings({ range }: { range: ViewRange }) {
   const [type, setType] = useState('');
   const q = useTenantQuery<{ items: AgentFinding[] }>(['agent-insights', 'findings', range, type], `/agent-insights/findings?last=${range}${type ? `&type=${type}` : ''}`);
   const label = (id: string) => t(TYPES.find((x) => x.id === id)?.label ?? 'agents.typeLoop');
+  const { rows, pager } = usePagination(q.data?.items ?? [], { reset: type });
   return (
     <>
       <div className="toolbar">
@@ -68,7 +72,7 @@ function Findings({ range }: { range: ViewRange }) {
         </select>
       </div>
       <ErrorBox error={q.error} />
-      <table className="table">
+      <table className="table" aria-busy={q.isLoading}>
         <thead>
           <tr>
             <th>{t('agents.colWhen')}</th>
@@ -82,7 +86,8 @@ function Findings({ range }: { range: ViewRange }) {
           </tr>
         </thead>
         <tbody>
-          {(q.data?.items ?? []).map((f) => (
+          {q.isLoading && <SkeletonRows cols={8} />}
+          {rows.map((f) => (
             <tr key={f.id}>
               <td className="muted nowrap">{fmtDate(f.at)}</td>
               <td>
@@ -100,6 +105,7 @@ function Findings({ range }: { range: ViewRange }) {
           ))}
         </tbody>
       </table>
+      <Pagination {...pager} />
       {q.data && !q.data.items.length && <div className="muted" style={{ padding: 16 }}>{t('agents.noFindings')}</div>}
     </>
   );
@@ -127,6 +133,7 @@ function Suggestions() {
   return (
     <>
       <ErrorBox error={q.error ?? accept.error ?? dismiss.error} />
+      {q.isLoading && <TextSkeleton lines={6} />}
       {(q.data?.items ?? []).map((s) => (
         <div className="panel" key={s.id} data-testid="suggestion">
           <div className="panel-head">
@@ -157,7 +164,7 @@ function Suggestions() {
 function CoUsage({ range }: { range: ViewRange }) {
   const t = useT();
   const q = useTenantQuery<{ nodes: string[]; edges: Array<{ from: string; to: string; count: number }> }>(['analytics', 'co-usage', range], `/analytics/co-usage?last=${range}`);
-  if (!q.data) return <ErrorBox error={q.error} />;
+  if (!q.data) return q.isLoading ? <ChartSkeleton height={420} /> : <ErrorBox error={q.error} />;
   return <Graph title={t('agents.coUsageTitle')} weightLabel={t('agents.coUsageWeight')} nodes={q.data.nodes} edges={q.data.edges.map((e) => ({ from: e.from, to: e.to, weight: e.count }))} />;
 }
 
@@ -165,7 +172,8 @@ function Outcomes({ range }: { range: ViewRange }) {
   const t = useT();
   const q = useTenantQuery<OutcomesView>(['analytics', 'outcomes', range], `/analytics/outcomes?last=${range}`);
   const v = q.data;
-  if (!v) return <ErrorBox error={q.error} />;
+  const { rows, pager } = usePagination(v?.recent ?? [], { compact: true });
+  if (!v) return q.isLoading ? <DashboardSkeleton stats={4} charts={2} /> : <ErrorBox error={q.error} />;
   if (!v.recent.length) return <div className="muted" style={{ padding: 16 }}>{t('agents.noOutcomes')}</div>;
   const pct = (n: number | null) => Math.round((n ?? 0) * 100);
   // status color only at the ends: a low success rate is a problem, a high one is healthy
@@ -193,7 +201,7 @@ function Outcomes({ range }: { range: ViewRange }) {
           </tr>
         </thead>
         <tbody>
-          {v.recent.map((o, i) => (
+          {rows.map((o, i) => (
             <tr key={i}>
               <td className="muted nowrap">{fmtDate(o.ts)}</td>
               <td>
@@ -206,6 +214,7 @@ function Outcomes({ range }: { range: ViewRange }) {
           ))}
         </tbody>
       </table>
+      <Pagination {...pager} />
     </>
   );
 }

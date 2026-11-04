@@ -5,6 +5,9 @@ import { api } from '../api/client';
 import type { ApiToken, ApiTokenCreated } from '../api/types';
 import { useT } from '../i18n';
 import { useInvalidate, useTenantQuery } from '../lib/hooks';
+import { usePagination } from '../lib/pagination';
+import { Pagination } from './Pagination';
+import { SkeletonRows } from './Skeleton';
 import { useToast } from './toast';
 import { CodeBlock, ErrorBox, Field, fmtDate } from './ui';
 
@@ -38,6 +41,7 @@ export function TokenList({ basePath }: { basePath: string }) {
     },
   });
   const items = tokens.data?.items ?? [];
+  const { rows, pager } = usePagination(items, { compact: true });
   return (
     <div className="stack">
       {created && (
@@ -65,7 +69,7 @@ export function TokenList({ basePath }: { basePath: string }) {
           {t('common.tokenGenerate')}
         </button>
       </div>
-      <table className="table">
+      <table className="table" aria-busy={tokens.isLoading}>
         <thead>
           <tr>
             <th>{t('common.name')}</th>
@@ -77,14 +81,15 @@ export function TokenList({ basePath }: { basePath: string }) {
           </tr>
         </thead>
         <tbody>
-          {items.length === 0 && (
+          {tokens.isLoading && <SkeletonRows cols={6} rows={3} />}
+          {!tokens.isLoading && items.length === 0 && (
             <tr>
               <td colSpan={6} className="muted">
                 {t('common.tokenNone')}
               </td>
             </tr>
           )}
-          {items.map((tk) => (
+          {rows.map((tk) => (
             <tr key={tk.id}>
               <td className="mono">{tk.name}</td>
               <td className="mono dim">{tk.prefix}…</td>
@@ -100,6 +105,7 @@ export function TokenList({ basePath }: { basePath: string }) {
           ))}
         </tbody>
       </table>
+      <Pagination {...pager} />
     </div>
   );
 }

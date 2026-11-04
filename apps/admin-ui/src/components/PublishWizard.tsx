@@ -4,7 +4,10 @@ import { api } from '../api/client';
 import type { CompositeReadiness, VirtualServer } from '../api/types';
 import { useT, type UiMessageKey } from '../i18n';
 import { useInvalidate, useTenantQuery } from '../lib/hooks';
+import { usePagination } from '../lib/pagination';
 import { enumLabel, TOOL_STATE_LABEL } from '../lib/labels';
+import { Pagination } from './Pagination';
+import { TableSkeleton } from './Skeleton';
 import { useToast } from './toast';
 import { Badge, Drawer, ErrorBox, Field } from './ui';
 
@@ -33,8 +36,14 @@ export function PublishWizard({ compositeId, onClose }: { compositeId: string; o
     .map((r) => r.trim())
     .filter(Boolean)
     .join(',');
-  const readiness = useTenantQuery<CompositeReadiness>(['composites', compositeId, 'readiness', roles], `/composites/${compositeId}/readiness?roles=${encodeURIComponent(roles || 'agent')}`);
+  // the previous answer stays on screen while the roles change, so the roles field is not unmounted
+  const readiness = useTenantQuery<CompositeReadiness>(['composites', compositeId, 'readiness', roles], `/composites/${compositeId}/readiness?roles=${encodeURIComponent(roles || 'agent')}`, {
+    keepPrevious: true,
+  });
   const r = readiness.data;
+  const stepsPage = usePagination(r?.steps ?? [], { compact: true });
+  const accessPage = usePagination(r?.access ?? [], { reset: roles, compact: true });
+  const serversPage = usePagination(r?.virtualServers ?? [], { compact: true });
   const refresh = () => {
     void readiness.refetch();
     void invalidate('tools');
@@ -92,6 +101,7 @@ export function PublishWizard({ compositeId, onClose }: { compositeId: string; o
       </div>
       <div className="drawer-body stack" data-testid="publish-wizard">
         <ErrorBox error={readiness.error ?? enable.error ?? grant.error ?? addToServer.error} />
+        {readiness.isLoading && step !== 'summary' && <TableSkeleton cols={3} rows={4} />}
         {r && step === 'enable' && (
           <>
             <p className="hint">{t('composer.pubEnableIntro')}</p>
@@ -111,7 +121,7 @@ export function PublishWizard({ compositeId, onClose }: { compositeId: string; o
                     )}
                   </td>
                 </tr>
-                {r.steps.map((s) => (
+                {stepsPage.rows.map((s) => (
                   <tr key={s.id}>
                     <td className="mono">
                       {s.id} → {s.tool}
@@ -131,6 +141,7 @@ export function PublishWizard({ compositeId, onClose }: { compositeId: string; o
                 ))}
               </tbody>
             </table>
+            <Pagination {...stepsPage.pager} />
           </>
         )}
 
@@ -149,7 +160,7 @@ export function PublishWizard({ compositeId, onClose }: { compositeId: string; o
                 </tr>
               </thead>
               <tbody>
-                {r.access.map((a) => (
+                {accessPage.rows.map((a) => (
                   <tr key={`${a.tool}|${a.role}`}>
                     <td className="mono">{a.tool}</td>
                     <td className="mono">{a.role}</td>
@@ -160,6 +171,7 @@ export function PublishWizard({ compositeId, onClose }: { compositeId: string; o
                 ))}
               </tbody>
             </table>
+            <Pagination {...accessPage.pager} />
             {missing.length > 0 &&
               (r.canCreatePolicies ? (
                 <button
@@ -181,7 +193,7 @@ export function PublishWizard({ compositeId, onClose }: { compositeId: string; o
             {r.virtualServers.length === 0 && <div className="alert warn">{t('composer.pubNoServers')}</div>}
             <table className="table">
               <tbody>
-                {r.virtualServers.map((vs) => (
+                {serversPage.rows.map((vs) => (
                   <tr key={vs.id}>
                     <td className="mono">{vs.slug}</td>
                     <td className="mono hint">{endpointOf(vs.id) ?? `/mcp/s/${vs.slug}`}</td>
@@ -200,6 +212,7 @@ export function PublishWizard({ compositeId, onClose }: { compositeId: string; o
                 ))}
               </tbody>
             </table>
+            <Pagination {...serversPage.pager} />
           </>
         )}
 
