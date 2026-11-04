@@ -1,8 +1,12 @@
 export { BarChart, type Bar } from './BarChart';
-export { ChartFrame, SERIES_COLORS } from './ChartFrame';
+export { Breakdown } from './Breakdown';
+export { ChartFrame } from './ChartFrame';
+export { Dumbbell } from './Dumbbell';
 export { Graph, type GraphEdge } from './Graph';
-export { Histogram } from './Histogram';
 export { LineChart, type LineSeries } from './LineChart';
+export { ScatterChart } from './ScatterChart';
 export { Sparkline } from './Sparkline';
 export { StackedBar } from './StackedBar';
 export { StatCard } from './StatCard';
+export { Swimlane } from './Swimlane';
+export { Waterfall } from './Waterfall';

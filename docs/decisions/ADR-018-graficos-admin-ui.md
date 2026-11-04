@@ -1,6 +1,6 @@
 # ADR-018: Gráficos na Admin UI sem biblioteca
 
-- Status: aceito
+- Status: substituído pelo ADR-028
 - Data: 2026-10-04
 
 ## Contexto

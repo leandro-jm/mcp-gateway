@@ -5,7 +5,7 @@ import { useSearchParams } from 'react-router';
 import { api } from '../api/client';
 import { useSession } from '../api/session';
 import type { CallExplanation, CallSummary, CapturedCall, DebugCapture, ReplayResult } from '../api/types';
-import { StackedBar } from '../components/charts';
+import { Waterfall } from '../components/charts';
 import { DiffView } from '../components/DiffView';
 import { useToast } from '../components/toast';
 import { Badge, Drawer, ErrorBox, Field, fmtBytes, fmtDate, fmtNumber, JsonView, PageHeader, Tabs } from '../components/ui';
@@ -135,7 +135,13 @@ function CallDrawer({ callId, admin, onClose, onOpen }: { callId: string; admin:
         <ErrorBox error={q.error} />
         {e && (
           <>
-            <StackedBar title={t('calls.waterfall')} format={(v) => `${fmtNumber(v)} ms`} segments={e.stages.filter((s) => s.ms > 0).map((s) => ({ label: s.stage, value: s.ms }))} />
+            <Waterfall
+              title={t('calls.waterfall')}
+              format={(v) => `${fmtNumber(v)} ms`}
+              // "overhead" is the gateway's total, not a pipeline stage: shown apart from the sequence
+              stages={e.stages.filter((s) => s.ms > 0 && s.stage !== 'overhead').map((s) => ({ label: s.stage, value: s.ms }))}
+              right={<span className="hint mono">{t('calls.overheadTotal', { ms: fmtNumber(e.stages.find((s) => s.stage === 'overhead')?.ms ?? 0) })}</span>}
+            />
             <div className="panel">
               <div className="panel-head">
                 <span className="panel-title">{t('calls.policy')}</span>

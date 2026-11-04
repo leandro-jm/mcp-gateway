@@ -1490,7 +1490,7 @@ kbd {
   }
 }
 
-/* charts (ADR-018): inline SVG over the theme tokens */
+/* charts (ADR-028): ECharts (SVG renderer) inside a themed card */
 .chart {
   margin: 0;
   border: 1px solid var(--border);
@@ -1513,68 +1513,25 @@ kbd {
   font-weight: 600;
   color: var(--text);
 }
-.chart-svg {
+.chart-canvas {
   width: 100%;
-  height: auto;
-  display: block;
-  overflow: visible;
+  min-width: 0;
 }
-.chart-grid {
-  stroke: var(--chart-grid);
-  stroke-width: 1;
-}
-.chart-axis,
-.chart-label {
-  fill: var(--text-2);
-  font-family: var(--font-mono);
-  font-size: 11px;
-}
-.chart-label {
-  fill: var(--text);
-}
-.chart-line {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-}
-.chart-dot {
-  fill: currentColor;
-}
-.chart-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--text-2);
-}
-.chart-legend i {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  margin-right: 6px;
-  vertical-align: -1px;
+.stat-card .chart-canvas {
+  margin: 4px -4px 0;
+  width: calc(100% + 8px);
 }
 .chart-empty {
   padding: 24px 0;
   text-align: center;
   font-size: 13px;
 }
+.chart-table-wrap {
+  max-height: 360px;
+  overflow: auto;
+}
 .chart-table {
   font-size: 12px;
-}
-.graph-edge {
-  stroke: var(--chart-2);
-  stroke-opacity: 0.6;
-}
-.graph-node {
-  fill: var(--chart-1);
-}
-.sparkline path {
-  fill: none;
-  stroke: var(--chart-1);
-  stroke-width: 1.5;
 }
 .stat-grid {
   display: grid;
@@ -1608,7 +1565,6 @@ kbd {
   font-weight: 600;
   line-height: 1.15;
   letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
 }
 .stat-hint {
   font-size: 12.5px;
@@ -1617,6 +1573,7 @@ kbd {
 .chart-grid-2 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  align-items: start;
   gap: 16px;
   margin-bottom: 16px;
 }
