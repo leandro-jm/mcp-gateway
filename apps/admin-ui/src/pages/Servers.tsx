@@ -5,11 +5,14 @@ import { Link } from 'react-router';
 import { api } from '../api/client';
 import { useSession } from '../api/session';
 import type { Page, Snippets, Tool, VirtualServer } from '../api/types';
+import { Pagination } from '../components/Pagination';
+import { Skeleton, SkeletonRows, TextSkeleton } from '../components/Skeleton';
 import { useToast } from '../components/toast';
 import { Badge, CodeBlock, Drawer, EmptyState, ErrorBox, Field, LivePill, PageHeader, RefreshControls, SearchBox, Tabs } from '../components/ui';
 import { useT } from '../i18n';
 import { useAutoRefresh, useInvalidate, useTenantQuery } from '../lib/hooks';
 import { enumLabel, TOOL_STATE_LABEL } from '../lib/labels';
+import { usePagination } from '../lib/pagination';
 import { rich } from '../lib/rich';
 import { lines } from '../lib/schema';
 
@@ -18,7 +21,8 @@ export function SnippetTabs({ serverId }: { serverId: string }) {
   const { tenant } = useSession();
   const sn = useQuery({ queryKey: [tenant, 'snippets', serverId], queryFn: () => api<Snippets>(`/virtual-servers/${serverId}/snippets`) });
   const [tab, setTab] = useState<'claude' | 'generic'>('claude');
-  if (!sn.data) return <div className="loading">{t('servers.loadingSnippets')}</div>;
+  if (sn.isLoading) return <TextSkeleton lines={5} />;
+  if (!sn.data) return <ErrorBox error={sn.error} />;
   return (
     <div className="panel">
       <Tabs<'claude' | 'generic'>
@@ -54,6 +58,7 @@ export function ServersPage() {
   const [edit, setEdit] = useState<VirtualServer | 'new' | null>(null);
   const servers = useTenantQuery<{ items: VirtualServer[] }>(['servers'], '/virtual-servers', { refetchMs: interval });
   const items = (servers.data?.items ?? []).filter((s) => !q || s.slug.includes(q) || (s.name ?? '').toLowerCase().includes(q.toLowerCase()));
+  const { rows, pager } = usePagination(items, { reset: q });
   return (
     <>
       <PageHeader title={t('servers.title')} right={<LivePill value={servers.data?.items.length ?? 0} label={t('servers.liveLabel')} />} />
@@ -61,7 +66,7 @@ export function ServersPage() {
       <div className="content">
         <div className="toolbar">
           <SearchBox value={q} onChange={setQ} placeholder={t('servers.searchPlaceholder')} />
-          <span className="count-label">{t('servers.count', { count: items.length })}</span>
+          <span className="count-label">{servers.isLoading ? <Skeleton width={72} /> : t('servers.count', { count: items.length })}</span>
           <span className="spacer" />
           <RefreshControls onRefresh={() => void servers.refetch()} interval={interval} setInterval={setIntervalMs} />
           <button className="btn primary" onClick={() => setEdit('new')}>
@@ -85,7 +90,8 @@ export function ServersPage() {
             }
           />
         ) : (
-          <table className="table">
+          <>
+          <table className="table" aria-busy={servers.isLoading}>
             <thead>
               <tr>
                 <th className="sorted">
@@ -99,7 +105,8 @@ export function ServersPage() {
               </tr>
             </thead>
             <tbody>
-              {items.map((s) => (
+              {servers.isLoading && <SkeletonRows cols={6} />}
+              {rows.map((s) => (
                 <tr key={s.id} className="clickable" onClick={() => setEdit(s)}>
                   <td className="mono">{s.slug}</td>
                   <td>{s.name ?? '—'}</td>
@@ -117,6 +124,8 @@ export function ServersPage() {
               ))}
             </tbody>
           </table>
+          <Pagination {...pager} />
+          </>
         )}
       </div>
       {edit && <ServerEditor server={edit === 'new' ? null : edit} onClose={() => setEdit(null)} />}
@@ -199,6 +208,7 @@ function ServerEditor({ server, onClose }: { server: VirtualServer | null; onClo
             <input className="input" style={{ width: 240, minHeight: 34 }} placeholder={t('common.filterPlaceholder')} aria-label={t('common.filterPlaceholder')} value={filter} onChange={(e) => setFilter(e.target.value)} />
           </div>
           <div className="panel-body" style={{ maxHeight: 280, overflow: 'auto' }}>
+            {tools.isLoading && <TextSkeleton lines={5} />}
             {list.map((tool) => (
               <label key={tool.id} className="check" style={{ display: 'flex', padding: '4px 0' }}>
                 <input type="checkbox" checked={form.tools.has(tool.name)} onChange={() => toggle(tool.name)} />

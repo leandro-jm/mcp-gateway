@@ -5,6 +5,7 @@ import { api } from '../api/client';
 import type { Page, PlaygroundResult, Tool } from '../api/types';
 import { DiffView } from '../components/DiffView';
 import { Editor } from '../components/Editor';
+import { Skeleton } from '../components/Skeleton';
 import { Badge, ErrorBox, Field, fmtBytes, fmtNumber, JsonView, PageHeader, Tabs } from '../components/ui';
 import { useT } from '../i18n';
 import { useTenantQuery } from '../lib/hooks';
@@ -62,13 +63,17 @@ export function PlaygroundPage() {
             </div>
             <div className="panel-body">
               <Field label={t('common.tool')}>
-                <select className="select mono" value={toolName} onChange={(e) => setToolName(e.target.value)} aria-label={t('common.tool')}>
-                  {(tools.data?.items ?? []).map((item) => (
-                    <option key={item.id} value={item.name}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
+                {tools.isLoading ? (
+                  <Skeleton height={34} style={{ borderRadius: 'var(--radius)' }} />
+                ) : (
+                  <select className="select mono" value={toolName} onChange={(e) => setToolName(e.target.value)} aria-label={t('common.tool')}>
+                    {(tools.data?.items ?? []).map((item) => (
+                      <option key={item.id} value={item.name}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </Field>
               {tool && <p className="hint" style={{ marginTop: -8 }}>{tool.description}</p>}
               <Field label={t('common.arguments')}>

@@ -5,6 +5,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
 import type { ThemeDto } from '../api/types';
+import { ChartSkeleton, TextSkeleton } from '../components/Skeleton';
 import { useToast } from '../components/toast';
 import { ErrorBox, Field } from '../components/ui';
 import { getLocale, useT } from '../i18n';
@@ -122,6 +123,22 @@ export function AppearancePanel() {
     },
   });
 
+  // the form waits for the saved theme instead of showing the defaults first (ADR-029)
+  if (theme.isLoading) {
+    return (
+      <div className="content stack">
+        <p className="hint">{t('views.appearanceIntro')}</p>
+        <div className="grid-2" style={{ alignItems: 'start' }}>
+          <div className="panel">
+            <div className="panel-body">
+              <TextSkeleton lines={10} />
+            </div>
+          </div>
+          <ChartSkeleton height={320} />
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="content stack">
       <p className="hint">{t('views.appearanceIntro')}</p>

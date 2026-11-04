@@ -3,6 +3,7 @@ import { Activity, Palette, Route, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import type { LlmProvider, LlmSettings, LlmTestResult, ObservabilitySettings } from '../api/types';
+import { TextSkeleton } from '../components/Skeleton';
 import { useToast } from '../components/toast';
 import { Badge, ErrorBox, Field, fmtDate, PageHeader, Tabs } from '../components/ui';
 import { useT } from '../i18n';
@@ -61,6 +62,19 @@ export function SettingsPage() {
 const SUBJECT_DETECTORS = ['cpf', 'cnpj', 'pis', 'email', 'telefone'];
 
 /** Observability settings (ADR-016): trace propagation, session id, pricing, subject index and report_outcome. */
+/** A settings panel while its values load: the form is not shown with defaults it does not have yet (ADR-029). */
+function SettingsSkeleton() {
+  return (
+    <div className="content" style={{ maxWidth: 760 }}>
+      <div className="panel">
+        <div className="panel-body">
+          <TextSkeleton lines={8} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ObservabilitySettingsPanel() {
   const t = useT();
   const toast = useToast();
@@ -78,7 +92,7 @@ function ObservabilitySettingsPanel() {
       void invalidate('analytics');
     },
   });
-  if (!form) return <div className="content"><ErrorBox error={settings.error} /></div>;
+  if (!form) return settings.error ? <div className="content"><ErrorBox error={settings.error} /></div> : <SettingsSkeleton />;
   const set = (patch: Partial<ObservabilitySettings>) => setForm({ ...form, ...patch });
   return (
     <div className="content" style={{ maxWidth: 760 }}>
@@ -202,6 +216,7 @@ function LlmSettingsPanel() {
       ? t('settings.apiKeyConfigured', { hint: `••••${s.apiKeyHint}` })
       : t('settings.apiKeyConfiguredNoHint');
 
+  if (settings.isLoading) return <SettingsSkeleton />;
   return (
     <>
       <div className="content" style={{ maxWidth: 760 }}>

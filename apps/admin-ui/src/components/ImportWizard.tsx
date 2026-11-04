@@ -5,6 +5,8 @@ import { api } from '../api/client';
 import type { Credential, ImportFormat, ImportInput, ImportPreview, ImportResult, Source } from '../api/types';
 import { useT, type UiMessageKey } from '../i18n';
 import { useInvalidate } from '../lib/hooks';
+import { usePagination } from '../lib/pagination';
+import { Pagination } from './Pagination';
 import { useToast } from './toast';
 import { Badge, Drawer, ErrorBox, Field, fmtBytes, JsonView, Tabs } from './ui';
 
@@ -122,6 +124,8 @@ export function ImportWizard({ credentials, sources, onClose, onImported }: { cr
       return next;
     });
   const selectable = data?.operations.filter((o) => !o.skipped) ?? [];
+  // pages slice the rows only: selection and select-all cover every operation (ADR-029)
+  const { rows: opRows, pager: opPager } = usePagination(data?.operations ?? [], { reset: preview.submittedAt, compact: true });
 
   return (
     <Drawer title={t('import.title')} subtitle={<span className="muted">{t(step === 'input' ? 'import.stepInput' : step === 'preview' ? 'import.stepPreview' : 'import.stepTarget')}</span>} onClose={onClose}>
@@ -214,7 +218,7 @@ export function ImportWizard({ credentials, sources, onClose, onImported }: { cr
                 </tr>
               </thead>
               <tbody>
-                {data.operations.map((o) => {
+                {opRows.map((o) => {
                   const tool = data.tools.find((x) => x.operationKey === o.key);
                   return [
                     <tr key={o.key} className="clickable" onClick={() => setExpanded(expanded === o.key ? null : o.key)}>
@@ -241,6 +245,7 @@ export function ImportWizard({ credentials, sources, onClose, onImported }: { cr
                 })}
               </tbody>
             </table>
+            <Pagination {...opPager} />
             <div className="row">
               <button className="btn" onClick={() => setStep('input')}>
                 {t('import.back')}

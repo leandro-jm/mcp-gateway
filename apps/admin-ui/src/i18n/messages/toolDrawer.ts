@@ -35,7 +35,6 @@ export const toolDrawer = defineMessages('toolDrawer', {
     'toolDrawer.toVersion': 'Target version',
     // projection
     'toolDrawer.projectionSaved': 'Projection saved and active',
-    'toolDrawer.loadingProjection': 'Loading projection…',
     'toolDrawer.projectionSuggested': 'Projection suggested by the crawl (inactive). Review it and save to activate.',
     'toolDrawer.includeField': 'Include (JSONPath, one per line)',
     'toolDrawer.include': 'Include',
@@ -90,7 +89,6 @@ export const toolDrawer = defineMessages('toolDrawer', {
     'toolDrawer.fromVersion': 'Versão de origem',
     'toolDrawer.toVersion': 'Versão de destino',
     'toolDrawer.projectionSaved': 'Projeção salva e ativa',
-    'toolDrawer.loadingProjection': 'Carregando projeção…',
     'toolDrawer.projectionSuggested': 'Projeção sugerida pelo crawl (inativa). Revise e salve para ativar.',
     'toolDrawer.includeField': 'Include (JSONPath, um por linha)',
     'toolDrawer.include': 'Include',
@@ -144,7 +142,6 @@ export const toolDrawer = defineMessages('toolDrawer', {
     'toolDrawer.fromVersion': 'Versión de origen',
     'toolDrawer.toVersion': 'Versión de destino',
     'toolDrawer.projectionSaved': 'Proyección guardada y activa',
-    'toolDrawer.loadingProjection': 'Cargando proyección…',
     'toolDrawer.projectionSuggested': 'Proyección sugerida por el crawl (inactiva). Revísela y guárdela para activarla.',
     'toolDrawer.includeField': 'Include (JSONPath, uno por línea)',
     'toolDrawer.include': 'Include',

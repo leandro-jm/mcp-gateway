@@ -1,17 +1,20 @@
 import { useInfiniteQuery, useMutation } from '@tanstack/react-query';
 import { Bug, ExternalLink, ListTree, RotateCcw } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router';
 import { api } from '../api/client';
 import { useSession } from '../api/session';
 import type { CallExplanation, CallSummary, CapturedCall, DebugCapture, ReplayResult } from '../api/types';
 import { Waterfall } from '../components/charts';
 import { DiffView } from '../components/DiffView';
+import { Pagination } from '../components/Pagination';
+import { ChartSkeleton, SkeletonRows, TextSkeleton } from '../components/Skeleton';
 import { useToast } from '../components/toast';
 import { Badge, Drawer, ErrorBox, Field, fmtBytes, fmtDate, fmtNumber, JsonView, PageHeader, Tabs } from '../components/ui';
 import { useT } from '../i18n';
 import { DECISION_LABEL, enumLabel } from '../lib/labels';
 import { useInvalidate, useTenantQuery } from '../lib/hooks';
+import { usePagination } from '../lib/pagination';
 
 type Tab = 'calls' | 'captures';
 const KINDS = ['tool', 'composite_step', 'meta', 'list', 'artifact'];
@@ -50,7 +53,14 @@ function CallList({ onOpen }: { onOpen(id: string): void }) {
     initialPageParam: '',
     getNextPageParam: (last) => last.nextCursor ?? undefined,
   });
-  const rows = q.data?.pages.flatMap((p) => p.items) ?? [];
+  const loaded = q.data?.pages.flatMap((p) => p.items) ?? [];
+  const { rows, pager } = usePagination(loaded, { reset: f });
+  // cursor list (ADR-029): keep the page after the visible one loaded, so "next" never waits
+  const needMore = (pager.page + 2) * pager.pageSize > loaded.length;
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = q;
+  useEffect(() => {
+    if (needMore && hasNextPage && !isFetchingNextPage) void fetchNextPage();
+  }, [needMore, hasNextPage, isFetchingNextPage, fetchNextPage]);
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }));
   return (
     <>
@@ -74,7 +84,7 @@ function CallList({ onOpen }: { onOpen(id: string): void }) {
         <input className="input mono" style={{ width: 200 }} placeholder={t('calls.sessionPlaceholder')} aria-label={t('calls.sessionPlaceholder')} value={f.session} onChange={set('session')} />
       </div>
       <ErrorBox error={q.error} />
-      <table className="table" data-testid="calls-table">
+      <table className="table" data-testid="calls-table" aria-busy={q.isLoading}>
         <thead>
           <tr>
             <th>{t('common.when')}</th>
@@ -88,6 +98,7 @@ function CallList({ onOpen }: { onOpen(id: string): void }) {
           </tr>
         </thead>
         <tbody>
+          {q.isLoading && <SkeletonRows cols={8} />}
           {rows.map((c) => (
             <tr key={c.callId} className="clickable" onClick={() => onOpen(c.callId)}>
               <td className="muted nowrap">{fmtDate(c.ts)}</td>
@@ -104,12 +115,8 @@ function CallList({ onOpen }: { onOpen(id: string): void }) {
           ))}
         </tbody>
       </table>
-      {!rows.length && !q.isLoading && <div className="muted" style={{ padding: 16 }}>{t('calls.none')}</div>}
-      {q.hasNextPage && (
-        <button className="btn" onClick={() => void q.fetchNextPage()} disabled={q.isFetchingNextPage} style={{ marginTop: 12 }}>
-          {t('calls.loadMore')}
-        </button>
-      )}
+      {!loaded.length && !q.isLoading && <div className="muted" style={{ padding: 16 }}>{t('calls.none')}</div>}
+      <Pagination {...pager} more={Boolean(q.hasNextPage)} />
     </>
   );
 }
@@ -133,6 +140,12 @@ function CallDrawer({ callId, admin, onClose, onOpen }: { callId: string; admin:
     >
       <div className="drawer-body stack" data-testid="call-explain">
         <ErrorBox error={q.error} />
+        {q.isLoading && (
+          <>
+            <ChartSkeleton height={160} />
+            <TextSkeleton lines={5} />
+          </>
+        )}
         {e && (
           <>
             <Waterfall
@@ -194,32 +207,39 @@ function CallDrawer({ callId, admin, onClose, onOpen }: { callId: string; admin:
                 </span>
               </div>
             </div>
-            {e.children.length > 0 && (
-              <div className="panel">
-                <div className="panel-head">
-                  <span className="panel-title">{t('calls.steps')}</span>
-                </div>
-                <table className="table">
-                  <tbody>
-                    {e.children.map((c) => (
-                      <tr key={c.callId} className="clickable" onClick={() => onOpen(c.callId)}>
-                        <td className="mono">{c.tool.name}</td>
-                        <td>
-                          <Badge kind={c.decision}>{enumLabel(t, DECISION_LABEL, c.decision)}</Badge>
-                        </td>
-                        <td className="mono">{fmtNumber(c.latencyMs)} ms</td>
-                        <td className="mono muted">{c.upstream.status ?? '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            {e.children.length > 0 && <StepsPanel steps={e.children} onOpen={onOpen} />}
             {admin && <DebugPanel callId={callId} />}
           </>
         )}
       </div>
     </Drawer>
+  );
+}
+
+function StepsPanel({ steps, onOpen }: { steps: CallExplanation['children']; onOpen(id: string): void }) {
+  const t = useT();
+  const { rows, pager } = usePagination(steps, { compact: true });
+  return (
+    <div className="panel">
+      <div className="panel-head">
+        <span className="panel-title">{t('calls.steps')}</span>
+      </div>
+      <table className="table">
+        <tbody>
+          {rows.map((c) => (
+            <tr key={c.callId} className="clickable" onClick={() => onOpen(c.callId)}>
+              <td className="mono">{c.tool.name}</td>
+              <td>
+                <Badge kind={c.decision}>{enumLabel(t, DECISION_LABEL, c.decision)}</Badge>
+              </td>
+              <td className="mono">{fmtNumber(c.latencyMs)} ms</td>
+              <td className="mono muted">{c.upstream.status ?? '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <Pagination {...pager} />
+    </div>
   );
 }
 
@@ -298,6 +318,7 @@ function Captures() {
     },
   });
   const stop = useMutation({ mutationFn: (id: string) => api(`/debug-captures/${id}`, { method: 'DELETE' }), onSuccess: () => void invalidate('debug-captures') });
+  const { rows, pager } = usePagination(list.data?.items ?? []);
   const submit = (e: FormEvent) => {
     e.preventDefault();
     create.mutate();
@@ -336,7 +357,7 @@ function Captures() {
           </div>
         </form>
       </div>
-      <table className="table" style={{ marginTop: 16 }}>
+      <table className="table" style={{ marginTop: 16 }} aria-busy={list.isLoading}>
         <thead>
           <tr>
             <th>{t('calls.colReason')}</th>
@@ -348,7 +369,8 @@ function Captures() {
           </tr>
         </thead>
         <tbody>
-          {(list.data?.items ?? []).map((c) => (
+          {list.isLoading && <SkeletonRows cols={6} />}
+          {rows.map((c) => (
             <tr key={c.id}>
               <td>{c.reason}</td>
               <td>
@@ -370,6 +392,7 @@ function Captures() {
           ))}
         </tbody>
       </table>
+      <Pagination {...pager} />
     </>
   );
 }

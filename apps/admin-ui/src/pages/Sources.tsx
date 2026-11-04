@@ -6,10 +6,13 @@ import { useSession } from '../api/session';
 import type { CrawlRun, Credential, Page, Source } from '../api/types';
 import { Editor } from '../components/Editor';
 import { FORMAT_LABEL, ImportWizard } from '../components/ImportWizard';
+import { Pagination } from '../components/Pagination';
+import { Skeleton, SkeletonRows } from '../components/Skeleton';
 import { useToast } from '../components/toast';
 import { Badge, CodeBlock, Drawer, EmptyState, ErrorBox, Field, fmtDate, JsonView, LivePill, PageHeader, RefreshControls, SearchBox, Tabs } from '../components/ui';
 import { useT, type UiMessageKey } from '../i18n';
 import { useAutoRefresh, useInvalidate, useTenantQuery } from '../lib/hooks';
+import { usePagination } from '../lib/pagination';
 import { CRAWL_STATUS_LABEL, CRAWL_TRIGGER_LABEL, enumLabel, SOURCE_STATUS_LABEL } from '../lib/labels';
 import { rich } from '../lib/rich';
 import { parseJson } from '../lib/schema';
@@ -36,6 +39,7 @@ export function SourcesPage() {
   const sources = useTenantQuery<Page<Source>>(['sources'], '/sources?limit=500', { refetchMs: interval });
   const credentials = useTenantQuery<{ items: Credential[] }>(['credentials'], me.isAdmin ? '/credentials' : null);
   const items = (sources.data?.items ?? []).filter((s) => !q || s.name.includes(q.toLowerCase()) || s.baseUrl.includes(q));
+  const { rows, pager } = usePagination(items, { reset: q });
   const invalidate = useInvalidate();
   const toast = useToast();
   const crawl = useMutation({
@@ -63,7 +67,7 @@ export function SourcesPage() {
           <>
             <div className="toolbar">
               <SearchBox value={q} onChange={setQ} placeholder={t('sources.searchPlaceholder')} />
-              <span className="count-label">{t('sources.count', { count: items.length })}</span>
+              <span className="count-label">{sources.isLoading ? <Skeleton width={72} /> : t('sources.count', { count: items.length })}</span>
               <span className="spacer" />
               <RefreshControls onRefresh={() => void sources.refetch()} interval={interval} setInterval={setIntervalMs} />
               {me.isAdmin && (
@@ -84,7 +88,8 @@ export function SourcesPage() {
                 footer={<span>{rich(t, 'sources.emptyFooter', { state: <b>{t('sources.disabledPlural')}</b> })}</span>}
               />
             ) : (
-              <table className="table">
+              <>
+              <table className="table" aria-busy={sources.isLoading}>
                 <thead>
                   <tr>
                     <th className="sorted">
@@ -100,7 +105,8 @@ export function SourcesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((s) => (
+                  {sources.isLoading && <SkeletonRows cols={8} />}
+                  {rows.map((s) => (
                     <tr key={s.id} className="clickable" onClick={() => setOpen(s)}>
                       <td className="mono">{s.name}</td>
                       <td className="mono muted">{s.baseUrl}</td>
@@ -123,10 +129,12 @@ export function SourcesPage() {
                   ))}
                 </tbody>
               </table>
+              <Pagination {...pager} />
+              </>
             )}
           </>
         )}
-        {tab === 'credentials' && <CredentialsTab items={credentials.data?.items ?? []} />}
+        {tab === 'credentials' && <CredentialsTab items={credentials.data?.items ?? []} loading={credentials.isLoading} />}
       </div>
       {open && <SourceDrawer source={open} credentials={credentials.data?.items ?? []} canEdit={me.isAdmin} onSaved={setOpen} onClose={() => setOpen(null)} />}
       {creating && (
@@ -162,6 +170,7 @@ function SourceDrawer({ source, credentials, canEdit, onSaved, onClose }: { sour
   const toast = useToast();
   const invalidate = useInvalidate();
   const runs = useTenantQuery<{ items: CrawlRun[] }>(['sources', source.id, 'runs'], `/sources/${source.id}/crawl-runs`, { refetchMs: 4000 });
+  const runPage = usePagination(runs.data?.items ?? [], { compact: true });
   const [form, setForm] = useState<SourceForm | null>(null);
   const set = (k: keyof SourceForm) => (e: { target: { value: string } }) => setForm((f) => f && { ...f, [k]: e.target.value });
   const save = useMutation({
@@ -255,7 +264,7 @@ function SourceDrawer({ source, credentials, canEdit, onSaved, onClose }: { sour
           <dd className="mono">{source.crawlSchedule ?? t('sources.scheduleManual')}</dd>
         </dl>
         <div className="label">{t('sources.crawlRuns')}</div>
-        <table className="table">
+        <table className="table" aria-busy={runs.isLoading}>
           <thead>
             <tr>
               <th>{t('common.status')}</th>
@@ -265,7 +274,8 @@ function SourceDrawer({ source, credentials, canEdit, onSaved, onClose }: { sour
             </tr>
           </thead>
           <tbody>
-            {(runs.data?.items ?? []).map((r) => (
+            {runs.isLoading && <SkeletonRows cols={4} rows={3} />}
+            {runPage.rows.map((r) => (
               <tr key={r.id}>
                 <td>
                   <Badge kind={r.status}>{enumLabel(t, CRAWL_STATUS_LABEL, r.status)}</Badge>
@@ -285,13 +295,15 @@ function SourceDrawer({ source, credentials, canEdit, onSaved, onClose }: { sour
             ))}
           </tbody>
         </table>
+        <Pagination {...runPage.pager} />
       </div>
     </Drawer>
   );
 }
 
-function CredentialsTab({ items }: { items: Credential[] }) {
+function CredentialsTab({ items, loading }: { items: Credential[]; loading: boolean }) {
   const t = useT();
+  const { rows, pager } = usePagination(items, { compact: true });
   const invalidate = useInvalidate();
   const toast = useToast();
   const [draft, setDraft] = useState(
@@ -314,7 +326,7 @@ function CredentialsTab({ items }: { items: Credential[] }) {
         <div className="label" style={{ marginBottom: 12 }}>
           {t('sources.credentialsTitle')}
         </div>
-        <table className="table">
+        <table className="table" aria-busy={loading}>
           <thead>
             <tr>
               <th>{t('common.name')}</th>
@@ -324,7 +336,8 @@ function CredentialsTab({ items }: { items: Credential[] }) {
             </tr>
           </thead>
           <tbody>
-            {items.map((c) => (
+            {loading && <SkeletonRows cols={4} rows={3} />}
+            {rows.map((c) => (
               <tr key={c.id}>
                 <td className="mono">{c.name}</td>
                 <td>
@@ -338,6 +351,7 @@ function CredentialsTab({ items }: { items: Credential[] }) {
             ))}
           </tbody>
         </table>
+        <Pagination {...pager} />
       </div>
       <div className="panel-body stack">
         <div className="label">{t('sources.newCredential')}</div>

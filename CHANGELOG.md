@@ -35,6 +35,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   - A true per-call waterfall, with the gateway overhead shown apart.
   - A clickable session timeline that follows the replay.
   - The dark-mode chart palette was re-stepped for contrast and color-blind separation.
+- Admin UI tables are paginated (ADR-029): a shared pager with range, page size (remembered per browser) and numbered pages. Audit pages on the server (it no longer stops at 200 events), Calls pages over its cursor instead of "Load more", and the other lists page in the browser. Projections only loads the projections of the visible page.
+- Admin UI shows skeletons while data loads (tables, dashboards, drawers, settings and the page itself) instead of blank areas, and "no items" messages only appear once loading is done.
 - New visual language for the Admin UI and the landing page (ADR-026, replacing the look of ADR-005): neutral zinc palette with a monochrome accent (color only for state), Geist and Geist Mono fonts, rounded cards with a soft shadow, sentence-case headings and status pills with a dot. The Admin UI shell now has a full-height sidebar with the brand and labeled groups (Operate, Configure, Manage), a top bar with `tenant / current page` breadcrumb and an account menu, and a horizontal nav under 960px. Light and dark themes keep the same selector, with dark as the default.
 
 ## [0.1.0] - 2026-10-04

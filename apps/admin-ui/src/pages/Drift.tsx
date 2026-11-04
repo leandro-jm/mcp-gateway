@@ -3,12 +3,15 @@ import { Inbox } from 'lucide-react';
 import { useState } from 'react';
 import { api } from '../api/client';
 import type { DriftEvent, Page } from '../api/types';
+import { Pagination } from '../components/Pagination';
+import { Skeleton, SkeletonRows } from '../components/Skeleton';
 import { ToolDrawer } from '../components/ToolDrawer';
 import { useToast } from '../components/toast';
 import { Badge, fmtDate, LivePill, PageHeader, RefreshControls, Tabs } from '../components/ui';
 import { useT } from '../i18n';
 import { DRIFT_KIND_LABEL, enumLabel } from '../lib/labels';
 import { useAutoRefresh, useInvalidate, useTenantQuery } from '../lib/hooks';
+import { usePagination } from '../lib/pagination';
 
 const KINDS: DriftEvent['kind'][] = ['breaking', 'removed', 'changed', 'added'];
 
@@ -31,6 +34,7 @@ export function DriftPage() {
     onError: (e) => toast('error', (e as Error).message),
   });
   const items = events.data?.items ?? [];
+  const { rows, pager } = usePagination(items, { reset: [pending, kind] });
   return (
     <>
       <PageHeader
@@ -52,11 +56,11 @@ export function DriftPage() {
               </option>
             ))}
           </select>
-          <span className="count-label">{t('drift.count', { count: items.length })}</span>
+          <span className="count-label">{events.isLoading ? <Skeleton width={72} /> : t('drift.count', { count: items.length })}</span>
           <span className="spacer" />
           <RefreshControls onRefresh={() => void events.refetch()} interval={interval} setInterval={setIntervalMs} />
         </div>
-        <table className="table">
+        <table className="table" aria-busy={events.isLoading}>
           <thead>
             <tr>
               <th>{t('common.when')}</th>
@@ -68,7 +72,8 @@ export function DriftPage() {
             </tr>
           </thead>
           <tbody>
-            {items.map((e) => (
+            {events.isLoading && <SkeletonRows cols={6} />}
+            {rows.map((e) => (
               <tr key={e.id} className="clickable" onClick={() => setOpen(e.toolId)}>
                 <td className="muted nowrap">{fmtDate(e.createdAt)}</td>
                 <td>
@@ -98,6 +103,7 @@ export function DriftPage() {
             ))}
           </tbody>
         </table>
+        <Pagination {...pager} />
         {!events.isLoading && items.length === 0 && <p className="muted">{t('drift.empty')}</p>}
       </div>
       {open && <ToolDrawer toolId={open} onClose={() => setOpen(null)} />}

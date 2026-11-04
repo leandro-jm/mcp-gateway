@@ -6,11 +6,14 @@ import { api } from '../api/client';
 import { useSession } from '../api/session';
 import type { Page, Source, Tool } from '../api/types';
 import { Editor } from '../components/Editor';
+import { Pagination } from '../components/Pagination';
+import { Skeleton, SkeletonRows } from '../components/Skeleton';
 import { KindBadge, StateBadge, ToolDrawer } from '../components/ToolDrawer';
 import { useToast } from '../components/toast';
 import { ErrorBox, Field, FiltersButton, fmtDate, LivePill, PageHeader, RefreshControls, SearchBox, Tabs } from '../components/ui';
 import { useT } from '../i18n';
 import { useAutoRefresh, useInvalidate, useTenantQuery } from '../lib/hooks';
+import { usePagination } from '../lib/pagination';
 import { enumLabel, TOOL_KIND_LABEL, TOOL_STATE_LABEL } from '../lib/labels';
 import { rich } from '../lib/rich';
 import { parseJson } from '../lib/schema';
@@ -38,6 +41,7 @@ export function ToolsPage() {
     return (tools.data?.items ?? []).filter((tool) => !needle || tool.name.toLowerCase().includes(needle) || tool.description.toLowerCase().includes(needle));
   }, [tools.data, q]);
   const activeFilters = [state, kind, owner].filter(Boolean).length;
+  const { rows, pager } = usePagination(filtered, { reset: [q, state, kind, owner] });
 
   return (
     <>
@@ -56,7 +60,7 @@ export function ToolsPage() {
             <div className="toolbar">
               <SearchBox value={q} onChange={setQ} placeholder={t('tools.searchPlaceholder')} />
               <FiltersButton active={activeFilters} onClick={() => setShowFilters((s) => !s)} />
-              <span className="count-label">{t('common.toolCount', { count: filtered.length })}</span>
+              <span className="count-label">{tools.isLoading ? <Skeleton width={72} /> : t('common.toolCount', { count: filtered.length })}</span>
               <span className="spacer" />
               <RefreshControls onRefresh={() => void tools.refetch()} interval={interval} setInterval={setIntervalMs} />
               <button className="btn primary" onClick={() => setTab('manual')}>
@@ -93,7 +97,7 @@ export function ToolsPage() {
               </div>
             )}
             <ErrorBox error={tools.error} />
-            <table className="table" data-testid="tools-table">
+            <table className="table" data-testid="tools-table" aria-busy={tools.isLoading}>
               <thead>
                 <tr>
                   <th className="sorted">
@@ -108,7 +112,8 @@ export function ToolsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((tool) => (
+                {tools.isLoading && <SkeletonRows cols={7} />}
+                {rows.map((tool) => (
                   <tr key={tool.id} className="clickable" onClick={() => setParams({ open: tool.id })}>
                     <td>
                       <div className="mono">{tool.name}</div>
@@ -130,6 +135,7 @@ export function ToolsPage() {
                 ))}
               </tbody>
             </table>
+            <Pagination {...pager} />
             {!tools.isLoading && filtered.length === 0 && <p className="muted">{t('tools.empty')}</p>}
           </>
         )}

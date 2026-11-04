@@ -1,6 +1,8 @@
 import { Table2, LineChart as ChartIcon } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { useT } from '../../i18n';
+import { usePagination } from '../../lib/pagination';
+import { Pagination } from '../Pagination';
 
 export interface TableData {
   columns: string[];
@@ -14,6 +16,7 @@ export interface TableData {
 export function ChartFrame({ title, table, empty, right, children }: { title: string; table: TableData; empty?: boolean; right?: ReactNode; children: ReactNode }) {
   const t = useT();
   const [asTable, setAsTable] = useState(false);
+  const { rows, pager } = usePagination(table.rows, { compact: true });
   return (
     <figure className="chart">
       <figcaption className="chart-head">
@@ -29,28 +32,31 @@ export function ChartFrame({ title, table, empty, right, children }: { title: st
       {empty ? (
         <div className="chart-empty muted">{t('charts.noData')}</div>
       ) : asTable ? (
-        <div className="chart-table-wrap">
-          <table className="table chart-table">
-            <thead>
-              <tr>
-                {table.columns.map((c) => (
-                  <th key={c}>{c}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {table.rows.map((r, i) => (
-                <tr key={i}>
-                  {r.map((v, j) => (
-                    <td key={j} className={typeof v === 'number' ? 'mono' : undefined}>
-                      {v ?? '—'}
-                    </td>
+        <>
+          <div className="chart-table-wrap">
+            <table className="table chart-table">
+              <thead>
+                <tr>
+                  {table.columns.map((c) => (
+                    <th key={c}>{c}</th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {rows.map((r, i) => (
+                  <tr key={i}>
+                    {r.map((v, j) => (
+                      <td key={j} className={typeof v === 'number' ? 'mono' : undefined}>
+                        {v ?? '—'}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Pagination {...pager} />
+        </>
       ) : (
         children
       )}

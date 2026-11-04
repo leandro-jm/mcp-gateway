@@ -2,10 +2,13 @@ import { ScrollText } from 'lucide-react';
 import { Fragment, useState } from 'react';
 import { Link } from 'react-router';
 import type { AuditEvent, Page } from '../api/types';
+import { Pagination } from '../components/Pagination';
+import { Skeleton, SkeletonRows } from '../components/Skeleton';
 import { Badge, ErrorBox, fmtBytes, fmtDate, fmtNumber, JsonView, PageHeader, RefreshControls, Tabs } from '../components/ui';
 import { useT } from '../i18n';
 import { DECISION_LABEL, enumLabel } from '../lib/labels';
 import { useAutoRefresh, useTenantQuery } from '../lib/hooks';
+import { usePageState } from '../lib/pagination';
 
 const ACTIONS = ['tools/call', 'composite.step', 'tool.enable', 'tool.disable', 'tool.override', 'projection.update', 'composite.create'];
 const DECISIONS = ['allow', 'deny', 'error', 'applied', 'rejected'];
@@ -15,9 +18,14 @@ export function AuditPage() {
   const [filters, setFilters] = useState({ action: '', decision: '', toolName: '', clientId: '', from: '', to: '' });
   const [interval, setIntervalMs] = useAutoRefresh(0);
   const [openId, setOpenId] = useState<number | null>(null);
-  const qs = new URLSearchParams({ limit: '200' });
+  // server-side paging (ADR-029): the total is known, so only the visible page is fetched
+  const [total, setTotal] = useState(0);
+  const pager = usePageState(total, { reset: filters });
+  const qs = new URLSearchParams({ limit: String(pager.pageSize), offset: String(pager.page * pager.pageSize) });
   for (const [k, v] of Object.entries(filters)) if (v) qs.set(k, k === 'from' || k === 'to' ? new Date(v).toISOString() : v);
-  const events = useTenantQuery<Page<AuditEvent>>(['audit', qs.toString()], `/audit?${qs}`, { refetchMs: interval });
+  const events = useTenantQuery<Page<AuditEvent>>(['audit', qs.toString()], `/audit?${qs}`, { refetchMs: interval, keepPrevious: true });
+  const loadedTotal = events.data?.total;
+  if (loadedTotal !== undefined && loadedTotal !== total) setTotal(loadedTotal);
   const set = (k: keyof typeof filters) => (e: { target: { value: string } }) => setFilters((f) => ({ ...f, [k]: e.target.value }));
   return (
     <>
@@ -43,12 +51,12 @@ export function AuditPage() {
           <input className="input" style={{ width: 160 }} placeholder={t('audit.clientPlaceholder')} aria-label={t('audit.colClient')} value={filters.clientId} onChange={set('clientId')} />
           <input className="input" type="datetime-local" style={{ width: 210 }} value={filters.from} onChange={set('from')} aria-label={t('audit.from')} />
           <input className="input" type="datetime-local" style={{ width: 210 }} value={filters.to} onChange={set('to')} aria-label={t('audit.to')} />
-          <span className="count-label">{t('audit.count', { count: events.data?.total ?? 0 })}</span>
+          <span className="count-label">{events.isLoading ? <Skeleton width={72} /> : t('audit.count', { count: events.data?.total ?? 0 })}</span>
           <span className="spacer" />
           <RefreshControls onRefresh={() => void events.refetch()} interval={interval} setInterval={setIntervalMs} />
         </div>
         <ErrorBox error={events.error} />
-        <table className="table">
+        <table className="table" aria-busy={events.isLoading}>
           <thead>
             <tr>
               <th>{t('common.when')}</th>
@@ -64,6 +72,7 @@ export function AuditPage() {
             </tr>
           </thead>
           <tbody>
+            {events.isLoading && <SkeletonRows cols={10} />}
             {(events.data?.items ?? []).map((e) => (
               <Fragment key={e.id}>
                 <tr className="clickable" onClick={() => setOpenId(openId === e.id ? null : e.id)}>
@@ -94,6 +103,7 @@ export function AuditPage() {
             ))}
           </tbody>
         </table>
+        <Pagination {...pager} />
       </div>
     </>
   );
