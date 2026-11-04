@@ -24,3 +24,6 @@ blob-report/
 
 # local agent settings
 .claude/settings.local.json
+
+# benchmark results (ADR-027): raw runs, snapshots and catalogs stay local
+apps/bench/results/
