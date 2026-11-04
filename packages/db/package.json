@@ -25,9 +25,9 @@
     "@mcp-gateway/call-analytics": "workspace:*",
     "@mcp-gateway/core": "workspace:*",
     "@mcp-gateway/i18n": "workspace:*",
-    "drizzle-orm": "^0.45.3",
+    "drizzle-orm": "^0.45.4",
     "pg": "^8.23.1",
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@mcp-gateway/testkit": "workspace:*",
