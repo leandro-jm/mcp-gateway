@@ -54,7 +54,10 @@ export const crawlStatus = pgEnum('crawl_status', ['queued', 'running', 'succeed
 export const driftKind = pgEnum('drift_kind', ['added', 'changed', 'removed', 'breaking']);
 export const userKind = pgEnum('user_kind', ['human', 'service']);
 export const userStatus = pgEnum('user_status', ['active', 'disabled']);
-export const apiTokenKind = pgEnum('api_token_kind', ['session', 'api']);
+/** `oauth`: access token issued by the authorization server for MCP clients (F20, ADR-030). */
+export const apiTokenKind = pgEnum('api_token_kind', ['session', 'api', 'oauth']);
+/** How an OAuth client was registered: Client ID Metadata Document or Dynamic Client Registration. */
+export const oauthClientKind = pgEnum('oauth_client_kind', ['cimd', 'dcr']);
 /** Same values as `LOCALES` in `@mcp-gateway/i18n` (ADR-012). */
 export const userLocale = pgEnum('user_locale', ['en', 'pt-BR', 'es']);
 /** LLM provider used by the natural-language composer (ADR-015). */
@@ -129,9 +132,98 @@ export const apiTokens = pgTable(
     expiresAt: timestamp('expires_at', { withTimezone: true }),
     lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
     revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    /** Set only for `kind = 'oauth'`: the grant the token was issued for. */
+    grantId: uuid('grant_id').references(() => oauthGrants.id, { onDelete: 'cascade' }),
     createdAt: createdAt(),
   },
-  (t) => [index('api_tokens_user_idx').on(t.userId)],
+  (t) => [
+    index('api_tokens_user_idx').on(t.userId),
+    index('api_tokens_grant_idx').on(t.grantId).where(sql`${t.grantId} is not null`),
+    check('api_tokens_oauth_grant_ck', sql`(${t.kind}::text = 'oauth') = (${t.grantId} is not null)`),
+  ],
+);
+
+/** OAuth clients of the authorization server (ADR-030). Platform-wide: the same client serves every tenant. */
+export const oauthClients = pgTable('oauth_clients', {
+  id: id(),
+  /** Metadata document URL (CIMD) or the identifier generated at registration (DCR). */
+  clientId: text('client_id').notNull().unique(),
+  kind: oauthClientKind('kind').notNull(),
+  clientName: text('client_name').notNull(),
+  clientUri: text('client_uri'),
+  redirectUris: text('redirect_uris').array().notNull(),
+  applicationType: text('application_type').$type<'web' | 'native'>().notNull(),
+  grantTypes: text('grant_types').array().notNull().default(sql`'{authorization_code,refresh_token}'::text[]`),
+  /** Last fetch of the CIMD document. */
+  fetchedAt: timestamp('fetched_at', { withTimezone: true }),
+  lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+  disabledAt: timestamp('disabled_at', { withTimezone: true }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+/** A user's authorization of a client: the refresh token family and an entry in "Connected apps". */
+export const oauthGrants = pgTable(
+  'oauth_grants',
+  {
+    id: id(),
+    tenantId: tenantId(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    clientId: uuid('client_id')
+      .notNull()
+      .references(() => oauthClients.id, { onDelete: 'cascade' }),
+    scopes: text('scopes').array().notNull(),
+    resource: text('resource').notNull(),
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index('oauth_grants_tenant_idx').on(t.tenantId),
+    index('oauth_grants_client_idx').on(t.clientId),
+    uniqueIndex('oauth_grants_active_uq').on(t.userId, t.clientId).where(sql`${t.revokedAt} is null`),
+  ],
+);
+
+/** Single-use authorization codes; only the hash is stored. */
+export const oauthAuthorizationCodes = pgTable(
+  'oauth_authorization_codes',
+  {
+    codeHash: text('code_hash').primaryKey(),
+    grantId: uuid('grant_id')
+      .notNull()
+      .references(() => oauthGrants.id, { onDelete: 'cascade' }),
+    redirectUri: text('redirect_uri').notNull(),
+    codeChallenge: text('code_challenge').notNull(),
+    resource: text('resource').notNull(),
+    scopes: text('scopes').array().notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index('oauth_authorization_codes_grant_idx').on(t.grantId),
+    index('oauth_authorization_codes_expires_idx').on(t.expiresAt),
+  ],
+);
+
+/** Rotating refresh tokens; a rotated one is kept to detect reuse (which revokes the grant). */
+export const oauthRefreshTokens = pgTable(
+  'oauth_refresh_tokens',
+  {
+    id: id(),
+    grantId: uuid('grant_id')
+      .notNull()
+      .references(() => oauthGrants.id, { onDelete: 'cascade' }),
+    tokenHash: text('token_hash').notNull().unique(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    rotatedAt: timestamp('rotated_at', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [index('oauth_refresh_tokens_grant_idx').on(t.grantId), index('oauth_refresh_tokens_expires_idx').on(t.expiresAt)],
 );
 
 export const credentials = pgTable(

@@ -13,6 +13,8 @@ export interface ApiTokenInput {
   tokenHash: string;
   prefix: string;
   expiresAt?: Date | null;
+  /** Required for `kind = 'oauth'`, absent otherwise (`api_tokens_oauth_grant_ck`). */
+  grantId?: string | null;
 }
 
 export const apiTokenColumns = {
@@ -25,6 +27,7 @@ export const apiTokenColumns = {
   expiresAt: apiTokens.expiresAt,
   lastUsedAt: apiTokens.lastUsedAt,
   revokedAt: apiTokens.revokedAt,
+  grantId: apiTokens.grantId,
   createdAt: apiTokens.createdAt,
 };
 

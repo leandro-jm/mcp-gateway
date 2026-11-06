@@ -98,7 +98,7 @@ As rotas ficam num plugin raiz (`apps/gateway/src/oauth/`), fora do hook `adminA
   - linha em `api_tokens` com `kind = oauth` e `grant_id`, formato `mgw_…`, expira em `OAUTH_ACCESS_TTL_MINUTES` (60 min) ou no valor menor do tenant;
   - a revogação segue o ADR-011: imediata na réplica que revogou e em até 15 s nas demais.
 - **Refresh token:**
-  - só com o escopo `offline_access`. Formato `mgr_<32 bytes base64url>`, só o hash no grant;
+  - só com o escopo `offline_access`. Formato `mgr_<32 bytes base64url>`, só o hash, em `oauth_refresh_tokens` ligado ao grant. O já rotacionado fica guardado até expirar, para detectar reuso;
   - rotaciona a cada uso e expira em `OAUTH_REFRESH_TTL_DAYS` (30 dias) ou no valor menor do tenant;
   - um refresh já rotacionado que volta a ser usado revoga a família inteira e invalida o cache do verificador.
 - **Audiência (RFC 8707).**
@@ -153,7 +153,7 @@ As rotas ficam num plugin raiz (`apps/gateway/src/oauth/`), fora do hook `adminA
 
 ### Persistência
 - Migration 0026 (fase A):
-  - `oauth_clients`, `oauth_authorization_codes` e `oauth_grants`;
+  - `oauth_clients`, `oauth_grants`, `oauth_authorization_codes` (ligados ao grant) e `oauth_refresh_tokens`;
   - `api_token_kind` ganha `oauth`;
   - `api_tokens.grant_id` com FK em cascata.
 - Migration 0027 (fase B): `tenant_identity_providers` e `user_identities`.

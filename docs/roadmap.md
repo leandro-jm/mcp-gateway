@@ -820,7 +820,7 @@ Objetivo: o gateway vira Authorization Server da spec MCP 2026-07-28, para que c
 - CA: vetores do RFC 7636; porta diferente só é aceita em loopback; testes sem I/O.
 
 **F20.3 Persistência**
-- Migration 0026 (com down): `oauth_clients`, `oauth_authorization_codes`, `oauth_grants`; `api_token_kind` ganha `oauth`; `api_tokens.grant_id` com FK em cascata.
+- Migration 0026 (com down): `oauth_clients`, `oauth_grants`, `oauth_authorization_codes`, `oauth_refresh_tokens`; `api_token_kind` ganha `oauth`; `api_tokens.grant_id` com FK em cascata.
 - `OAuthQueries` (`@cross-tenant`) para cliente, código e refresh; `OAuthGrantsRepo` com `tenantId` para listar e revogar.
 - CA: teste de arquitetura verde; migration sobe e desce.
 

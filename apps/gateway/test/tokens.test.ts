@@ -8,7 +8,7 @@ const now0 = new Date('2026-10-03T12:00:00Z').getTime();
 function record(over: { expiresAt?: Date | null; revokedAt?: Date | null; status?: 'active' | 'disabled'; tenant?: TokenRecord['tenant']; selfIssued?: boolean } = {}): TokenRecord {
   const at = new Date(now0);
   return {
-    token: { id: 't1', userId: 'u1', name: 'ponto-bot', kind: 'api', selfIssued: over.selfIssued ?? false, prefix: 'mgw_abc', expiresAt: over.expiresAt ?? null, lastUsedAt: null, revokedAt: over.revokedAt ?? null, createdAt: at },
+    token: { id: 't1', userId: 'u1', name: 'ponto-bot', kind: 'api', selfIssued: over.selfIssued ?? false, prefix: 'mgw_abc', expiresAt: over.expiresAt ?? null, lastUsedAt: null, revokedAt: over.revokedAt ?? null, grantId: null, createdAt: at },
     user: {
       id: 'u1',
       tenantId: 'tid',
