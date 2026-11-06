@@ -141,6 +141,7 @@ packages/
   composition/    definição e execução de tools compostas (puro)
   composer/       prompts e lint do composer em linguagem natural (puro)
   call-analytics/ modelo do evento de chamada e helpers de analytics (puro)
+  oauth/          regras do protocolo OAuth 2.1 para clientes MCP (puro)
   db/             schema, migrations e repositórios Postgres
   net/            HTTP de saída com proteção contra SSRF
   artifacts/      store de artefatos em S3
