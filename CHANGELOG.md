@@ -40,6 +40,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Admin UI shows skeletons while data loads (tables, dashboards, drawers, settings and the page itself) instead of blank areas, and "no items" messages only appear once loading is done.
 - New visual language for the Admin UI and the landing page (ADR-026, replacing the look of ADR-005): neutral zinc palette with a monochrome accent (color only for state), Geist and Geist Mono fonts, rounded cards with a soft shadow, sentence-case headings and status pills with a dot. The Admin UI shell now has a full-height sidebar with the brand and labeled groups (Operate, Configure, Manage), a top bar with `tenant / current page` breadcrumb and an account menu, and a horizontal nav under 960px. Light and dark themes keep the same selector, with dark as the default.
 
+### Fixed
+- FinOps view: the token savings of the tool router shortlist (ADR-025) now count in the hourly rollups (new mechanism `shortlist`, metric `tokens_saved_shortlist`, "Without the gateway" total and per-mechanism chart), and the per-client, per-agent and per-subject "Saved" column includes the Omni and shortlist savings of `tools/list`, matching the cards. Migration `0025_shortlist_savings` adds the column and recomputes the rollups that still have raw call events.
+
 ## [0.1.0] - 2026-10-04
 
 First public release.

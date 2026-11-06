@@ -410,6 +410,7 @@ function FinopsTab({ range }: { range: ViewRange }) {
             { label: t('observability.mechProjection'), value: v.tokens.savedByMechanism.projection },
             { label: t('observability.mechArtifact'), value: v.tokens.savedByMechanism.artifact },
             { label: t('observability.mechOmni'), value: v.tokens.savedByMechanism.omni },
+            { label: t('observability.mechShortlist'), value: v.tokens.savedByMechanism.shortlist },
           ]}
         />
         <UsageTable title={t('observability.usageByClient')} items={v.usageByClient} />

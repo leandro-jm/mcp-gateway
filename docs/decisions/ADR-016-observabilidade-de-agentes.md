@@ -86,7 +86,9 @@ A F15 transforma o gateway na fonte de observabilidade dos agentes, para SRE, ow
     - Economia por mecanismo:
       - projeção: bytes antes − bytes depois;
       - artefato: bytes do artefato − bytes do resumo;
-      - Omni: tokens do catálogo completo − tokens do catálogo de meta-tools.
+      - Omni: tokens do catálogo completo − tokens do catálogo de meta-tools;
+      - shortlist do roteador (ADR-025): tokens do catálogo completo − tokens do `tools/list` encurtado;
+      - a economia de `tools/list` (Omni e shortlist) também entra na coluna "poupado" do uso por titular, client e agente.
     - O preço é por tenant (`settings.observability.pricing`).
 12. **Analytics consultável.**
     - Uma DSL tipada (`AnalyticsQuery`): métrica e dimensões de um enum, no máximo 2 `groupBy`, filtros tipados, janela `last` ou `from/to` de até 90 dias, `limit` ≤ 100.

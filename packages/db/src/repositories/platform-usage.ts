@@ -23,7 +23,7 @@ export class PlatformUsageQueries {
              coalesce(sum(r.calls) FILTER (WHERE r.kind = 'tool'), 0) AS calls,
              coalesce(sum(r.calls) FILTER (WHERE r.kind = 'tool' AND r.decision = 'error'), 0) AS errors,
              coalesce(sum(r.response_tokens_sum) FILTER (WHERE r.kind <> 'composite_step'), 0) AS tokens,
-             coalesce(sum(r.tokens_saved_projection_sum + r.tokens_saved_artifact_sum + r.tokens_saved_omni_sum), 0) AS saved
+             coalesce(sum(r.tokens_saved_projection_sum + r.tokens_saved_artifact_sum + r.tokens_saved_omni_sum + r.tokens_saved_shortlist_sum), 0) AS saved
       FROM call_rollups_hourly r JOIN tenants t ON t.id = r.tenant_id
       WHERE r.bucket >= date_trunc('hour', ${from}::timestamptz) AND r.bucket < ${to}
       GROUP BY r.tenant_id, t.slug ORDER BY calls DESC`);
