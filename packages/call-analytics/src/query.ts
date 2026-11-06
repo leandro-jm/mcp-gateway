@@ -26,6 +26,7 @@ export const METRICS = [
   'tokens_saved_projection',
   'tokens_saved_artifact',
   'tokens_saved_omni',
+  'tokens_saved_shortlist',
   'agents',
   'clients',
   'authz_avg',
@@ -70,8 +71,8 @@ const MAX_FILTER_LENGTH = 200;
 export const OUTCOME_DIMENSIONS: ReadonlySet<Dimension> = new Set(['tool', 'virtual_server', 'day']);
 export const OUTCOME_FILTERS: ReadonlySet<FilterKey> = new Set(['tool', 'virtual_server']);
 
-/** Metrics about context savings look at every event kind (Omni savings live on `list` events). */
-export const ALL_KINDS_METRICS: ReadonlySet<Metric> = new Set(['tokens_saved', 'tokens_saved_omni']);
+/** Metrics about context savings look at every event kind (Omni and shortlist savings live on `list` events). */
+export const ALL_KINDS_METRICS: ReadonlySet<Metric> = new Set(['tokens_saved', 'tokens_saved_omni', 'tokens_saved_shortlist']);
 
 export interface AnalyticsQuery {
   metric: Metric;

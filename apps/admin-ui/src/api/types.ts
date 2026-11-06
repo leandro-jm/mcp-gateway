@@ -439,7 +439,7 @@ export interface UsageRow {
 
 export interface FinopsView {
   pricing: { currency: string; inputPerMTok: number };
-  tokens: { response: number; saved: number; savedByMechanism: { projection: number; artifact: number; omni: number } };
+  tokens: { response: number; saved: number; savedByMechanism: { projection: number; artifact: number; omni: number; shortlist: number } };
   money: { currency: string; saved: number; spent: number };
   beforeAfter: { withoutGateway: number; withGateway: number; savedPct: number; moneySaved: number };
   usageByClient: UsageRow[];

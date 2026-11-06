@@ -187,17 +187,23 @@ export async function finopsView(services: Services, tenantId: string, r: ViewRa
   const a = services.analytics;
   const snapshot = await services.registry.get(tenantId);
   const pricing = readObservabilitySettings(snapshot.tenant.settings).pricing;
-  const [response, projection, artifact, omni, byClient, byAgent, bySubject] = await Promise.all([
+  const [response, projection, artifact, omni, shortlist, byClient, byAgent, bySubject] = await Promise.all([
     a.query(tenantId, nq('tokens_response', r, [], { kind: ['tool', 'meta', 'list', 'artifact'] })),
     a.query(tenantId, nq('tokens_saved_projection', r)),
     a.query(tenantId, nq('tokens_saved_artifact', r)),
     a.query(tenantId, nq('tokens_saved_omni', r)),
+    a.query(tenantId, nq('tokens_saved_shortlist', r)),
     a.usageBy(tenantId, 'client', r.from, r.to, 50),
     a.usageBy(tenantId, 'agent', r.from, r.to, 50),
     a.usageBy(tenantId, 'subject', r.from, r.to, 50),
   ]);
-  const saved = { projection: scalar(projection.rows) ?? 0, artifact: scalar(artifact.rows) ?? 0, omni: scalar(omni.rows) ?? 0 };
-  const totalSaved = saved.projection + saved.artifact + saved.omni;
+  const saved = {
+    projection: scalar(projection.rows) ?? 0,
+    artifact: scalar(artifact.rows) ?? 0,
+    omni: scalar(omni.rows) ?? 0,
+    shortlist: scalar(shortlist.rows) ?? 0,
+  };
+  const totalSaved = saved.projection + saved.artifact + saved.omni + saved.shortlist;
   const used = scalar(response.rows) ?? 0;
   const without = used + totalSaved;
   return {

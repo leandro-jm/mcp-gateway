@@ -37,7 +37,8 @@ describe('analytics rollups (F15.8)', () => {
     (
       await db.pool.query(
         `SELECT sum(calls)::int AS calls, sum(latency_sum)::int AS latency, sum(redactions_sum)::int AS redactions,
-                jsonb_counts_sum(redactions_by_detector) AS det, sum(tokens_saved_omni_sum)::int AS omni
+                jsonb_counts_sum(redactions_by_detector) AS det, sum(tokens_saved_omni_sum)::int AS omni,
+                sum(tokens_saved_shortlist_sum)::int AS shortlist
          FROM call_rollups_hourly WHERE tenant_id = $1`,
         [tenantId],
       )
@@ -54,15 +55,19 @@ describe('analytics rollups (F15.8)', () => {
     }
     events.push(ev(hour(1), { decision: 'error', errorStage: 'upstream', errorCode: 'UPSTREAM_ERROR', redactionsByDetector: { email: 2 }, redactionsCount: 2 }));
     events.push(ev(hour(0), { kind: 'list', toolName: 'tools/list', endpoint: 'omni', viaOmni: true, catalogTokens: 100, meta: { fullCatalogTokens: 900 } }));
+    const noRedactions = { redactionsCount: 0, redactionsByDetector: undefined };
+    // router shortlist on a native list, and a native list the router left alone (nothing saved)
+    events.push(ev(hour(1), { kind: 'list', toolName: 'tools/list', endpoint: 'server', catalogTokens: 300, meta: { fullCatalogTokens: 900 }, ...noRedactions }));
+    events.push(ev(hour(2), { kind: 'list', toolName: 'tools/list', endpoint: 'server', catalogTokens: 900, ...noRedactions }));
     await writer.insertBatch(events);
   });
   afterAll(async () => db?.teardown());
 
-  it('hourly totals equal the sums over raw events, with detector counts and Omni savings', async () => {
+  it('hourly totals equal the sums over raw events, with detector counts and Omni and shortlist savings', async () => {
     const r = await rollups.rollup(now, 6 * HOUR);
     expect(r.skipped).toBe(false);
     const raw = (await db.pool.query('SELECT count(*)::int AS n, sum(latency_ms)::int AS l, sum(redactions_count)::int AS red FROM call_events WHERE tenant_id = $1', [tenantId])).rows[0];
-    expect(await sums()).toMatchObject({ calls: raw.n, latency: raw.l, redactions: raw.red, det: { cpf: 31, email: 2 }, omni: 800 });
+    expect(await sums()).toMatchObject({ calls: raw.n, latency: raw.l, redactions: raw.red, det: { cpf: 31, email: 2 }, omni: 800, shortlist: 600 });
     const buckets = (await db.pool.query('SELECT DISTINCT bucket FROM call_rollups_hourly WHERE tenant_id = $1', [tenantId])).rows;
     expect(buckets).toHaveLength(3);
     const errs = (await db.pool.query("SELECT calls, error_code FROM call_rollups_hourly WHERE decision = 'error'")).rows;
@@ -88,15 +93,18 @@ describe('analytics rollups (F15.8)', () => {
   });
 
   it('daily usage per subject and client (chargeback)', async () => {
-    const rows = (await db.pool.query('SELECT sum(calls)::int AS calls, sum(errors)::int AS errors, sum(response_tokens_sum)::int AS tokens FROM usage_rollups_daily WHERE tenant_id = $1', [tenantId])).rows[0];
-    expect(rows.calls).toBe(32); // tool calls only, late event included (the list event is not a call)
+    const rows = (
+      await db.pool.query('SELECT sum(calls)::int AS calls, sum(errors)::int AS errors, sum(response_tokens_sum)::int AS tokens, sum(tokens_saved_sum)::int AS saved FROM usage_rollups_daily WHERE tenant_id = $1', [tenantId])
+    ).rows[0];
+    expect(rows.calls).toBe(32); // tool calls only, late event included (list events are not calls)
     expect(rows.errors).toBe(1);
     expect(rows.tokens).toBeGreaterThan(0);
+    expect(rows.saved).toBe(1400); // Omni + shortlist, same as the hourly mechanisms
   });
 
   it('two concurrent runs do the work once', async () => {
     const [a, b] = await Promise.all([rollups.rollup(now, 6 * HOUR), rollups.rollup(now, 6 * HOUR)]);
     expect([a.skipped, b.skipped].filter(Boolean).length).toBeLessThanOrEqual(1);
-    expect((await sums()).calls).toBe(33);
+    expect((await sums()).calls).toBe(35);
   });
 });

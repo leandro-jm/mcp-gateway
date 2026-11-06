@@ -3,6 +3,12 @@ import { authorize } from '../auth/authorizer';
 import type { Principal } from '../auth/tokens';
 import type { Services } from '../services';
 
+/** Tokens a `tools/list` saved against the full catalog (Omni or router shortlist); same rule as the rollups. */
+function listTokensSaved(r: CallEventRow): number {
+  const full = (r.meta as { fullCatalogTokens?: unknown } | null)?.fullCatalogTokens;
+  return r.kind === 'list' && typeof full === 'number' ? Math.max(0, full - (r.catalogTokens ?? 0)) : 0;
+}
+
 /** Call event as the Admin API and the observability MCP show it (never payloads). */
 export function callDto(r: CallEventRow) {
   return {
@@ -27,7 +33,7 @@ export function callDto(r: CallEventRow) {
     overheadMs: r.overheadMs,
     redactionsCount: r.redactionsCount,
     responseTokens: r.responseTokens,
-    tokensSaved: r.tokensSavedProjection + r.tokensSavedArtifact,
+    tokensSaved: r.tokensSavedProjection + r.tokensSavedArtifact + listTokensSaved(r),
     meta: r.meta,
   };
 }

@@ -38,6 +38,12 @@ const GROUP_COLS = [
   'error_code',
 ];
 
+/**
+ * Tokens a `tools/list` saved against the full catalog (`meta.fullCatalogTokens`): Omni replaces it
+ * with meta-tools, the router shortlist trims it (ADR-025). Same rule as `recordCallMetrics`.
+ */
+const LIST_SAVED = `CASE WHEN kind = 'list' THEN greatest(coalesce((meta->>'fullCatalogTokens')::int, 0) - coalesce(catalog_tokens, 0), 0) ELSE 0 END`;
+
 const HOURLY_SQL = `
 INSERT INTO call_rollups_hourly (
   ${GROUP_COLS.join(', ')}, bucket,
@@ -45,7 +51,7 @@ INSERT INTO call_rollups_hourly (
   upstream_sum, authz_sum, validation_sum, pii_sum, projection_sum, artifact_sum, retries_sum,
   redactions_sum, redactions_by_detector, bytes_before_sum, bytes_after_sum, artifact_bytes_sum,
   response_tokens_sum, raw_tokens_sum, def_tokens_sum,
-  tokens_saved_projection_sum, tokens_saved_artifact_sum, tokens_saved_omni_sum
+  tokens_saved_projection_sum, tokens_saved_artifact_sum, tokens_saved_omni_sum, tokens_saved_shortlist_sum
 )
 SELECT
   ${GROUP_COLS.join(', ')}, date_trunc('hour', ts) AS bucket,
@@ -72,8 +78,8 @@ SELECT
   coalesce(sum(def_tokens), 0),
   coalesce(sum(tokens_saved_projection), 0),
   coalesce(sum(tokens_saved_artifact), 0),
-  coalesce(sum(CASE WHEN kind = 'list' AND via_omni
-    THEN greatest(coalesce((meta->>'fullCatalogTokens')::int, 0) - coalesce(catalog_tokens, 0), 0) ELSE 0 END), 0)
+  coalesce(sum(CASE WHEN via_omni THEN ${LIST_SAVED} ELSE 0 END), 0),
+  coalesce(sum(CASE WHEN NOT via_omni THEN ${LIST_SAVED} ELSE 0 END), 0)
 FROM call_events`;
 const HOURLY_GROUP = `GROUP BY ${GROUP_COLS.join(', ')}, date_trunc('hour', ts)`;
 
@@ -85,7 +91,7 @@ SELECT tenant_id, (ts AT TIME ZONE 'UTC')::date, subject, client_id, agent_name,
   count(*) FILTER (WHERE kind IN ('tool', 'artifact') AND decision = 'deny')::int,
   coalesce(sum(latency_ms) FILTER (WHERE kind IN ('tool', 'artifact')), 0),
   coalesce(sum(response_tokens) FILTER (WHERE kind <> 'composite_step'), 0),
-  coalesce(sum(tokens_saved_projection + tokens_saved_artifact), 0)
+  coalesce(sum(tokens_saved_projection + tokens_saved_artifact + ${LIST_SAVED}), 0)
 FROM call_events`;
 const DAILY_GROUP = `GROUP BY tenant_id, (ts AT TIME ZONE 'UTC')::date, subject, client_id, agent_name`;
 
