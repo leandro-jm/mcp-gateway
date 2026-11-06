@@ -18,6 +18,7 @@ O gateway fica entre agentes de IA, que são clientes semiconfiáveis sujeitos a
 - **Usuário de outro tenant**: possui um token válido emitido pelo gateway.
 - **Owner malicioso ou descuidado**: controla specs, overrides, tools manuais, compostas e políticas do seu time.
 - **Upstream comprometido ou malicioso**: controla respostas, headers e redirects.
+- **Cliente OAuth ou site malicioso** (ADR-030): controla o `client_id` (URL de CIMD ou registro DCR), os `redirect_uris`, o `state` e os links que leva o usuário a abrir.
 
 ## Ameaças e mitigações (STRIDE resumido)
 | # | Ameaça | Mitigação | Teste |
@@ -35,6 +36,12 @@ O gateway fica entre agentes de IA, que são clientes semiconfiáveis sujeitos a
 | T11 | **Spec maliciosa** (`$ref` externo, YAML bomb, spec gigante) | `$ref` externo é rejeitado. Tamanho expandido das referências limitado antes de desreferenciar (fan-out exponencial). Limite de aliases no YAML. Limite de bytes e timeout no download. | `normalize.test` |
 | T12 | **Expressões de usuário (JSONata/regex) custosas** | JSONata com os guardrails nativos (timeout, profundidade, tamanho de sequência), pois `setTimeout` não interrompe o JSONata. `artifact_query` roda num processo filho descartável com teto de heap (ADR-013). Regex configuráveis (policies, conta bancária do tenant) passam por validação anti-ReDoS na escrita e na execução, e o detector de e-mail é linear. | `composition.test`, `artifacts.int`, `jsonata-sandbox.test`, `regex.test`, `detectors.test` |
 | T13 | **Vazamento pela observabilidade** (eventos de chamada, índice de titulares, captura de debug, MCP de observabilidade) | `call_events` guarda só contagens, hashes e nomes, nunca payload, query de busca ou texto livre; subject e client são sanitizados com a chave PII do tenant. O índice LGPD guarda HMAC normalizado com chave derivada por tenant e é consultado só por `gateway-admin`, com auditoria sem o valor (ADR-017). A captura de debug é opt-in, com motivo, prazo e teto, fica cifrada com a data key do tenant e expira em 24 h. O MCP de observabilidade exige `gateway-admin` ou `analytics-reader`, aceita só a DSL tipada (sem SQL) e nunca devolve payload. `baggage` recebido é ignorado. | `call-events.int`, `subject-index.int`, `debug-capture.int`, `observability-mcp.int`, `security/tenant-isolation` |
+| T14 | **Roubo ou troca do código de autorização** (código interceptado, reutilizado ou trocado por outro cliente) | PKCE `S256` obrigatório. Código de uso único, 60 s, só o hash no banco, preso a cliente, usuário, `redirect_uri` e `resource`. Reuso revoga o grant gerado. `iss` na resposta de autorização (RFC 9207). | `security/oauth`, `oauth.test` |
+| T15 | **Redirect aberto e vazamento do código** | `redirect_uri` exato (só a porta varia em loopback, RFC 8252). Erro antes de validar o redirect mostra página de erro e nunca redireciona. `Referrer-Policy: no-referrer` nas telas. | `security/oauth`, `oauth.test` |
+| T16 | **Confused deputy e consentimento enganoso** (cliente se passa por outro; clickjacking na tela) | Consentimento explícito com host do `client_id` e do redirect e avisos para loopback e DCR. `clientId` das policies derivado do host do CIMD, nunca do `client_name`. Allowlist por tenant. `frame-ancestors 'none'`. CSRF por pedido nos POSTs de login e consentimento. | `security/oauth` |
+| T17 | **SSRF via CIMD ou discovery do IdP** | Documento CIMD e discovery, JWKS e token do IdP (fase B) por `outboundFetch` (T1): só HTTPS, sem redirects, teto de 5 KB no CIMD, timeout e cache. | `security/oauth`, `security/ssrf` |
+| T18 | **Token OAuth roubado ou reaproveitado** | Access token curto (60 min) com audiência no `PUBLIC_URL` (RFC 8707). Refresh rotativo; reuso revoga a família. Tokens `oauth` recusados na Admin API. Usuário desabilitado, tenant suspenso ou OAuth desligado invalidam na próxima verificação. | `security/oauth`, `security/privilege-escalation` |
+| T19 | **Tomada de conta pelo login federado** (e-mail não verificado, IdP de outro tenant, replay do callback) | Um IdP por tenant, descoberto pelo domínio. Vínculo por `(issuer, sub)`; match por e-mail só com `email_verified`. `state` e `nonce` de uso único. Roles nunca vêm do IdP. JIT desligado por padrão. | `security/oauth-sso`, `security/tenant-isolation` |
 
 ## Riscos aceitos
 - Sessões do modo Omni dinâmico ficam em memória (exigem afinidade). Não há risco de confidencialidade, só de disponibilidade, limitada pelos tetos de sessões.
@@ -54,6 +61,9 @@ O pentest encontrou controles que não se sustentavam:
 - **T12**: o timeout de JSONata não disparava.
 
 Os itens acima foram corrigidos, e a suíte `security/` cobre os PoCs.
+
+## Adendo (F20, ADR-030)
+O OAuth para clientes MCP e o login federado acrescentam o ator "cliente OAuth ou site malicioso" e as ameaças T14 a T19. Os testes listados nessas linhas entram com a F20.10 (`security/oauth`) e a F20.14 (`security/oauth-sso`).
 
 ## Consequências
 A suíte `pnpm test:security` (`apps/gateway/test/security`) roda na CI. Qualquer nova saída de rede deve usar `outboundFetch`.
