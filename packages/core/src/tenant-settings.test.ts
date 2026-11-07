@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readToolRouterSettings, readTrafficSettings, readWebhooks } from './tenant-settings';
+import { readOAuthSettings, readToolRouterSettings, readTrafficSettings, readWebhooks } from './tenant-settings';
 
 describe('tenant settings', () => {
   it('applies traffic defaults', () => {
@@ -39,5 +39,23 @@ describe('tool router settings (F19.3)', () => {
     expect(readToolRouterSettings({ toolRouter: { enabled: true, gate: { confirmAt: 0.95, denyAt: 0.5 } } }).enabled).toBe(false);
     expect(readToolRouterSettings({ toolRouter: { enabled: 'yes' } }).enabled).toBe(false);
     expect(readToolRouterSettings(null).enabled).toBe(false);
+  });
+});
+
+describe('oauth settings (F20.4)', () => {
+  it('is off by default and admits no client', () => {
+    expect(readOAuthSettings({})).toEqual({ enabled: false, clients: 'allowlist', allowlist: [] });
+    expect(readOAuthSettings(null).enabled).toBe(false);
+  });
+
+  it('reads an enabled tenant with an allowlist and shorter TTLs', () => {
+    const s = readOAuthSettings({ oauth: { enabled: true, allowlist: [' claude.ai '], accessTtlMinutes: 15, refreshTtlDays: 7 } });
+    expect(s).toEqual({ enabled: true, clients: 'allowlist', allowlist: ['claude.ai'], accessTtlMinutes: 15, refreshTtlDays: 7 });
+  });
+
+  it('reads invalid settings as the defaults, which keep OAuth off', () => {
+    expect(readOAuthSettings({ oauth: { enabled: true, clients: 'everyone' } }).enabled).toBe(false);
+    expect(readOAuthSettings({ oauth: { enabled: true, accessTtlMinutes: 0 } }).enabled).toBe(false);
+    expect(readOAuthSettings({ oauth: { enabled: 'yes' } }).enabled).toBe(false);
   });
 });

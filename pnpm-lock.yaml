@@ -211,6 +211,9 @@ importers:
       '@mcp-gateway/net':
         specifier: workspace:*
         version: link:../../packages/net
+      '@mcp-gateway/oauth':
+        specifier: workspace:*
+        version: link:../../packages/oauth
       '@mcp-gateway/openapi-toolgen':
         specifier: workspace:*
         version: link:../../packages/openapi-toolgen

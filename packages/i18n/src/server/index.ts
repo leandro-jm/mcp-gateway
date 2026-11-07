@@ -13,6 +13,7 @@ import { db } from './db';
 import { importer } from './import';
 import { llm } from './llm';
 import { mcp } from './mcp';
+import { oauth } from './oauth';
 import { pii } from './pii';
 import { policy } from './policy';
 import { projection } from './projection';
@@ -24,7 +25,7 @@ import { toolgen } from './toolgen';
 
 export type { ResourceName } from './common';
 
-const AREAS = [common, resource, auth, admin, proxy, pii, mcp, policy, composition, toolgen, crawler, db, config, projection, redaction, artifacts, importer, composer, llm, analytics, ui, router] as const;
+const AREAS = [common, resource, auth, admin, proxy, pii, mcp, policy, composition, toolgen, crawler, db, config, projection, redaction, artifacts, importer, composer, llm, analytics, ui, router, oauth] as const;
 
 /** Every backend message key (Admin API, MCP data plane, crawler, pure packages). */
 export type ServerMessageKey = KeysOf<(typeof AREAS)[number]>;

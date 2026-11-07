@@ -231,3 +231,25 @@ export function readToolRouterSettings(settings: unknown): ToolRouterSettings {
   const parsed = toolRouterSettingsSchema.safeParse((settings as { toolRouter?: unknown } | null)?.toolRouter ?? {});
   return parsed.success ? parsed.data : toolRouterSettingsSchema.parse({});
 }
+
+/**
+ * OAuth for MCP clients (F20, ADR-030). Off by default. With `clients: 'allowlist'` (the default)
+ * only listed clients connect, so an empty list admits none; `any` admits every client, always
+ * through the consent screen. Entries are exact `client_id`s or CIMD hosts (`claude.ai`).
+ * TTLs only shorten the platform ones (`OAUTH_ACCESS_TTL_MINUTES`, `OAUTH_REFRESH_TTL_DAYS`).
+ */
+export const oauthSettingsSchema = z.object({
+  enabled: z.boolean().default(false),
+  clients: z.enum(['any', 'allowlist']).default('allowlist'),
+  allowlist: z.array(z.string().trim().min(1).max(2048)).max(200).default([]),
+  accessTtlMinutes: z.number().int().min(1).max(1440).optional(),
+  refreshTtlDays: z.number().int().min(1).max(365).optional(),
+});
+
+export type OAuthSettings = z.output<typeof oauthSettingsSchema>;
+
+/** Invalid settings read as the defaults, which keep OAuth off for the tenant. */
+export function readOAuthSettings(settings: unknown): OAuthSettings {
+  const parsed = oauthSettingsSchema.safeParse((settings as { oauth?: unknown } | null)?.oauth ?? {});
+  return parsed.success ? parsed.data : oauthSettingsSchema.parse({});
+}

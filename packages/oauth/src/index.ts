@@ -9,3 +9,4 @@ export * from './registration';
 export * from './authorize-request';
 export * from './token-request';
 export * from './metadata';
+export * from './allowlist';

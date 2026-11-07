@@ -19,31 +19,54 @@ export type OAuthErrorCode =
   | 'invalid_redirect_uri'
   | 'invalid_client_metadata';
 
-export type OAuthErrorReason =
-  | 'duplicate_parameter'
-  | 'invalid_parameter'
-  | 'missing_client_id'
-  | 'invalid_client_id'
-  | 'missing_redirect_uri'
-  | 'invalid_redirect_uri'
-  | 'redirect_uri_mismatch'
-  | 'unsupported_response_type'
-  | 'missing_code_challenge'
-  | 'invalid_code_challenge'
-  | 'unsupported_challenge_method'
-  | 'invalid_resource'
-  | 'invalid_state'
-  | 'invalid_scope'
-  | 'missing_grant_type'
-  | 'unsupported_grant_type'
-  | 'missing_code'
-  | 'missing_code_verifier'
-  | 'invalid_code_verifier'
-  | 'missing_refresh_token'
-  | 'invalid_client_metadata'
-  | 'client_id_mismatch'
-  | 'unsupported_auth_method'
-  | 'unsupported_grant_types';
+/** Every reason, so the gateway can check that each one has a localized description. */
+export const OAUTH_ERROR_REASONS = [
+  // request parsing (this package)
+  'duplicate_parameter',
+  'invalid_parameter',
+  'missing_client_id',
+  'invalid_client_id',
+  'missing_redirect_uri',
+  'invalid_redirect_uri',
+  'redirect_uri_mismatch',
+  'unsupported_response_type',
+  'missing_code_challenge',
+  'invalid_code_challenge',
+  'unsupported_challenge_method',
+  'invalid_resource',
+  'invalid_state',
+  'invalid_scope',
+  'missing_grant_type',
+  'unsupported_grant_type',
+  'missing_code',
+  'missing_code_verifier',
+  'invalid_code_verifier',
+  'missing_refresh_token',
+  'invalid_client_metadata',
+  'client_id_mismatch',
+  'unsupported_auth_method',
+  'unsupported_grant_types',
+  // decisions taken by the gateway (clients, tenant, grants)
+  'client_unavailable',
+  'client_disabled',
+  'client_not_allowed',
+  'tenant_oauth_disabled',
+  'user_not_allowed',
+  'user_denied',
+  'request_expired',
+  'invalid_code',
+  'code_reused',
+  'pkce_mismatch',
+  'resource_mismatch',
+  'client_mismatch',
+  'invalid_refresh_token',
+  'refresh_token_reused',
+  'registration_disabled',
+  'rate_limited',
+  'internal_error',
+] as const;
+
+export type OAuthErrorReason = (typeof OAUTH_ERROR_REASONS)[number];
 
 export class OAuthProtocolError extends Error {
   constructor(
