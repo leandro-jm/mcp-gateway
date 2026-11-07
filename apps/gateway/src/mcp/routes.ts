@@ -2,8 +2,10 @@ import { createHash } from 'node:crypto';
 import type { CallEndpoint, SessionSource } from '@mcp-gateway/call-analytics';
 import { isGatewayError, NotFound, readObservabilitySettings, Unauthorized } from '@mcp-gateway/core';
 import { msg, translate, type ServerMessage } from '@mcp-gateway/i18n/server';
+import { canonicalMcpResource, issuerOf, SCOPE_MCP } from '@mcp-gateway/oauth';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { bearerToken, wwwAuthenticate, type Principal } from '../auth/tokens';
+import { bearerToken, wwwAuthenticate, type ChallengeOptions, type Principal } from '../auth/tokens';
+import type { GatewayConfig } from '../config';
 import { requestLocale } from '../i18n';
 import type { CallContext, CallIdentity, ToolExecutor } from '../proxy/executor';
 import type { ToolSearch } from '../search/tool-search';
@@ -148,6 +150,17 @@ export async function resolveContext(
   return withHeaderTrace(ctx, req.headers);
 }
 
+/**
+ * With OAuth on (ADR-030), the challenge points the client at the Protected Resource Metadata of
+ * the surface it called, which names the gateway as authorization server.
+ */
+function challengeOf(config: GatewayConfig, req: FastifyRequest): ChallengeOptions {
+  if (!config.OAUTH_ENABLED) return {};
+  const path = req.url.split('?')[0] ?? '';
+  const resource = canonicalMcpResource(`${issuerOf(config.PUBLIC_URL)}${path}`, config.PUBLIC_URL) ?? issuerOf(config.PUBLIC_URL);
+  return { resource, scope: SCOPE_MCP };
+}
+
 async function contextOrReply(deps: McpRouteDeps, req: FastifyRequest, reply: FastifyReply, serverSlug?: string) {
   try {
     return await resolveContext(deps, req, serverSlug);
@@ -156,7 +169,11 @@ async function contextOrReply(deps: McpRouteDeps, req: FastifyRequest, reply: Fa
       const hasToken = Boolean(bearerToken(req.headers.authorization));
       // The body follows the request locale; the WWW-Authenticate error_description stays English.
       localizedError(req, reply, 401, -32001, err.msg, {
-        'www-authenticate': wwwAuthenticate(hasToken ? 'invalid_token' : undefined, hasToken ? err.message : undefined),
+        'www-authenticate': wwwAuthenticate(
+          hasToken ? 'invalid_token' : undefined,
+          hasToken ? err.message : undefined,
+          challengeOf(deps.services.config, req),
+        ),
       });
       return undefined;
     }

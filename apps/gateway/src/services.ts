@@ -8,6 +8,8 @@ import {
   ArtifactsRepo,
   AuditRepo,
   AuthQueries,
+  OAuthGrantsRepo,
+  OAuthQueries,
   CallEventsRepo,
   CallEventWriter,
   PgAnalyticsStore,
@@ -86,6 +88,8 @@ export interface Repos {
   users: UsersRepo;
   apiTokens: ApiTokensRepo;
   auth: AuthQueries;
+  oauth: OAuthQueries;
+  oauthGrants: OAuthGrantsRepo;
   llmSettings: LlmSettingsRepo;
   decisionSettings: DecisionSettingsRepo;
   callEvents: CallEventsRepo;
@@ -182,6 +186,8 @@ export function createRepos(db: Db, keyring: Keyring): Repos {
     users: new UsersRepo(db),
     apiTokens: new ApiTokensRepo(db),
     auth: new AuthQueries(db),
+    oauth: new OAuthQueries(db),
+    oauthGrants: new OAuthGrantsRepo(db),
     llmSettings: new LlmSettingsRepo(db, keyring),
     decisionSettings: new DecisionSettingsRepo(db, keyring),
     callEvents: new CallEventsRepo(db),
@@ -212,7 +218,7 @@ export function createServices(
   const keyring = new Keyring(dbHandle.db, decodeKey(config.GATEWAY_MASTER_KEY));
   const crawl = new Queue(CRAWL_QUEUE, { connection: redis });
   const repos = createRepos(dbHandle.db, keyring);
-  const verifier = new TokenVerifier(repos.auth);
+  const verifier = new TokenVerifier(repos.auth, { oauthEnabled: config.OAUTH_ENABLED });
   const rateLimiter = new RateLimiter(redis);
   const registry = new RegistryCache(dbHandle.db, repos, redis, logger);
   const credentialManager = new CredentialManager(repos.credentials, keyring, redis, logger);

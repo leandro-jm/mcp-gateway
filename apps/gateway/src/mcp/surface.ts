@@ -20,7 +20,7 @@ export async function classify(req: FastifyRequest): Promise<Classified> {
 
 /** The route already authenticated the caller: the SDK only carries the context to the factory. */
 function authInfoOf(ctx: CallContext): AuthInfo {
-  return { token: '', clientId: ctx.principal.clientId ?? ctx.principal.sub, scopes: [], extra: { [CTX_KEY]: ctx } };
+  return { token: '', clientId: ctx.principal.clientId ?? ctx.principal.sub, scopes: ctx.principal.scopes ?? [], extra: { [CTX_KEY]: ctx } };
 }
 
 function contextOf(authInfo: AuthInfo | undefined): CallContext {

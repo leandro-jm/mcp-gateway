@@ -1,7 +1,7 @@
 import { hashToken } from '@mcp-gateway/core';
 import type { AuthQueries, TokenRecord } from '@mcp-gateway/db';
 import { describe, expect, it } from 'vitest';
-import { bearerToken, TokenVerifier } from '../src/auth/tokens';
+import { bearerToken, TokenVerifier, wwwAuthenticate } from '../src/auth/tokens';
 
 const now0 = new Date('2026-10-03T12:00:00Z').getTime();
 
@@ -114,5 +114,79 @@ describe('TokenVerifier (ADR-011)', () => {
     expect(bearerToken('bearer mgw_x')).toBe('mgw_x');
     expect(bearerToken('Basic abc')).toBeUndefined();
     expect(bearerToken(undefined)).toBeUndefined();
+  });
+});
+
+describe('TokenVerifier with OAuth tokens (F20.5, ADR-030)', () => {
+  type OAuthOver = Partial<NonNullable<TokenRecord['oauth']>> & { userKind?: 'human' | 'service' };
+  function oauthRecord(over: OAuthOver = {}): TokenRecord {
+    const { userKind = 'human', ...oauth } = over;
+    const base = record();
+    return {
+      ...base,
+      token: { ...base.token, kind: 'oauth', name: 'oauth', grantId: 'g1' },
+      user: { ...base.user, kind: userKind },
+      oauth: {
+        grantId: 'g1',
+        grantRevokedAt: null,
+        scopes: ['mcp', 'offline_access'],
+        resource: 'https://gw.example/mcp',
+        clientId: 'https://claude.ai/oauth/meta',
+        clientKind: 'cimd',
+        clientDisabledAt: null,
+        tenantSettings: { enabled: true, clients: 'any' },
+        ...oauth,
+      },
+    };
+  }
+  const verifier = (rec: TokenRecord, oauthEnabled = true) => new TokenVerifier(fakeAuth(rec).auth, { now: () => now0, oauthEnabled });
+
+  it('identifies the connected app by its verifiable host and keeps the scopes', async () => {
+    const p = await verifier(oauthRecord()).verify('mgw_ok');
+    expect(p).toMatchObject({ sub: 'bot', clientId: 'oauth:claude.ai', tokenKind: 'oauth', scopes: ['mcp', 'offline_access'] });
+  });
+
+  it('names DCR clients by their generated id, never by a self-declared name', async () => {
+    const p = await verifier(oauthRecord({ clientId: 'dcr_abc', clientKind: 'dcr' })).verify('mgw_ok');
+    expect(p.clientId).toBe('oauth:dcr:dcr_abc');
+  });
+
+  it('accepts a client listed in the tenant allowlist', async () => {
+    const rec = oauthRecord({ tenantSettings: { enabled: true, allowlist: ['claude.ai'] } });
+    expect((await verifier(rec).verify('mgw_ok')).clientId).toBe('oauth:claude.ai');
+  });
+
+  it.each([
+    ['the platform switch is off', oauthRecord(), false, 'auth.oauthPlatformDisabled'],
+    ['the grant was revoked', oauthRecord({ grantRevokedAt: new Date(now0 - 1) }), true, 'auth.revokedToken'],
+    ['the client was disabled', oauthRecord({ clientDisabledAt: new Date(now0 - 1) }), true, 'oauth.reason.client_disabled'],
+    ['the owner is a service user', oauthRecord({ userKind: 'service' }), true, 'oauth.reason.user_not_allowed'],
+    ['the tenant turned OAuth off', oauthRecord({ tenantSettings: { enabled: false } }), true, 'oauth.reason.tenant_oauth_disabled'],
+    ['the tenant settings are invalid', oauthRecord({ tenantSettings: { enabled: 'yes' } }), true, 'oauth.reason.tenant_oauth_disabled'],
+    ['the client left the allowlist', oauthRecord({ tenantSettings: { enabled: true, allowlist: ['chatgpt.com'] } }), true, 'oauth.reason.client_not_allowed'],
+  ] as const)('rejects the token when %s', async (_l, rec, enabled, key) => {
+    await expect(verifier(rec, enabled).verify('mgw_ok')).rejects.toMatchObject({ msg: { key } });
+  });
+
+  it('rejects an oauth token whose grant is missing', async () => {
+    const { oauth: _o, ...rec } = oauthRecord();
+    await expect(verifier(rec).verify('mgw_ok')).rejects.toMatchObject({ msg: { key: 'auth.revokedToken' } });
+  });
+
+  it('other token kinds have no scopes', async () => {
+    expect(await new TokenVerifier(fakeAuth(record()).auth, { now: () => now0 }).verify('mgw_ok')).toMatchObject({ tokenKind: 'api', scopes: [] });
+  });
+});
+
+describe('wwwAuthenticate', () => {
+  it('keeps the plain challenge without OAuth', () => {
+    expect(wwwAuthenticate()).toBe('Bearer realm="mcp-gateway"');
+    expect(wwwAuthenticate('invalid_token', 'token "revoked"')).toBe(`Bearer realm="mcp-gateway", error="invalid_token", error_description="token 'revoked'"`);
+  });
+
+  it('announces the protected resource metadata and the scope', () => {
+    expect(wwwAuthenticate(undefined, undefined, { resource: 'https://gw.example/mcp/omni', scope: 'mcp' })).toBe(
+      'Bearer realm="mcp-gateway", resource_metadata="https://gw.example/.well-known/oauth-protected-resource/mcp/omni", scope="mcp"',
+    );
   });
 });

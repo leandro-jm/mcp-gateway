@@ -66,6 +66,8 @@ export const adminAuth = fp(async (app: FastifyInstance, opts: { services: Servi
     const token = bearerToken(req.headers.authorization);
     if (!token) throw new Unauthorized(msg('auth.missingBearer'));
     req.principal = await opts.services.verifier.verify(token);
+    // Connected apps act on the data plane only (ADR-030): their tokens never administer anything.
+    if (req.principal.tokenKind === 'oauth') throw new Unauthorized(msg('auth.oauthTokenNotAllowed'));
     const roles = cfg?.roles;
     if (roles && !roles.some((r) => req.principal!.roles.includes(r))) {
       throw new Forbidden(msg('auth.requiresRole', { roles: roles.join(', ') }));

@@ -2,7 +2,7 @@ import { Conflict, NotFound } from '@mcp-gateway/core';
 import { msg } from '@mcp-gateway/i18n/server';
 import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
 import type { Db } from '../client';
-import { apiTokens, tenants, users } from '../schema';
+import { apiTokens, oauthClients, oauthGrants, tenants, users } from '../schema';
 import { apiTokenColumns, type ApiToken, type ApiTokenInput } from './api-tokens';
 import type { Tenant } from './tenants';
 import { toUser, wrapUserConflict, type User, type UserInput } from './users';
@@ -17,11 +17,27 @@ export interface AuthTenant {
   status: 'active' | 'suspended';
 }
 
+/** What an OAuth access token was issued for (ADR-030): grant, client and the tenant's OAuth settings. */
+export interface OAuthTokenInfo {
+  grantId: string;
+  grantRevokedAt: Date | null;
+  scopes: string[];
+  resource: string;
+  /** The client's `client_id` (CIMD URL or DCR identifier). */
+  clientId: string;
+  clientKind: 'cimd' | 'dcr';
+  clientDisabledAt: Date | null;
+  /** Raw `tenants.settings.oauth` of the user's tenant (read with `readOAuthSettings`). */
+  tenantSettings: unknown;
+}
+
 export interface TokenRecord {
   token: ApiToken;
   user: User;
   /** Absent for platform admins. */
   tenant: AuthTenant | null;
+  /** Present only for `kind = 'oauth'` tokens. */
+  oauth?: OAuthTokenInfo;
 }
 
 export interface LoginRecord {
@@ -40,13 +56,40 @@ export class AuthQueries {
 
   async findToken(tokenHash: string): Promise<TokenRecord | undefined> {
     const [row] = await this.db
-      .select({ token: apiTokenColumns, user: users, tenant: { id: tenants.id, slug: tenants.slug, status: tenants.status } })
+      .select({
+        token: apiTokenColumns,
+        user: users,
+        tenant: { id: tenants.id, slug: tenants.slug, status: tenants.status },
+        grant: {
+          id: oauthGrants.id,
+          revokedAt: oauthGrants.revokedAt,
+          scopes: oauthGrants.scopes,
+          resource: oauthGrants.resource,
+        },
+        client: { clientId: oauthClients.clientId, kind: oauthClients.kind, disabledAt: oauthClients.disabledAt },
+        tenantOAuth: sql<unknown>`${tenants.settings} -> 'oauth'`,
+      })
       .from(apiTokens)
       .innerJoin(users, eq(users.id, apiTokens.userId))
       .leftJoin(tenants, eq(tenants.id, users.tenantId))
+      .leftJoin(oauthGrants, eq(oauthGrants.id, apiTokens.grantId))
+      .leftJoin(oauthClients, eq(oauthClients.id, oauthGrants.clientId))
       .where(eq(apiTokens.tokenHash, tokenHash));
     if (!row) return undefined;
-    return { token: row.token, user: toUser(row.user), tenant: row.tenant };
+    const record: TokenRecord = { token: row.token, user: toUser(row.user), tenant: row.tenant };
+    if (row.grant && row.client) {
+      record.oauth = {
+        grantId: row.grant.id,
+        grantRevokedAt: row.grant.revokedAt,
+        scopes: row.grant.scopes,
+        resource: row.grant.resource,
+        clientId: row.client.clientId,
+        clientKind: row.client.kind,
+        clientDisabledAt: row.client.disabledAt,
+        tenantSettings: row.tenantOAuth ?? undefined,
+      };
+    }
+    return record;
   }
 
   async findLogin(username: string): Promise<LoginRecord | undefined> {

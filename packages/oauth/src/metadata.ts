@@ -54,3 +54,36 @@ export function authorizationServerMetadata(opts: AuthorizationServerMetadataOpt
     ...(opts.serviceDocumentation ? { service_documentation: opts.serviceDocumentation } : {}),
   };
 }
+
+/** Protected Resource Metadata (RFC 9728) of the gateway or of one of its MCP surfaces. */
+export interface ProtectedResourceMetadata {
+  resource: string;
+  authorization_servers: string[];
+  scopes_supported: string[];
+  bearer_methods_supported: string[];
+  resource_name: string;
+  resource_documentation?: string;
+}
+
+export function protectedResourceMetadata(opts: {
+  publicUrl: string;
+  resource: string;
+  resourceName?: string;
+  documentation?: string;
+}): ProtectedResourceMetadata {
+  return {
+    resource: opts.resource,
+    authorization_servers: [issuerOf(opts.publicUrl)],
+    scopes_supported: [...SUPPORTED_SCOPES],
+    bearer_methods_supported: ['header'],
+    resource_name: opts.resourceName ?? 'MCP Gateway',
+    ...(opts.documentation ? { resource_documentation: opts.documentation } : {}),
+  };
+}
+
+/** Path of the metadata document of a resource (RFC 9728 §3.1): the well-known prefix plus the resource path. */
+export function protectedResourceMetadataUrl(resource: string): string {
+  const url = new URL(resource);
+  const path = url.pathname === '/' ? '' : url.pathname;
+  return `${url.origin}/.well-known/oauth-protected-resource${path}`;
+}

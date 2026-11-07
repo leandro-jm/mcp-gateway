@@ -12,6 +12,11 @@ describe('resource indicators', () => {
     }
   });
 
+  it('accepts the gateway itself (root metadata)', () => {
+    expect(canonicalMcpResource(base, base)).toBe(base);
+    expect(canonicalMcpResource(`${base}/`, base)).toBe(base);
+  });
+
   it('canonicalizes a trailing slash and the host case', () => {
     expect(canonicalMcpResource('https://MCP.example.com/mcp/omni/', base)).toBe(`${base}/mcp/omni`);
   });
@@ -41,7 +46,9 @@ describe('resource indicators', () => {
       'https://example.com/gateway/mcp/omni',
     );
     expect(canonicalMcpResource('https://example.com/mcp/omni', withPath)).toBeUndefined();
-    expect(defaultMcpResource(withPath)).toBe('https://example.com/gateway/mcp');
+    expect(canonicalMcpResource('https://example.com/gateway', withPath)).toBe('https://example.com/gateway');
+    expect(canonicalMcpResource('https://example.com/', withPath)).toBeUndefined();
+    expect(defaultMcpResource(withPath)).toBe('https://example.com/gateway');
   });
 });
 

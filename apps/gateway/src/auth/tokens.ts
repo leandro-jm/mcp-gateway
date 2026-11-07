@@ -1,7 +1,8 @@
-import { hashToken, Unauthorized } from '@mcp-gateway/core';
-import type { AuthQueries, TokenRecord } from '@mcp-gateway/db';
+import { hashToken, readOAuthSettings, Unauthorized } from '@mcp-gateway/core';
+import type { AuthQueries, OAuthTokenInfo, TokenRecord } from '@mcp-gateway/db';
 import type { Locale } from '@mcp-gateway/i18n';
 import { msg } from '@mcp-gateway/i18n/server';
+import { clientInAllowlist, clientMetadataHost, protectedResourceMetadataUrl } from '@mcp-gateway/oauth';
 
 export interface Principal {
   /** Username of the token owner (unique and immutable). */
@@ -10,7 +11,10 @@ export interface Principal {
   tenant: string | undefined;
   roles: string[];
   groups: string[];
-  /** Token name (used by `client` policies and rate limiting); `me/<name>` for self-issued tokens. */
+  /**
+   * Token name (used by `client` policies and rate limiting); `me/<name>` for self-issued tokens;
+   * `oauth:<host>` (CIMD) or `oauth:dcr:<client_id>` for tokens issued to a connected app (ADR-030).
+   */
   clientId: string | undefined;
   kind?: 'human' | 'service';
   /** User attributes, exposed to policy conditions as `claims.*`. */
@@ -19,9 +23,15 @@ export interface Principal {
   locale: Locale;
   userId?: string;
   tokenId?: string;
+  /** Kind of the token behind the principal; `oauth` tokens only work on the data plane. */
+  tokenKind?: 'session' | 'api' | 'oauth';
+  /** OAuth scopes granted to the token (empty for other kinds). */
+  scopes?: string[];
 }
 
 export interface TokenVerifierOptions {
+  /** Platform switch `OAUTH_ENABLED`: while off, `oauth` tokens are rejected. */
+  oauthEnabled?: boolean;
   /** Lookup cache TTL (ms). A revocation on another replica takes at most this long. */
   cacheTtlMs?: number;
   /** Minimum interval between `last_used_at` updates (ms). */
@@ -35,18 +45,31 @@ interface CacheEntry {
   record?: TokenRecord;
 }
 
-export function toPrincipal({ token, user, tenant }: TokenRecord): Principal {
+/** `clientId` of a connected app: the CIMD host is verifiable, a DCR name is not (ADR-030). */
+export function oauthClientId(oauth: Pick<OAuthTokenInfo, 'clientId' | 'clientKind'>): string {
+  return oauth.clientKind === 'cimd' ? `oauth:${clientMetadataHost(oauth.clientId)}` : `oauth:dcr:${oauth.clientId}`;
+}
+
+function clientIdOf({ token, oauth }: TokenRecord): string {
+  if (oauth) return oauthClientId(oauth);
+  return token.selfIssued ? `me/${token.name}` : token.name;
+}
+
+export function toPrincipal(record: TokenRecord): Principal {
+  const { token, user, tenant } = record;
   return {
     sub: user.username,
     tenant: tenant?.slug,
     roles: user.roles,
     groups: user.groups,
-    clientId: token.selfIssued ? `me/${token.name}` : token.name,
+    clientId: clientIdOf(record),
     kind: user.kind,
     claims: { ...user.attributes, sub: user.username, name: user.displayName ?? user.username, preferred_username: user.username },
     locale: user.locale,
     userId: user.id,
     tokenId: token.id,
+    tokenKind: token.kind,
+    scopes: record.oauth?.scopes ?? [],
   };
 }
 
@@ -58,6 +81,7 @@ export class TokenVerifier {
   private readonly touchInterval: number;
   private readonly maxEntries: number;
   private readonly now: () => number;
+  private readonly oauthEnabled: boolean;
 
   constructor(
     private readonly auth: AuthQueries,
@@ -67,6 +91,7 @@ export class TokenVerifier {
     this.touchInterval = opts.touchIntervalMs ?? 60_000;
     this.maxEntries = opts.maxEntries ?? 10_000;
     this.now = opts.now ?? Date.now;
+    this.oauthEnabled = opts.oauthEnabled ?? false;
   }
 
   private async lookup(hash: string): Promise<TokenRecord | undefined> {
@@ -88,8 +113,26 @@ export class TokenVerifier {
     if (record.tenant && record.tenant.status !== 'active') {
       throw new Unauthorized(msg('auth.tenantInactive', { tenant: record.tenant.slug, status: record.tenant.status }));
     }
+    if (record.token.kind === 'oauth') this.checkOAuth(record);
     this.touch(record.token.id);
     return toPrincipal(record);
+  }
+
+  /**
+   * A connected app's token stays valid only while everything that allowed it still holds: the
+   * platform and tenant switches, the grant, the client and the tenant allowlist (ADR-030).
+   */
+  private checkOAuth(record: TokenRecord): void {
+    const oauth = record.oauth;
+    if (!this.oauthEnabled) throw new Unauthorized(msg('auth.oauthPlatformDisabled'));
+    if (!oauth || oauth.grantRevokedAt) throw new Unauthorized(msg('auth.revokedToken'));
+    if (oauth.clientDisabledAt) throw new Unauthorized(msg('oauth.reason.client_disabled'));
+    if (record.user.kind !== 'human') throw new Unauthorized(msg('oauth.reason.user_not_allowed'));
+    const settings = readOAuthSettings({ oauth: oauth.tenantSettings });
+    if (!settings.enabled) throw new Unauthorized(msg('oauth.reason.tenant_oauth_disabled'));
+    if (settings.clients === 'allowlist' && !clientInAllowlist(settings.allowlist, { clientId: oauth.clientId, kind: oauth.clientKind })) {
+      throw new Unauthorized(msg('oauth.reason.client_not_allowed'));
+    }
   }
 
   /** Drops the cache of a token (revocation, logout, user change). */
@@ -118,9 +161,18 @@ export function bearerToken(header: string | undefined): string | undefined {
   return m?.[1]?.trim();
 }
 
+export interface ChallengeOptions {
+  /** The MCP resource the client called; with OAuth on, its Protected Resource Metadata is announced (RFC 9728 §5.1). */
+  resource?: string;
+  /** Scopes the client should request (MCP spec 2026-07-28, scope selection). */
+  scope?: string;
+}
+
 /** `WWW-Authenticate` header value for data plane 401 responses. */
-export function wwwAuthenticate(error?: string, description?: string): string {
+export function wwwAuthenticate(error?: string, description?: string, opts: ChallengeOptions = {}): string {
   const parts = [`Bearer realm="mcp-gateway"`];
+  if (opts.resource) parts.push(`resource_metadata="${protectedResourceMetadataUrl(opts.resource)}"`);
+  if (opts.scope) parts.push(`scope="${opts.scope}"`);
   if (error) parts.push(`error="${error}"`);
   if (description) parts.push(`error_description="${description.replace(/"/g, "'")}"`);
   return parts.join(', ');

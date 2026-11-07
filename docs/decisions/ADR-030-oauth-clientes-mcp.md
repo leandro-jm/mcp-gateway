@@ -102,7 +102,7 @@ As rotas ficam num plugin raiz (`apps/gateway/src/oauth/`), fora do hook `adminA
   - rotaciona a cada uso e expira em `OAUTH_REFRESH_TTL_DAYS` (30 dias) ou no valor menor do tenant;
   - um refresh já rotacionado que volta a ser usado revoga a família inteira e invalida o cache do verificador.
 - **Audiência (RFC 8707).**
-  - O `resource` precisa começar com o `PUBLIC_URL` e ser uma das superfícies MCP. Qualquer outro valor dá `invalid_target`.
+  - O `resource` precisa ser o próprio gateway (o `PUBLIC_URL`, anunciado no PRM da raiz) ou uma das superfícies MCP abaixo dele. Qualquer outro valor dá `invalid_target`. Cliente que não manda `resource` (anterior à spec 2025-06-18) recebe o próprio gateway.
   - O token vale em todas as superfícies MCP do gateway; a autorização fina continua nas policies, como com tokens estáticos.
 - **Fronteira com a Admin API.** Tokens `kind = oauth` são recusados no `adminAuth`. O fluxo OAuth dá acesso ao data plane, não à administração.
 - **Desativação.** Usuário desabilitado, tenant suspenso ou `settings.oauth.enabled = false` invalidam os tokens na próxima verificação, pelas checagens do verificador. Desligar o OAuth do tenant também recusa refresh.

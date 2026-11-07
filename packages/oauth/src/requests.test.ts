@@ -55,7 +55,7 @@ describe('authorization request', () => {
   it('defaults the resource and scope for older clients', () => {
     const { resource: _r, scope: _s, ...rest } = params;
     const req = parseAuthorizationRequest(rest, target, PUBLIC_URL);
-    expect(req.resource).toBe(`${PUBLIC_URL}/mcp`);
+    expect(req.resource).toBe(PUBLIC_URL);
     expect(req.scopes).toEqual(['mcp']);
   });
 
@@ -173,6 +173,24 @@ describe('errors and metadata', () => {
     });
     expect(authorizationServerMetadata({ publicUrl: PUBLIC_URL, registration: false })).not.toHaveProperty(
       'registration_endpoint',
+    );
+  });
+});
+
+describe('protected resource metadata', () => {
+  it('points every resource at the gateway issuer', async () => {
+    const { protectedResourceMetadata, protectedResourceMetadataUrl } = await import('./metadata');
+    expect(protectedResourceMetadata({ publicUrl: PUBLIC_URL, resource: `${PUBLIC_URL}/mcp/omni` })).toEqual({
+      resource: `${PUBLIC_URL}/mcp/omni`,
+      authorization_servers: [PUBLIC_URL],
+      scopes_supported: ['mcp', 'offline_access'],
+      bearer_methods_supported: ['header'],
+      resource_name: 'MCP Gateway',
+    });
+    expect(protectedResourceMetadataUrl(`${PUBLIC_URL}/mcp/omni`)).toBe(`${PUBLIC_URL}/.well-known/oauth-protected-resource/mcp/omni`);
+    expect(protectedResourceMetadataUrl(PUBLIC_URL)).toBe(`${PUBLIC_URL}/.well-known/oauth-protected-resource`);
+    expect(protectedResourceMetadataUrl('https://example.com/gateway/mcp')).toBe(
+      'https://example.com/.well-known/oauth-protected-resource/gateway/mcp',
     );
   });
 });
