@@ -1,8 +1,9 @@
-import { Forbidden, generateApiToken, hashToken, Unauthorized, verifyPassword } from '@mcp-gateway/core';
+import { Forbidden, generateApiToken, hashToken, Unauthorized } from '@mcp-gateway/core';
 import type { ApiToken, ApiTokenInput } from '@mcp-gateway/db';
 import { msg } from '@mcp-gateway/i18n/server';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
+import { checkPasswordLogin } from '../../auth/login';
 import { bearerToken } from '../../auth/tokens';
 import type { Services } from '../../services';
 import { requirePrincipal } from '../auth';
@@ -41,12 +42,6 @@ export async function issueToken(
 
 export const expiresInDays = (days: number | undefined) => (days ? new Date(Date.now() + days * DAY_MS) : null);
 
-/**
- * Reference hash for unknown usernames: verification takes the same time,
- * without revealing which usernames exist.
- */
-const DUMMY_HASH = 'scrypt$16384$8$1$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-
 /** Admin UI login, logout and the user's own tokens (ADR-011). */
 export const authRoutes: FastifyPluginAsyncZod<{ services: Services }> = async (app, { services }) => {
   const { auth } = services.repos;
@@ -63,17 +58,8 @@ export const authRoutes: FastifyPluginAsyncZod<{ services: Services }> = async (
     },
     handler: async (req) => {
       const { username, password } = req.body;
-      const user = username.toLowerCase();
-      await services.rateLimiter.check([
-        { scope: 'login', key: `login:${user}:${req.ip}`, limit: { limit: services.config.AUTH_LOGIN_RATE_LIMIT, windowSec: 300 } },
-        // the IP may come from a header: a per-user ceiling bounds guessing from many addresses
-        { scope: 'login', key: `login-user:${user}`, limit: { limit: services.config.AUTH_LOGIN_USER_RATE_LIMIT, windowSec: 900 } },
-      ]);
-      const rec = await auth.findLogin(username);
-      const ok = await verifyPassword(password, rec?.passwordHash ?? DUMMY_HASH);
-      const fail = () => new Unauthorized(msg('auth.invalidCredentials'));
-      if (!rec || !ok || rec.user.kind !== 'human' || rec.user.status !== 'active') throw fail();
-      if (rec.tenant && rec.tenant.status !== 'active') throw fail();
+      const rec = await checkPasswordLogin(services, req.ip, username, password);
+      if (!rec) throw new Unauthorized(msg('auth.invalidCredentials'));
       const expiresAt = new Date(Date.now() + services.config.AUTH_SESSION_TTL_HOURS * 60 * 60 * 1000);
       const issued = await issueToken((input) => auth.createToken(rec.user.id, input), 'admin-ui', { kind: 'session', expiresAt });
       return { token: issued.token, expiresAt: expiresAt.toISOString() };

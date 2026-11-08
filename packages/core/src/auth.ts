@@ -46,8 +46,18 @@ export function hashToken(token: string): string {
 }
 
 export function generateApiToken(): GeneratedToken {
-  const token = `${API_TOKEN_PREFIX}${randomBytes(32).toString('base64url')}`;
-  return { token, prefix: token.slice(0, API_TOKEN_PREFIX.length + 6), hash: hashToken(token) };
+  return generateSecret(API_TOKEN_PREFIX);
+}
+
+/** OAuth refresh token prefix (ADR-030); access tokens keep `mgw_`. */
+export const REFRESH_TOKEN_PREFIX = 'mgr_';
+/** OAuth authorization code prefix (ADR-030). */
+export const AUTHORIZATION_CODE_PREFIX = 'mgc_';
+
+/** Opaque secret `<prefix><32 random bytes, base64url>`; only its SHA-256 is stored. */
+export function generateSecret(prefix: string): GeneratedToken {
+  const token = `${prefix}${randomBytes(32).toString('base64url')}`;
+  return { token, prefix: token.slice(0, prefix.length + 6), hash: hashToken(token) };
 }
 
 /** Random password (admin bootstrap). */

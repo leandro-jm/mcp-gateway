@@ -61,6 +61,7 @@ import { SessionStore } from './mcp/sessions';
 import { RegistryCache } from './registry/cache';
 import { HttpEmbeddingProvider, type EmbeddingProvider } from './search/embeddings';
 import { ToolSearch } from './search/tool-search';
+import { httpClientMetadataFetcher, type ClientMetadataFetcher } from './oauth/clients';
 import { Metrics } from './telemetry/metrics';
 import { createTracing, type TracingHandle } from './telemetry/tracing';
 import { createPgCallEventSink } from './telemetry/call-events/pg-sink';
@@ -134,6 +135,8 @@ export interface Services {
   analytics: AnalyticsStore;
   /** Opt-in debug capture (F15.17). */
   debug: DebugCaptureService;
+  /** Fetches Client ID Metadata Documents for the OAuth authorization server (ADR-030). */
+  clientMetadataFetcher: ClientMetadataFetcher;
   /** Starts background connections (registry invalidation subscription). */
   start(): Promise<void>;
   close(): Promise<void>;
@@ -211,6 +214,7 @@ export function createServices(
     callEventSink?: CallEventSink;
     decisions?: DecisionProviderFactory;
     decisionCache?: DecisionCache;
+    clientMetadataFetcher?: ClientMetadataFetcher;
   } = {},
 ): Services {
   const dbHandle = createDb(config.DATABASE_URL);
@@ -311,6 +315,8 @@ export function createServices(
     callEvents,
     analytics: new PgAnalyticsStore(dbHandle.db),
     debug,
+    clientMetadataFetcher:
+      overrides.clientMetadataFetcher ?? httpClientMetadataFetcher({ allowPrivate: config.NETWORK_ALLOW_PRIVATE, allowedHosts: [] }),
     async start() {
       await registry.start();
       await artifacts.init();

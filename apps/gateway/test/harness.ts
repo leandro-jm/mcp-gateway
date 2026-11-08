@@ -8,6 +8,7 @@ import { loadConfig, type GatewayConfig } from '../src/config';
 import { createLogger } from '../src/logger';
 import type { SpanProcessor } from '@opentelemetry/sdk-trace-base';
 import type { LlmProviderFactory } from '../src/llm';
+import type { ClientMetadataFetcher } from '../src/oauth/clients';
 import type { DecisionProviderFactory } from '../src/router';
 import type { EmbeddingProvider } from '../src/search/embeddings';
 import { createServices, type Services } from '../src/services';
@@ -132,6 +133,7 @@ export async function startHarness(
     spanProcessors?: SpanProcessor[];
     llm?: LlmProviderFactory;
     decisions?: DecisionProviderFactory;
+    clientMetadataFetcher?: ClientMetadataFetcher;
   } = {},
 ): Promise<Harness> {
   const infra = opts.infra ?? (await startInfra());
@@ -161,6 +163,7 @@ export async function startHarness(
     ...(opts.spanProcessors ? { spanProcessors: opts.spanProcessors } : {}),
     ...(opts.llm ? { llm: opts.llm } : {}),
     ...(opts.decisions ? { decisions: opts.decisions } : {}),
+    ...(opts.clientMetadataFetcher ? { clientMetadataFetcher: opts.clientMetadataFetcher } : {}),
   });
   await migrateUp(services.dbHandle.pool);
   await services.start();
