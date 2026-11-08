@@ -31,6 +31,7 @@ Ligar agentes direto em APIs internas significa vazar credenciais em prompts, ma
 - **Importação e crawling de APIs**: OpenAPI 3.x / Swagger 2.0, Postman, HAR e cURL; detecção de drift a cada novo crawl.
 - **Cofre de credenciais**: OAuth2 client credentials, password grant, API key e bearer estático, injetados por upstream.
 - **Autorização**: tokens de API opacos e usuários no Postgres; políticas por tenant, role, grupo, client e tool; rate limit.
+- **OAuth 2.1 para clientes MCP** (opcional): apps como Claude.ai, ChatGPT e IDEs conectam com a conta da própria pessoa, com consentimento, PKCE, Client ID Metadata Documents ou registro dinâmico, e uma página de Aplicativos conectados para revogar.
 - **Redação de PII**: mask, hash, drop ou tokenize, com detectores de documentos brasileiros (CPF, CNPJ, PIS, CEP), e-mail, telefone, cartão e IBAN, além de regras por nome de campo (ex.: saúde, salário).
 - **Projeção de respostas**: inclusão/exclusão de campos via JSONPath, limite de arrays e bytes, e `_fields` pedido pelo agente.
 - **Tools compostas**: orquestram vários endpoints numa tool só (JSONata). Também podem ser descritas em linguagem natural e rascunhadas pela LLM do tenant (Anthropic, OpenAI ou servidor compatível com OpenAI).
@@ -141,6 +142,7 @@ packages/
   composition/    definição e execução de tools compostas (puro)
   composer/       prompts e lint do composer em linguagem natural (puro)
   call-analytics/ modelo do evento de chamada e helpers de analytics (puro)
+  oauth/          regras do protocolo OAuth 2.1 para clientes MCP (puro)
   db/             schema, migrations e repositórios Postgres
   net/            HTTP de saída com proteção contra SSRF
   artifacts/      store de artefatos em S3

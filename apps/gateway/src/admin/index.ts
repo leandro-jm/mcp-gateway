@@ -22,6 +22,7 @@ import { viewRoutes } from './routes/views';
 import { sourceImportRoutes } from './routes/source-import';
 import { settingsRoutes } from './routes/settings';
 import { toolRouterRoutes } from './routes/tool-router';
+import { oauthAdminRoutes } from './routes/oauth';
 import { sourceRoutes } from './routes/sources';
 import { tenantRoutes } from './routes/tenants';
 import { userRoutes } from './routes/users';
@@ -59,5 +60,6 @@ export const adminApi: FastifyPluginAsync<{ services: Services }> = async (app, 
   await z.register(agentRoutes, { services });
   await z.register(settingsRoutes, { services });
   await z.register(toolRouterRoutes, { services });
+  await z.register(oauthAdminRoutes, { services });
   await z.register(uiRoutes, { services });
 };

@@ -214,6 +214,35 @@ describe('security: privilege escalation', () => {
       expect((await call(tenantAdmin, 'GET', '/settings/tool-router')).statusCode).toBe(200);
     });
 
+    it('app connection settings, tenant grants and the platform app list need the right admin (F20.8)', async () => {
+      const someId = '00000000-0000-4000-8000-000000000000';
+      const tenantRoutes: Array<[string, string, unknown?]> = [
+        ['GET', '/settings/oauth'],
+        ['PUT', '/settings/oauth', { enabled: true, clients: 'any', allowlist: [] }],
+        ['GET', '/oauth/grants'],
+        ['DELETE', `/oauth/grants/${someId}`],
+      ];
+      const platformRoutes: Array<[string, string, unknown?]> = [
+        ['GET', '/platform/oauth/clients'],
+        ['PATCH', `/platform/oauth/clients/${someId}`, { disabled: true }],
+      ];
+      const others = {
+        agent: await h.token({ sub: 'oauth-agent', tenant: 'acme' }),
+        owner,
+        reader: await h.token({ sub: 'oauth-reader', tenant: 'acme', roles: ['analytics-reader'] }),
+      };
+      for (const [who, token] of Object.entries(others)) {
+        for (const [method, url, body] of [...tenantRoutes, ...platformRoutes]) {
+          expect((await call(token, method, url, body)).statusCode, `${who} ${method} ${url}`).toBe(403);
+        }
+        // everyone reaches their own connected apps
+        expect((await call(token, 'GET', '/me/oauth/grants', undefined, null)).statusCode, `${who} /me/oauth/grants`).toBe(200);
+      }
+      for (const [method, url, body] of platformRoutes) expect((await call(tenantAdmin, method, url, body)).statusCode, `tenant admin ${method} ${url}`).toBe(403);
+      expect((await call(tenantAdmin, 'GET', '/settings/oauth')).statusCode).toBe(200);
+      expect((await call(platformAdmin, 'GET', '/platform/oauth/clients', undefined, null)).statusCode).toBe(200);
+    });
+
     it('platform usage is for the platform admin only; a tenant admin gets 403', async () => {
       expect((await call(tenantAdmin, 'GET', '/platform/usage')).statusCode).toBe(403);
       expect((await call(platformAdmin, 'GET', '/platform/usage', undefined, null)).statusCode).toBe(200);

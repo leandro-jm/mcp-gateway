@@ -32,6 +32,7 @@
     "@mcp-gateway/db": "workspace:*",
     "@mcp-gateway/i18n": "workspace:*",
     "@mcp-gateway/net": "workspace:*",
+    "@mcp-gateway/oauth": "workspace:*",
     "@mcp-gateway/openapi-toolgen": "workspace:*",
     "@mcp-gateway/policy": "workspace:*",
     "@mcp-gateway/projection": "workspace:*",

@@ -18,6 +18,7 @@ export * from './artifacts';
 export * from './users';
 export * from './api-tokens';
 export * from './auth';
+export * from './oauth';
 export * from './llm-settings';
 export * from './decision-settings';
 export * from './call-events';

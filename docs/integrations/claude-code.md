@@ -1,8 +1,18 @@
 # Claude Code e Claude Desktop
 
-Todo acesso usa um **token de API do gateway** (ADR-011): crie um usuário `service` em **Admin UI → Usuários**, gere o token na aba **Tokens** e guarde o valor (ele aparece uma única vez). Para uso pessoal, gere o token em **Admin UI → Tokens** com o seu próprio usuário.
+Há duas formas de autenticar:
+- **OAuth, com a conta da pessoa** (ADR-030). A pessoa entra na tela do gateway com o próprio usuário, aprova o acesso e pode desconectar o app depois em **Admin UI → Tokens → Aplicativos conectados**. Precisa de `OAUTH_ENABLED=true` no gateway e da conexão de apps ligada no tenant (**Configurações → Conexão de apps**). É o caminho para conectores que só aceitam OAuth.
+- **Token de API do gateway** (ADR-011), para agentes de máquina e clientes que aceitam header fixo: crie um usuário `service` em **Admin UI → Usuários**, gere o token na aba **Tokens** e guarde o valor (ele aparece uma única vez). Para uso pessoal sem OAuth, gere o token em **Admin UI → Tokens** com o seu próprio usuário.
 
-## Claude Code (CLI)
+## Claude Code com OAuth
+```bash
+claude mcp add --transport http mcp-gateway https://mcp.empresa.com/mcp/omni
+```
+Na sessão do Claude Code, rode `/mcp`, escolha `mcp-gateway` e autentique. O navegador abre a tela de login do gateway; depois de aprovar, o Claude Code guarda os tokens e os renova sozinho. O app aparece em **Aplicativos conectados**, e desconectar ali revoga o acesso na hora.
+
+Se o tenant aceita só os apps da allowlist, o Claude Code precisa estar nela. Clientes que se registram sozinhos (DCR) ganham um id `dcr_…` na primeira tentativa; o admin de plataforma o vê em **Configurações → Conexão de apps → Apps conhecidos pelo gateway** e pode copiá-lo para a allowlist. Outra opção é o tenant aceitar qualquer app: a pessoa sempre passa pela tela de consentimento.
+
+## Claude Code com token de API
 ```bash
 export MCP_GATEWAY_TOKEN=mgw_...
 claude mcp add --transport http mcp-gateway https://mcp.empresa.com/mcp/omni \
@@ -23,7 +33,13 @@ Ou em `.mcp.json` no repositório (a Admin UI gera este snippet em **MCP Servers
 O token não expira, a menos que tenha sido criado com validade. Para trocar, gere um novo e revogue o antigo na Admin UI. A revogação vale em até 15 s em todas as réplicas.
 
 ## Claude Desktop / claude.ai
-Use um conector que aceite header customizado e informe a URL (`https://mcp.empresa.com/mcp/s/<slug>`, ou `/omni`) com `Authorization: Bearer <token>`. O gateway não implementa o fluxo OAuth de clientes MCP: conectores que só aceitam OAuth não conseguem se conectar. Para usar pela internet, o gateway precisa de TLS.
+Com o OAuth ligado, adicione um conector personalizado com a URL do gateway (`https://mcp.empresa.com/mcp/omni`, `/mcp` ou `/mcp/s/<slug>`). O conector descobre o servidor de autorização pela resposta 401 do gateway (`WWW-Authenticate` com `resource_metadata`), abre a tela de login e pede a aprovação da pessoa.
+
+Requisitos:
+- O `PUBLIC_URL` precisa ser HTTPS e alcançável pelo app. Conectores do claude.ai partem da nuvem da Anthropic, então o gateway precisa estar na internet.
+- Se o tenant usa allowlist, inclua o host do app. Apps que publicam um documento de metadados (CIMD) aparecem em **Apps conhecidos pelo gateway** com o host verificado depois da primeira tentativa.
+
+Sem OAuth, use um conector que aceite header customizado e informe `Authorization: Bearer <token>`.
 
 ## MCP de observabilidade
 O próprio gateway expõe o seu analytics como MCP (F15.14). Isso permite perguntar ao Claude, por exemplo, "por que a tool X falhou mais esta semana?", e ele investiga sozinho com `top_failing_tools`, `explain_call` e `analytics_query`.

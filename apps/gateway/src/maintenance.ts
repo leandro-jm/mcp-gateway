@@ -13,12 +13,17 @@ export interface MaintenanceReport {
   subjectRefsDropped: string[];
   debugItems: number;
   searchBackfilled: number;
+  /** OAuth (F20.7): expired codes and refresh tokens past the reuse-detection window, and DCR clients unused for 30 days. */
+  oauth: { codes: number; refreshTokens: number; dcrClients: number };
 }
+
+/** DCR clients unused this long are removed (ADR-030); their refresh tokens expired long before. */
+const DCR_CLIENT_IDLE_MS = 30 * 24 * 3_600_000;
 
 /**
  * Maintenance job: expired artifacts (F8.1), expired PII tokens (F5) and
  * audit partitions (creates the next ones and drops those outside retention, F9.1) and
- * call event partitions (daily, F15.5) and the analytics rollups (F15.8).
+ * call event partitions (daily, F15.5), the analytics rollups (F15.8) and OAuth secrets and idle DCR clients (F20.7).
  */
 export async function runMaintenance(services: Services, now = new Date()): Promise<MaintenanceReport> {
   const artifacts = await services.artifacts.cleanup(services.repos.system);
@@ -34,5 +39,20 @@ export async function runMaintenance(services: Services, now = new Date()): Prom
   const rollups = await services.repos.rollups.rollup(now);
   await services.repos.rollups.prune(services.config.CALL_ROLLUPS_RETENTION_DAYS, now);
   const searchBackfilled = await services.repos.system.backfillSearchText();
-  return { artifacts, piiTokens, auditPartitions, auditDropped, callEventPartitions, callEventsDropped, rollups, subjectRefPartitions, subjectRefsDropped, debugItems, searchBackfilled };
+  const purged = await services.repos.oauth.purgeExpired(now);
+  const dcrClients = await services.repos.oauth.deleteStaleDcrClients(new Date(now.getTime() - DCR_CLIENT_IDLE_MS));
+  return {
+    artifacts,
+    piiTokens,
+    auditPartitions,
+    auditDropped,
+    callEventPartitions,
+    callEventsDropped,
+    rollups,
+    subjectRefPartitions,
+    subjectRefsDropped,
+    debugItems,
+    searchBackfilled,
+    oauth: { ...purged, dcrClients },
+  };
 }

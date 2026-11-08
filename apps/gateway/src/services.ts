@@ -8,6 +8,8 @@ import {
   ArtifactsRepo,
   AuditRepo,
   AuthQueries,
+  OAuthGrantsRepo,
+  OAuthQueries,
   CallEventsRepo,
   CallEventWriter,
   PgAnalyticsStore,
@@ -59,6 +61,7 @@ import { SessionStore } from './mcp/sessions';
 import { RegistryCache } from './registry/cache';
 import { HttpEmbeddingProvider, type EmbeddingProvider } from './search/embeddings';
 import { ToolSearch } from './search/tool-search';
+import { httpClientMetadataFetcher, type ClientMetadataFetcher } from './oauth/clients';
 import { Metrics } from './telemetry/metrics';
 import { createTracing, type TracingHandle } from './telemetry/tracing';
 import { createPgCallEventSink } from './telemetry/call-events/pg-sink';
@@ -86,6 +89,8 @@ export interface Repos {
   users: UsersRepo;
   apiTokens: ApiTokensRepo;
   auth: AuthQueries;
+  oauth: OAuthQueries;
+  oauthGrants: OAuthGrantsRepo;
   llmSettings: LlmSettingsRepo;
   decisionSettings: DecisionSettingsRepo;
   callEvents: CallEventsRepo;
@@ -130,6 +135,8 @@ export interface Services {
   analytics: AnalyticsStore;
   /** Opt-in debug capture (F15.17). */
   debug: DebugCaptureService;
+  /** Fetches Client ID Metadata Documents for the OAuth authorization server (ADR-030). */
+  clientMetadataFetcher: ClientMetadataFetcher;
   /** Starts background connections (registry invalidation subscription). */
   start(): Promise<void>;
   close(): Promise<void>;
@@ -182,6 +189,8 @@ export function createRepos(db: Db, keyring: Keyring): Repos {
     users: new UsersRepo(db),
     apiTokens: new ApiTokensRepo(db),
     auth: new AuthQueries(db),
+    oauth: new OAuthQueries(db),
+    oauthGrants: new OAuthGrantsRepo(db),
     llmSettings: new LlmSettingsRepo(db, keyring),
     decisionSettings: new DecisionSettingsRepo(db, keyring),
     callEvents: new CallEventsRepo(db),
@@ -205,6 +214,7 @@ export function createServices(
     callEventSink?: CallEventSink;
     decisions?: DecisionProviderFactory;
     decisionCache?: DecisionCache;
+    clientMetadataFetcher?: ClientMetadataFetcher;
   } = {},
 ): Services {
   const dbHandle = createDb(config.DATABASE_URL);
@@ -212,7 +222,7 @@ export function createServices(
   const keyring = new Keyring(dbHandle.db, decodeKey(config.GATEWAY_MASTER_KEY));
   const crawl = new Queue(CRAWL_QUEUE, { connection: redis });
   const repos = createRepos(dbHandle.db, keyring);
-  const verifier = new TokenVerifier(repos.auth);
+  const verifier = new TokenVerifier(repos.auth, { oauthEnabled: config.OAUTH_ENABLED });
   const rateLimiter = new RateLimiter(redis);
   const registry = new RegistryCache(dbHandle.db, repos, redis, logger);
   const credentialManager = new CredentialManager(repos.credentials, keyring, redis, logger);
@@ -305,6 +315,8 @@ export function createServices(
     callEvents,
     analytics: new PgAnalyticsStore(dbHandle.db),
     debug,
+    clientMetadataFetcher:
+      overrides.clientMetadataFetcher ?? httpClientMetadataFetcher({ allowPrivate: config.NETWORK_ALLOW_PRIVATE, allowedHosts: [] }),
     async start() {
       await registry.start();
       await artifacts.init();

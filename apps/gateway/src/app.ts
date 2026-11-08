@@ -13,6 +13,7 @@ import {
 } from 'fastify-type-provider-zod';
 import { adminApi } from './admin';
 import { mcpRoutes } from './mcp/routes';
+import { oauthRoutes } from './oauth';
 import { opsRoutes } from './ops';
 import { sdkRoutes } from './sdk/routes';
 import { requestLocale } from './i18n';
@@ -85,6 +86,7 @@ export async function buildApp(services: Services): Promise<GatewayApp> {
   const mcpDeps = { services, executor: services.executor, search: services.search, sessions: services.sessions };
   await app.register(async (scope) => mcpRoutes(scope, mcpDeps));
   await app.register(async (scope) => sdkRoutes(scope, mcpDeps));
+  if (services.config.OAUTH_ENABLED) await app.register(async (scope) => oauthRoutes(scope, services));
 
   return app;
 }

@@ -72,3 +72,9 @@ groups:
         labels: { severity: ticket }
         annotations:
           summary: "Eventos de analytics descartados ({{ $labels.reason }}): buffer cheio ou Postgres indisponível"
+      - alert: McpOAuthSecretReuse
+        # a code or refresh token redeemed twice revokes the grant (ADR-030): a client bug or a stolen secret
+        expr: sum by (reason) (increase(mcp_oauth_errors_total{reason=~"code_reused|refresh_token_reused"}[15m])) > 0
+        labels: { severity: ticket }
+        annotations:
+          summary: "Reuso de segredo OAuth ({{ $labels.reason }}): o acesso foi revogado; verifique o app e a auditoria (oauth.grant.revoke)"

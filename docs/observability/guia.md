@@ -114,5 +114,14 @@ Com o roteador ligado (ADR-025), cada decisão entra no evento da chamada:
 
 As métricas são `mcp_router_decisions_total`, `mcp_router_duration_seconds` e `mcp_tokens_saved_total{mechanism="shortlist"}`. Consulta, intenção e argumentos nunca entram no evento. Detalhes e PromQL em [docs/tool-router/guia.md](../tool-router/guia.md).
 
+## Conexão de apps (OAuth, ADR-030)
+O servidor de autorização expõe métricas sem rótulo de tenant, porque a maior parte dos pedidos chega antes de o tenant ser conhecido:
+- `mcp_oauth_authorizations_total{outcome}`: `code_issued`, `consent_skipped` (grant já existente), `user_denied`, `login_refused` (senha errada, tenant sem OAuth ou app fora da allowlist) e `request_error`.
+- `mcp_oauth_tokens_issued_total{grant_type}`: tokens de acesso emitidos por `authorization_code` e `refresh_token`.
+- `mcp_oauth_errors_total{endpoint,reason}`: erros por endpoint (`authorize`, `token`, `revoke`, `register`) e motivo, de uma lista fixa. `code_reused` e `refresh_token_reused` disparam o alerta `McpOAuthSecretReuse`.
+- `mcp_oauth_client_metadata_fetch_duration_seconds{outcome}`: busca dos documentos de metadados dos apps (CIMD).
+
+Aprovações, negações e revogações de grants vão para a auditoria (`oauth.grant.approve`, `oauth.grant.deny`, `oauth.grant.revoke`, `oauth.client.disable`), sem código, token ou `state`.
+
 ## Quando trocar o Postgres por ClickHouse
 Os eventos vão para o Postgres, particionados por dia, e os dashboards leem agregados por hora. Para volumes muito maiores, a troca fica atrás das interfaces `CallEventSink` (escrita) e `AnalyticsStore` (leitura) e não muda a API nem a UI (ADR-016): uma tabela MergeTree com o mesmo formato, com os rollups como materialized views.

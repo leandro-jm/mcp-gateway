@@ -1,4 +1,4 @@
-import { assertProductionConfig, base64Key32, envBool, envInt, parseEnv } from '@mcp-gateway/core';
+import { assertProductionConfig, base64Key32, ConfigError, envBool, envInt, parseEnv } from '@mcp-gateway/core';
 import { z } from 'zod';
 
 export const gatewayConfigSchema = z.object({
@@ -25,6 +25,20 @@ export const gatewayConfigSchema = z.object({
    * tenant if given this secret. Unset = setup disabled (use `create-admin`). Useless once a user exists.
    */
   SETUP_TOKEN: z.string().min(16, 'SETUP_TOKEN: at least 16 characters').optional(),
+
+  /**
+   * OAuth 2.1 authorization server for MCP clients (F20, ADR-030). Off: no OAuth route exists and
+   * `WWW-Authenticate` stays as before. Each tenant also opts in (`settings.oauth`).
+   */
+  OAUTH_ENABLED: envBool(false),
+  /** Dynamic Client Registration (RFC 7591), for clients without Client ID Metadata Documents. */
+  OAUTH_DCR_ENABLED: envBool(true),
+  /** Access token lifetime; a tenant may only shorten it. */
+  OAUTH_ACCESS_TTL_MINUTES: z.coerce.number().int().min(1).max(1440).default(60),
+  /** Refresh token lifetime (rotated on every use); a tenant may only shorten it. */
+  OAUTH_REFRESH_TTL_DAYS: z.coerce.number().int().min(1).max(365).default(30),
+  /** Authorization code lifetime (single use). */
+  OAUTH_CODE_TTL_SECONDS: z.coerce.number().int().min(10).max(600).default(60),
 
   /**
    * Proxies trusted for `X-Forwarded-For` (Fastify `trustProxy`): `false` (default), a hop count
@@ -87,5 +101,21 @@ export type GatewayConfig = z.output<typeof gatewayConfigSchema>;
 export function loadConfig(env: Record<string, string | undefined>): GatewayConfig {
   const config = parseEnv(gatewayConfigSchema, env);
   assertProductionConfig(config, { requireMetricsToken: true });
+  assertOAuthConfig(config);
   return config;
+}
+
+/**
+ * `PUBLIC_URL` is the OAuth issuer and the base of every resource (ADR-030): it cannot carry a
+ * query or fragment, and production requires HTTPS.
+ */
+function assertOAuthConfig(config: GatewayConfig): void {
+  if (!config.OAUTH_ENABLED) return;
+  const url = new URL(config.PUBLIC_URL);
+  const issues: string[] = [];
+  if (url.search || url.hash) issues.push('PUBLIC_URL: no query or fragment allowed when OAUTH_ENABLED=true (it is the OAuth issuer)');
+  if (config.NODE_ENV === 'production' && url.protocol !== 'https:') {
+    issues.push('PUBLIC_URL: HTTPS is required in production when OAUTH_ENABLED=true');
+  }
+  if (issues.length) throw new ConfigError(issues);
 }

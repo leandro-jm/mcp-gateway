@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { Activity, Palette, Route, Sparkles } from 'lucide-react';
+import { Activity, Palette, PlugZap, Route, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import type { LlmProvider, LlmSettings, LlmTestResult, ObservabilitySettings } from '../api/types';
@@ -9,6 +9,7 @@ import { Badge, ErrorBox, Field, fmtDate, PageHeader, Tabs } from '../components
 import { useT } from '../i18n';
 import { useInvalidate, useTenantQuery } from '../lib/hooks';
 import { AppearancePanel } from './AppearancePanel';
+import { OAuthPanel } from './OAuthPanel';
 import { ToolRouterPanel } from './ToolRouterPanel';
 
 /** Anthropic models offered in the select; any other id can be typed. */
@@ -35,9 +36,9 @@ const fromSettings = (s: LlmSettings | undefined): Form => ({
   removeKey: false,
 });
 
-type SettingsTab = 'llm' | 'observability' | 'appearance' | 'router';
+type SettingsTab = 'llm' | 'observability' | 'appearance' | 'router' | 'oauth';
 
-/** Tenant settings (gateway-admin): Composer LLM (ADR-015), observability (ADR-016), appearance (ADR-022) and tool router (ADR-025). */
+/** Tenant settings (gateway-admin): Composer LLM (ADR-015), observability (ADR-016), appearance (ADR-022), tool router (ADR-025) and app connections (ADR-030). */
 export function SettingsPage() {
   const t = useT();
   const [tab, setTab] = useState<SettingsTab>('llm');
@@ -50,11 +51,22 @@ export function SettingsPage() {
           { id: 'observability', label: t('settings.tabObservability'), icon: <Activity size={20} /> },
           { id: 'appearance', label: t('views.appearance'), icon: <Palette size={20} /> },
           { id: 'router', label: t('router.tab'), icon: <Route size={20} /> },
+          { id: 'oauth', label: t('oauth.tab'), icon: <PlugZap size={20} /> },
         ]}
         value={tab}
         onChange={setTab}
       />
-      {tab === 'llm' ? <LlmSettingsPanel /> : tab === 'observability' ? <ObservabilitySettingsPanel /> : tab === 'appearance' ? <AppearancePanel /> : <ToolRouterPanel />}
+      {tab === 'llm' ? (
+        <LlmSettingsPanel />
+      ) : tab === 'observability' ? (
+        <ObservabilitySettingsPanel />
+      ) : tab === 'appearance' ? (
+        <AppearancePanel />
+      ) : tab === 'router' ? (
+        <ToolRouterPanel />
+      ) : (
+        <OAuthPanel />
+      )}
     </>
   );
 }

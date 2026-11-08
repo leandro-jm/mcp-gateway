@@ -37,6 +37,7 @@
 | Fluxo de "owner habilita a tool" | Admin UI para revisar, editar e habilitar tools | F10 |
 | — (extensão própria) | Composer em linguagem natural: LLM do tenant monta a composta, com grafo, dry-run e assistente de publicação | F14 |
 | — (extensão própria) | Observabilidade de agentes: evento largo por chamada, visões por público, explorador de chamadas, trajetórias, sugestão de compostas e MCP de observabilidade | F15 |
+| — (extensão própria) | OAuth 2.1 para clientes MCP (CIMD e DCR) com tokens opacos do gateway, e login federado OIDC por tenant | F20 |
 
 > Observação: a Uber não publica todos os detalhes de Omni MCP e Code Mode. As F7 e F8 implementam a **intenção** descrita (descoberta incremental, redução de contexto via arquivos), com desenho próprio.
 
@@ -804,6 +805,71 @@ Objetivo: um plugin opcional que usa modelos de decisão (OpenAI Decisions e Typ
 - Avaliação offline com o `SEARCH_EVAL` (oráculo, gravado, sempre-falha), guia de operação, CHANGELOG e ADR-025 aceito.
 - CA: o oráculo atinge top-1 igual ao recall@20; o gravado não piora o top-3 do FTS.
 
+### F20 — OAuth 2.1 para clientes MCP e login federado (ADR-030)
+
+Objetivo: o gateway vira Authorization Server da spec MCP 2026-07-28, para que clientes que só falam OAuth (conectores do Claude.ai e do Claude Desktop, ChatGPT, IDEs) conectem com a identidade do usuário. Os tokens emitidos são opacos, do modelo do ADR-011. Na fase B, o login humano pode vir do IdP OIDC do tenant, também na Admin UI. Desligado (padrão), o comportamento é idêntico ao anterior.
+
+#### Fase A — Authorization Server com senha local
+
+**F20.1 ADR e plano**
+- ADR-030 (revisa o ADR-011), ameaças T14–T19 no ADR-003, marco M11.
+
+**F20.2 Pacote puro `oauth`**
+- PKCE `S256`, casamento de `redirect_uri` (exato, e porta livre em loopback), validação do documento CIMD e do pedido DCR, parsing de escopos e do pedido de autorização, formato de erro RFC 6749.
+- Entra na lista de pacotes puros do ESLint e do AGENTS.md.
+- CA: vetores do RFC 7636; porta diferente só é aceita em loopback; testes sem I/O.
+
+**F20.3 Persistência**
+- Migration 0026 (com down): `oauth_clients`, `oauth_grants`, `oauth_authorization_codes`, `oauth_refresh_tokens`; `api_token_kind` ganha `oauth`; `api_tokens.grant_id` com FK em cascata.
+- `OAuthQueries` (`@cross-tenant`) para cliente, código e refresh; `OAuthGrantsRepo` com `tenantId` para listar e revogar.
+- CA: teste de arquitetura verde; migration sobe e desce.
+
+**F20.4 Configuração e i18n**
+- Env `OAUTH_ENABLED`, `OAUTH_DCR_ENABLED`, `OAUTH_ACCESS_TTL_MINUTES`, `OAUTH_REFRESH_TTL_DAYS`, `OAUTH_CODE_TTL_SECONDS`; `settings.oauth` do tenant no `core`; catálogo i18n `oauth` (telas e erros).
+- CA: produção recusa `OAUTH_ENABLED` com `PUBLIC_URL` sem HTTPS; os três locales com as mesmas chaves.
+
+**F20.5 Resource server**
+- PRM por superfície MCP e metadata RFC 8414; `resource_metadata` e `scope` no `WWW-Authenticate`; `Principal.clientId` `oauth:<host>` ou `oauth:dcr:<id>` e escopos no `authInfo`; `adminAuth` recusa tokens `oauth`.
+- CA: com `OAUTH_ENABLED=false`, well-known 404 e `WWW-Authenticate` iguais aos de hoje.
+
+**F20.6 Authorize, login e consentimento**
+- Telas HTML do gateway; pedido pendente no Redis com CSRF; login por senha com o helper extraído do `/auth/login`; checagens de tenant e allowlist; consentimento com avisos de loopback e DCR; resposta com `code`, `state` e `iss`.
+- CA: redirect não validado nunca redireciona; grant existente dispensa o consentimento; usuário de tenant sem OAuth recebe mensagem localizada.
+
+**F20.7 Token, revoke e register**
+- `authorization_code` e `refresh_token` com rotação e detecção de reuso; RFC 7009; DCR (RFC 7591) só público, com `application_type`; CORS sem credenciais; rate limit em token e register; limpeza de clientes DCR sem uso em 30 dias.
+- CA: código reutilizado revoga o grant; refresh reutilizado revoga a família; `resource` fora do gateway dá `invalid_target`.
+
+**F20.8 Admin API e UI**
+- `/settings/oauth`, `/oauth/grants`, `/me/oauth/grants`, `/platform/oauth/clients`; aba OAuth em Settings e "Aplicativos conectados" no perfil.
+- CA: suíte de segurança cobre as rotas novas; revogar na UI derruba o token em até 15 s.
+
+**F20.9 Proxies e documentação**
+- nginx da Admin UI e proxy do Vite encaminham `/.well-known/oauth-` e `/oauth/`; guias de integração (Claude Code e genérico), deploy, `prod.env.example` e README.
+- CA: `claude mcp add --transport http` sem header conecta pela stack de produção do compose.
+
+**F20.10 Testes e fechamento da fase A**
+- Fluxo completo com o `auth()` do cliente v2 e com o cliente 1.x, CIMD servido pelo testkit; `security/oauth` com T14–T18; CHANGELOG.
+- CA: todos os casos de T14–T18 cobertos; regressão dos tokens estáticos verde.
+
+#### Fase B — Login federado (OIDC)
+
+**F20.11 Persistência e dependência**
+- Migration 0027: `tenant_identity_providers` (secret cifrado com a data key do tenant) e `user_identities`; `openid-client` com `fetch` via `outboundFetch`.
+- CA: repositórios com `tenantId`; o secret nunca sai do repositório em claro.
+
+**F20.12 Fluxo de SSO**
+- "Continuar com SSO" com descoberta do tenant pelo domínio; `/oauth/sso/start` e `/oauth/sso/callback` com PKCE, `state` e `nonce`; resolução por vínculo, e-mail verificado ou JIT; sincronização opcional de grupos; `require_sso`.
+- CA: `email_verified=false` não vincula; `state` e `nonce` reutilizados falham; roles nunca vêm do IdP.
+
+**F20.13 SSO na Admin UI e configuração**
+- Botão SSO no login da Admin UI com handoff por código de uso único (`/admin/v1/auth/sso/exchange`); aba Identidade em Settings com teste da discovery.
+- CA: a sessão emitida é igual à do login por senha; o secret nunca é devolvido.
+
+**F20.14 Testes e fechamento da fase B**
+- IdP OIDC fake no testkit; `security/oauth-sso` com T19; E2E Playwright do login SSO; CHANGELOG e ADR-030 aceito.
+- CA: isolamento entre tenants com IdPs diferentes; JIT desligado recusa usuário desconhecido.
+
 ---
 
 ## 5. Ordem e marcos
@@ -820,6 +886,7 @@ Objetivo: um plugin opcional que usa modelos de decisão (OpenAI Decisions e Typ
 | M8 — Spec MCP 2026-07-28 | F17 | Gateway atende clientes stateless da nova spec e clientes 2025 com o SDK v2 |
 | M9 — UI generativa | F18 | Resultados das tools viram tabela, gráfico, formulário e plano com confirmação em qualquer host MCP Apps |
 | M10 — Roteamento assistido | F19 | Modelos de decisão reordenam a busca, encurtam a lista de tools e passam escritas por um gate de risco, como plugin opcional |
+| M11 — Clientes OAuth e SSO | F20 | Clientes MCP que só falam OAuth conectam com a identidade do usuário, e o login humano pode vir do IdP OIDC do tenant |
 
 M2 é o mínimo para qualquer uso com dados reais de clientes.
 

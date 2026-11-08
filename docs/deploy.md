@@ -14,7 +14,7 @@ Este guia sobe a stack de produção ([`docker/docker-compose.prod.yml`](../dock
 
 As imagens são **públicas no Docker Hub** e multi-arch (`linux/amd64` e `linux/arm64`), com as tags `X.Y.Z`, `X.Y`, `latest` e `sha-<commit>`. As mesmas imagens também saem no GHCR (`ghcr.io/leandro-jm/mcp-gateway…`): basta usar `IMAGE_NAMESPACE=ghcr.io/leandro-jm`.
 
-Usuários, senhas e tokens ficam no próprio Postgres (ADR-011): não há IdP externo.
+Usuários, senhas e tokens ficam no próprio Postgres (ADR-011). Com a conexão de apps ligada, o próprio gateway é o servidor de autorização OAuth dos clientes MCP (ADR-030); não há IdP externo obrigatório.
 
 ## 1. Pré-requisitos
 - VPS Linux (ex.: Ubuntu 24.04) com 2 vCPU, 4 GB de RAM e 40 GB de disco no mínimo.
@@ -53,6 +53,9 @@ Copie [`docker/prod.env.example`](../docker/prod.env.example) para `.env` (ou ca
 | `CALL_ROLLUPS_RETENTION_DAYS` | não | Retenção dos agregados que alimentam os dashboards. Padrão 400. |
 | `CALL_EVENTS_FLUSH_MS`, `CALL_EVENTS_BATCH_SIZE`, `CALL_EVENTS_BUFFER_MAX` | não | Writer em lote dos eventos (padrões 1000, 500 e 20000). Eventos descartados aparecem em `mcp_call_events_dropped_total`. |
 | `SUBJECT_INDEX_RETENTION_MONTHS` | não | Retenção do índice de titulares LGPD (ADR-017). Padrão 12. |
+| `OAUTH_ENABLED` | não | Conexão de apps com OAuth 2.1 (ADR-030): Claude.ai, ChatGPT e IDEs conectam com a conta da pessoa. Cada tenant ainda liga a sua em Configurações. **Padrão `false`.** Exige `PUBLIC_URL` HTTPS. |
+| `OAUTH_DCR_ENABLED` | não | Autorregistro de apps (RFC 7591) sem documento de metadados. Padrão `true`. Com `false`, só apps com CIMD conectam. |
+| `OAUTH_ACCESS_TTL_MINUTES`, `OAUTH_REFRESH_TTL_DAYS` | não | Validade do token de acesso (60) e do refresh token (30 dias). Um tenant só pode encurtar. |
 | `TOOL_ROUTER_ENABLED` | não | Habilita o roteador de tools com modelos de decisão (ADR-025); cada tenant ainda liga o seu em Configurações. **Padrão `false`.** Guia em `docs/tool-router/guia.md`. |
 | `DEBUG_CAPTURE_ENABLED` | não | Habilita a captura de debug de payloads (cifrada, 24 h, só `gateway-admin`). **Padrão `false`.** Exige S3. |
 | `DEBUG_CAPTURE_MAX_MINUTES`, `DEBUG_CAPTURE_RETENTION_HOURS` | não | Duração máxima de uma captura (60) e retenção dos itens (24). |
@@ -93,7 +96,7 @@ Para o Portainer o nome da stack vem da UI; a chave `name:` do compose só vale 
 2. *General*: provider GitHub (ou Git), repositório `leandro-jm/mcp-gateway`, branch `main`, *Compose Path* `./docker/docker-compose.prod.yml`.
 3. *Advanced*: ligue **Isolated Deployments**. Sem isso, só o serviço com domínio entra na rede do Traefik e a admin-ui deixa de enxergar o gateway.
 4. *Environment*: as variáveis do passo 3. Use `GATEWAY_PORT=127.0.0.1:14000` e `ADMIN_UI_PORT=127.0.0.1:18080`, porque quem expõe para fora é o Traefik.
-5. *Domains*: um domínio no serviço `admin-ui`, porta `8080`, com HTTPS (Let's Encrypt). Um domínio basta: o nginx da admin-ui repassa `/mcp` e `/admin` para o gateway, então `PUBLIC_URL` é esse mesmo domínio.
+5. *Domains*: um domínio no serviço `admin-ui`, porta `8080`, com HTTPS (Let's Encrypt). Um domínio basta: o nginx da admin-ui repassa `/mcp`, `/admin`, `/sdk`, `/oauth/` e `/.well-known/oauth-` para o gateway, então `PUBLIC_URL` é esse mesmo domínio.
 6. *Deploy*. O deploy automático (canal `main` ou releases) está no passo 8.
 
 O serviço `migrate` aplica as migrations e termina. `gateway` e `crawler` só sobem depois dele (`service_completed_successfully`). O bucket de artefatos é criado pelo gateway no boot.
@@ -159,6 +162,15 @@ O Composer pode montar tools compostas a partir de uma descrição em linguagem 
 - Uma geração pode levar até 120 s. Se houver outro reverse proxy na frente da stack, ele precisa de timeout de pelo menos 150 s em `/admin/v1/composites/generate` (o nginx da Admin UI já vem assim).
 - Num servidor compatível com OpenAI, a `base_url` segue a mesma política de rede dos upstreams. Endereços privados ficam bloqueados quando `NETWORK_ALLOW_PRIVATE=false`.
 
+### Conexão de apps com OAuth (opcional)
+Para que apps como Claude.ai, ChatGPT e IDEs conectem com a conta de cada pessoa (ADR-030):
+1. Defina `OAUTH_ENABLED=true`. O `PUBLIC_URL` vira o emissor dos tokens: ele precisa ser HTTPS, sem query, e o endereço pelo qual os apps alcançam o gateway. Conectores que partem da nuvem (claude.ai, ChatGPT) exigem o gateway na internet.
+2. O nginx da Admin UI já repassa `/oauth/` e `/.well-known/oauth-` para o gateway. Se houver outro reverse proxy na frente, ele precisa repassar esses caminhos no mesmo domínio do `PUBLIC_URL`, sem acrescentar um Content-Security-Policy próprio: as telas de login e consentimento mandam o delas, que libera o redirect de volta para o app.
+3. Em **Configurações → Conexão de apps**, o admin do tenant liga a conexão e escolhe entre só os apps da allowlist (padrão) ou qualquer app.
+4. Cada pessoa vê e desconecta os seus apps em **Tokens → Aplicativos conectados**. O admin do tenant vê os de todos, e o admin de plataforma pode desabilitar um app no gateway inteiro.
+
+Desabilitar uma pessoa ou trocar a senha dela desconecta os apps dela. Tokens de API (`service`) continuam funcionando como antes, com ou sem OAuth.
+
 ## 8. Atualizações
 1. O CI ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)) publica as imagens:
    - em todo push: `sha-<commit>` e `<branch>`, no GHCR;
@@ -191,6 +203,7 @@ O Composer pode montar tools compostas a partir de uma descrição em linguagem 
 - [ ] Senha do admin criado no passo 7 guardada num cofre; tokens de agentes com nome por consumidor e revogação quando o consumidor sair.
 - [ ] `gateway-admin` concedido a poucas pessoas (enxerga todos os tenants).
 - [ ] Rotação periódica das credenciais dos upstreams (`PATCH /credentials/:id` invalida os tokens em cache).
+- [ ] Se a conexão de apps (OAuth) estiver ligada: `PUBLIC_URL` HTTPS, tenants em modo allowlist sempre que possível e `OAUTH_DCR_ENABLED=false` se todos os apps usados publicarem documento de metadados.
 - [ ] Se o Composer em linguagem natural estiver ativo: limite de gerações por hora ajustado em **Configurações** e chave do provedor de LLM com escopo e orçamento próprios.
 
 ## 11. Publicar as imagens (mantenedores)

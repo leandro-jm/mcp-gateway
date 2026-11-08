@@ -20,6 +20,8 @@ export const auth = defineMessages('auth', {
     'auth.setupDisabled': 'first-run setup is disabled: set SETUP_TOKEN on the gateway or create the admin with create-admin',
     'auth.setupDone': 'this instance is already set up; sign in instead',
     'auth.invalidSetupToken': 'invalid setup token',
+    'auth.oauthTokenNotAllowed': 'tokens issued to connected apps only work on the MCP endpoints, not on the Admin API',
+    'auth.oauthPlatformDisabled': 'app connections (OAuth) are disabled on this gateway',
   },
   'pt-BR': {
     'auth.invalidCredentials': 'usuário ou senha inválidos',
@@ -39,6 +41,8 @@ export const auth = defineMessages('auth', {
     'auth.setupDisabled': 'o setup inicial está desligado: defina SETUP_TOKEN no gateway ou crie o admin com create-admin',
     'auth.setupDone': 'esta instância já foi configurada; faça login',
     'auth.invalidSetupToken': 'token de setup inválido',
+    'auth.oauthTokenNotAllowed': 'tokens emitidos para aplicativos conectados só valem nos endpoints MCP, não na Admin API',
+    'auth.oauthPlatformDisabled': 'a conexão de apps (OAuth) está desligada neste gateway',
   },
   es: {
     'auth.invalidCredentials': 'usuario o contraseña inválidos',
@@ -58,5 +62,7 @@ export const auth = defineMessages('auth', {
     'auth.setupDisabled': 'el setup inicial está desactivado: defina SETUP_TOKEN en el gateway o cree el admin con create-admin',
     'auth.setupDone': 'esta instancia ya está configurada; inicie sesión',
     'auth.invalidSetupToken': 'token de setup inválido',
+    'auth.oauthTokenNotAllowed': 'los tokens emitidos para aplicaciones conectadas solo valen en los endpoints MCP, no en la Admin API',
+    'auth.oauthPlatformDisabled': 'la conexión de apps (OAuth) está desactivada en este gateway',
   },
 });

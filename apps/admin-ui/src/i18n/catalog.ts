@@ -8,6 +8,7 @@ import { common } from './messages/common';
 import { composer } from './messages/composer';
 import { drift } from './messages/drift';
 import { importer } from './messages/import';
+import { oauth } from './messages/oauth';
 import { observability } from './messages/observability';
 import { onboarding } from './messages/onboarding';
 import { pii } from './messages/pii';
@@ -26,7 +27,7 @@ import { toolRouter } from './messages/toolRouter';
 import { tools } from './messages/tools';
 import { users } from './messages/users';
 
-const AREAS = [common, shell, auth, tools, toolDrawer, sources, servers, policies, pii, projections, composer, playground, drift, audit, users, tenants, tokens, importer, settings, charts, observability, calls, agents, views, onboarding, toolRouter] as const;
+const AREAS = [common, shell, auth, tools, toolDrawer, sources, servers, policies, pii, projections, composer, playground, drift, audit, users, tenants, tokens, importer, settings, charts, observability, calls, agents, views, onboarding, toolRouter, oauth] as const;
 
 export type UiMessageKey = KeysOf<(typeof AREAS)[number]>;
 export type UiMessage = Message<UiMessageKey>;
