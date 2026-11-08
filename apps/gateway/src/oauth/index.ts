@@ -5,6 +5,7 @@ import { OAuthClientResolver } from './clients';
 import { registerFormParser } from './forms';
 import { oauthMetadataRoutes } from './metadata';
 import { PendingAuthorizations } from './pending';
+import { tokenRoutes } from './token-endpoint';
 
 /**
  * Authorization server for MCP clients (F20, ADR-030). Registered only with `OAUTH_ENABLED=true`;
@@ -21,4 +22,5 @@ export async function oauthRoutes(app: FastifyInstance, services: Services): Pro
   );
   await oauthMetadataRoutes(app, services);
   await authorizeRoutes(app, services, { clients, pending: new PendingAuthorizations(services.redis) });
+  await tokenRoutes(app, services);
 }
