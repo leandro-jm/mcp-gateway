@@ -37,6 +37,25 @@ export async function startAuthorize(base: string, params: Record<string, string
   };
 }
 
+/**
+ * Plays the browser for an authorization URL built by a client (e.g. the SDK's `auth()`):
+ * opens it, signs in, approves and returns the code and `iss` from the redirect.
+ */
+export async function approveInBrowser(authorizationUrl: URL, username: string, password: string): Promise<{ code: string; iss: string | null; state: string | null }> {
+  const base = authorizationUrl.origin;
+  const res = await fetch(authorizationUrl, { redirect: 'manual' });
+  const html = await res.text();
+  if (res.status !== 200) throw new Error(`authorize answered ${res.status}: ${res.headers.get('location') ?? html.slice(0, 200)}`);
+  const cookie = res.headers.get('set-cookie')?.split(';')[0];
+  let step = await postForm(base, '/oauth/authorize/login', { request_id: hiddenField(html, 'request_id'), csrf: hiddenField(html, 'csrf'), username, password }, cookie);
+  if (step.status === 200) step = await postForm(base, '/oauth/authorize/consent', { request_id: step.requestId, csrf: step.csrf, decision: 'approve' }, cookie);
+  if (step.status !== 303 || !step.location) throw new Error(`flow ended with ${step.status}: ${step.html.slice(0, 200)}`);
+  const url = new URL(step.location);
+  const code = url.searchParams.get('code');
+  if (!code) throw new Error(`no code in ${step.location}`);
+  return { code, iss: url.searchParams.get('iss'), state: url.searchParams.get('state') };
+}
+
 export async function postForm(base: string, path: string, fields: Record<string, string | undefined>, cookie?: string): Promise<BrowserFlow> {
   const body = new URLSearchParams();
   for (const [k, v] of Object.entries(fields)) if (v !== undefined) body.set(k, v);

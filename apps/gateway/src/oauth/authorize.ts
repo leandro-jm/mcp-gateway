@@ -51,11 +51,19 @@ export async function authorizeRoutes(app: FastifyInstance, services: Services, 
   const html = (reply: FastifyReply, status: number, body: string, redirectUri?: string) =>
     pageHeaders(reply, redirectUri).code(status).type('text/html; charset=utf-8').send(body);
   const fail = (reply: FastifyReply, locale: Locale, status: number, message: ServerMessage) => html(reply, status, errorPage(locale, message));
+  /** An error page for a request that never reaches the client; counted by reason. */
+  const failReason = (reply: FastifyReply, locale: Locale, status: number, reason: OAuthErrorReason, param?: string) => {
+    services.metrics.oauthErrors.inc({ endpoint: 'authorize', reason });
+    services.metrics.oauthAuthorizations.inc({ outcome: 'request_error' });
+    return fail(reply, locale, status, reasonMessage(reason, param));
+  };
   const redirect = (reply: FastifyReply, url: string) => pageHeaders(reply).code(303).header('location', url).send();
 
   /** Protocol error sent to the client; descriptions stay in English for the client's logs. */
-  const redirectError = (reply: FastifyReply, redirectUri: string, err: OAuthProtocolError, state: string | undefined) =>
-    redirect(
+  const redirectError = (reply: FastifyReply, redirectUri: string, err: OAuthProtocolError, state: string | undefined) => {
+    services.metrics.oauthErrors.inc({ endpoint: 'authorize', reason: err.reason });
+    services.metrics.oauthAuthorizations.inc({ outcome: err.reason === 'user_denied' ? 'user_denied' : 'request_error' });
+    return redirect(
       reply,
       buildRedirect(redirectUri, {
         error: err.code,
@@ -64,6 +72,7 @@ export async function authorizeRoutes(app: FastifyInstance, services: Services, 
         iss: issuer,
       }),
     );
+  };
 
   const showLogin = (reply: FastifyReply, status: number, locale: Locale, pending: PendingAuthorization, error?: ServerMessage, username?: string) =>
     html(reply, status, loginPage({ locale, pending, action: actions.login, error, username }), pending.request.redirectUri);
@@ -79,7 +88,7 @@ export async function authorizeRoutes(app: FastifyInstance, services: Services, 
   }
 
   /** Stores a single-use code for the grant and sends the browser back to the client. */
-  async function issueCode(reply: FastifyReply, pending: PendingAuthorization, grant: OAuthGrant) {
+  async function issueCode(reply: FastifyReply, pending: PendingAuthorization, grant: OAuthGrant, outcome: 'code_issued' | 'consent_skipped') {
     const { request } = pending;
     const code = generateSecret(AUTHORIZATION_CODE_PREFIX);
     await repos.oauth.createCode({
@@ -92,6 +101,7 @@ export async function authorizeRoutes(app: FastifyInstance, services: Services, 
       expiresAt: new Date(Date.now() + config.OAUTH_CODE_TTL_SECONDS * 1000),
     });
     await repos.oauth.touchClient(pending.client.rowId);
+    services.metrics.oauthAuthorizations.inc({ outcome });
     return redirect(reply, buildRedirect(request.redirectUri, { code: code.token, state: request.state, iss: issuer }));
   }
 
@@ -110,7 +120,7 @@ export async function authorizeRoutes(app: FastifyInstance, services: Services, 
     try {
       await services.rateLimiter.check([{ scope: 'oauth-authorize', key: `oauth-authorize:${req.ip}`, limit: AUTHORIZE_RATE }]);
     } catch (err) {
-      if (err instanceof RateLimited) return fail(reply, locale, 429, reasonMessage('rate_limited'));
+      if (err instanceof RateLimited) return failReason(reply, locale, 429, 'rate_limited');
       throw err;
     }
     let target;
@@ -119,12 +129,10 @@ export async function authorizeRoutes(app: FastifyInstance, services: Services, 
       target = parseAuthorizationTarget(query);
       client = await deps.clients.resolve(target.clientId);
     } catch (err) {
-      if (err instanceof OAuthProtocolError) return fail(reply, locale, 400, reasonMessage(err.reason, err.param));
+      if (err instanceof OAuthProtocolError) return failReason(reply, locale, 400, err.reason, err.param);
       throw err;
     }
-    if (!redirectUriMatches(client.redirectUris, target.redirectUri)) {
-      return fail(reply, locale, 400, reasonMessage('redirect_uri_mismatch'));
-    }
+    if (!redirectUriMatches(client.redirectUris, target.redirectUri)) return failReason(reply, locale, 400, 'redirect_uri_mismatch');
     let request;
     try {
       request = parseAuthorizationRequest(query, target, config.PUBLIC_URL);
@@ -145,25 +153,35 @@ export async function authorizeRoutes(app: FastifyInstance, services: Services, 
   app.post(actions.login.slice(basePath.length), opts, async (req, reply) => {
     const locale = negotiate(req.headers['accept-language']);
     const pending = await deps.pending.get(field(req.body, 'request_id', 64), field(req.body, 'csrf', 64), readCookie(req, BROWSER_COOKIE));
-    if (!pending) return fail(reply, locale, 400, reasonMessage('request_expired'));
+    if (!pending) return failReason(reply, locale, 400, 'request_expired');
     const username = field(req.body, 'username', 256);
     let rec: LoginRecord | undefined;
     try {
       rec = await checkPasswordLogin(services, req.ip, username, field(req.body, 'password', 1024));
     } catch (err) {
-      if (err instanceof RateLimited) return showLogin(reply, 429, locale, pending, msg('oauth.login.rateLimited'), username);
+      if (err instanceof RateLimited) {
+        services.metrics.oauthAuthorizations.inc({ outcome: 'login_refused' });
+        return showLogin(reply, 429, locale, pending, msg('oauth.login.rateLimited'), username);
+      }
       throw err;
     }
-    if (!rec) return showLogin(reply, 401, locale, pending, msg('oauth.login.failed'), username);
+    if (!rec) {
+      services.metrics.oauthAuthorizations.inc({ outcome: 'login_refused' });
+      return showLogin(reply, 401, locale, pending, msg('oauth.login.failed'), username);
+    }
     const denial = await denialOf(rec, pending);
-    if (denial) return showLogin(reply, 403, locale, pending, reasonMessage(denial), username);
+    if (denial) {
+      services.metrics.oauthAuthorizations.inc({ outcome: 'login_refused' });
+      services.metrics.oauthErrors.inc({ endpoint: 'authorize', reason: denial });
+      return showLogin(reply, 403, locale, pending, reasonMessage(denial), username);
+    }
 
     pending.user = { id: rec.user.id, username: rec.user.username, tenantId: rec.tenant!.id, tenantSlug: rec.tenant!.slug, locale: rec.user.locale };
     const existing = await repos.oauth.findActiveGrant(rec.user.id, pending.client.rowId);
     if (existing && coversScopes(existing.scopes, pending.request.scopes)) {
       // already approved with these scopes: no second consent (ADR-030)
-      if (!(await deps.pending.consume(pending.id))) return fail(reply, locale, 400, reasonMessage('request_expired'));
-      return issueCode(reply, pending, existing);
+      if (!(await deps.pending.consume(pending.id))) return failReason(reply, locale, 400, 'request_expired');
+      return issueCode(reply, pending, existing, 'consent_skipped');
     }
     await deps.pending.save(pending);
     return html(reply, 200, consentPage({ locale: rec.user.locale, pending, action: actions.consent }), pending.request.redirectUri);
@@ -172,7 +190,7 @@ export async function authorizeRoutes(app: FastifyInstance, services: Services, 
   app.post(actions.consent.slice(basePath.length), opts, async (req, reply) => {
     const locale = negotiate(req.headers['accept-language']);
     const pending = await deps.pending.get(field(req.body, 'request_id', 64), field(req.body, 'csrf', 64), readCookie(req, BROWSER_COOKIE));
-    if (!pending?.user || !(await deps.pending.consume(pending.id))) return fail(reply, locale, 400, reasonMessage('request_expired'));
+    if (!pending?.user || !(await deps.pending.consume(pending.id))) return failReason(reply, locale, 400, 'request_expired');
     const { request, user } = pending;
 
     if (field(req.body, 'decision', 16) !== 'approve') {
@@ -192,6 +210,6 @@ export async function authorizeRoutes(app: FastifyInstance, services: Services, 
       resource: request.resource,
     });
     await audit(pending, 'oauth.grant.approve', 'allow', grant.id);
-    return issueCode(reply, pending, grant);
+    return issueCode(reply, pending, grant, 'code_issued');
   });
 }

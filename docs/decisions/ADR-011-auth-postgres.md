@@ -1,6 +1,6 @@
 # ADR-011: Autenticação própria com usuários e tokens no Postgres
 
-- Status: aceito (revisão proposta no ADR-030: OAuth para clientes MCP e login federado)
+- Status: aceito (revisado pelo ADR-030: OAuth para clientes MCP; login federado proposto)
 - Data: 2026-10-03
 
 ## Contexto

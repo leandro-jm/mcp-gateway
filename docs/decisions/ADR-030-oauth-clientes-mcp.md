@@ -1,6 +1,6 @@
 # ADR-030: OAuth 2.1 para clientes MCP e login federado (OIDC)
 
-- Status: proposto
+- Status: aceito para a fase A (F20.1–F20.10); fase B (login federado) proposta
 - Data: 2026-11-06
 - Revisa: ADR-011
 - Depende de: ADR-003, ADR-012, ADR-016, ADR-021, ADR-022

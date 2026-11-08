@@ -23,6 +23,10 @@ export class Metrics {
   readonly callEventsDropped: Counter<'reason'>;
   readonly callEventsBuffer: Gauge;
   readonly callEventsFlushDuration: Histogram;
+  readonly oauthAuthorizations: Counter<'outcome'>;
+  readonly oauthTokens: Counter<'grant_type'>;
+  readonly oauthErrors: Counter<'endpoint' | 'reason'>;
+  readonly oauthClientFetchDuration: Histogram<'outcome'>;
 
   constructor(opts: { defaultMetrics?: boolean } = {}) {
     if (opts.defaultMetrics) collectDefaultMetrics({ register: this.registry, prefix: 'mcp_gateway_' });
@@ -120,6 +124,27 @@ export class Metrics {
     this.callEventsFlushDuration = new Histogram({
       name: 'mcp_call_events_flush_duration_seconds',
       help: 'Duration of a call event batch flush',
+      buckets: LATENCY_BUCKETS,
+      registers: r,
+    });
+    // OAuth authorization server (F20, ADR-030): no tenant label, most requests come before one is known
+    this.oauthAuthorizations = new Counter({
+      name: 'mcp_oauth_authorizations_total',
+      help: 'Authorization requests by outcome (code_issued, consent_skipped, user_denied, login_refused, request_error)',
+      labelNames: ['outcome'],
+      registers: r,
+    });
+    this.oauthTokens = new Counter({ name: 'mcp_oauth_tokens_issued_total', help: 'Access tokens issued by grant type', labelNames: ['grant_type'], registers: r });
+    this.oauthErrors = new Counter({
+      name: 'mcp_oauth_errors_total',
+      help: 'OAuth errors by endpoint and reason (a fixed list); code and refresh reuse show up here',
+      labelNames: ['endpoint', 'reason'],
+      registers: r,
+    });
+    this.oauthClientFetchDuration = new Histogram({
+      name: 'mcp_oauth_client_metadata_fetch_duration_seconds',
+      help: 'Fetches of Client ID Metadata Documents by outcome (ok, error)',
+      labelNames: ['outcome'],
       buckets: LATENCY_BUCKETS,
       registers: r,
     });

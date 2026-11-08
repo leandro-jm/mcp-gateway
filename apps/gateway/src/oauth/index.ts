@@ -19,6 +19,7 @@ export async function oauthRoutes(app: FastifyInstance, services: Services): Pro
     services.clientMetadataFetcher,
     { dcrEnabled: services.config.OAUTH_DCR_ENABLED },
     services.logger,
+    services.metrics,
   );
   await oauthMetadataRoutes(app, services);
   await authorizeRoutes(app, services, { clients, pending: new PendingAuthorizations(services.redis) });

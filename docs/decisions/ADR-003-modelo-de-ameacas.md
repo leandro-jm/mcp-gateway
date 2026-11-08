@@ -63,7 +63,7 @@ O pentest encontrou controles que não se sustentavam:
 Os itens acima foram corrigidos, e a suíte `security/` cobre os PoCs.
 
 ## Adendo (F20, ADR-030)
-O OAuth para clientes MCP e o login federado acrescentam o ator "cliente OAuth ou site malicioso" e as ameaças T14 a T19. Os testes listados nessas linhas entram com a F20.10 (`security/oauth`) e a F20.14 (`security/oauth-sso`).
+O OAuth para clientes MCP e o login federado acrescentam o ator "cliente OAuth ou site malicioso" e as ameaças T14 a T19. T14 a T18 são cobertas por `security/oauth` (F20.10). A T19 (login federado) entra com `security/oauth-sso` na F20.14.
 
 ## Consequências
 A suíte `pnpm test:security` (`apps/gateway/test/security`) roda na CI. Qualquer nova saída de rede deve usar `outboundFetch`.

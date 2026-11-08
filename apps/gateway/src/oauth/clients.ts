@@ -5,6 +5,7 @@ import { BodyTooLarge, outboundFetch, readLimited } from '@mcp-gateway/net';
 import { isClientMetadataUrl, MAX_CLIENT_METADATA_BYTES, OAuthProtocolError, parseClientMetadataDocument } from '@mcp-gateway/oauth';
 import type { Redis } from 'ioredis';
 import type { Logger } from '../logger';
+import type { Metrics } from '../telemetry/metrics';
 import type { Repos } from '../services';
 
 const CIMD_TIMEOUT_MS = 5000;
@@ -69,6 +70,7 @@ export class OAuthClientResolver {
     private readonly fetcher: ClientMetadataFetcher,
     private readonly opts: { dcrEnabled: boolean },
     private readonly logger: Logger,
+    private readonly metrics?: Metrics,
   ) {}
 
   async resolve(clientId: string): Promise<OAuthClient> {
@@ -86,9 +88,12 @@ export class OAuthClientResolver {
     if (known && (await this.redis.exists(cacheKey(clientId)))) return known;
 
     let fetched: FetchedClientMetadata;
+    const done = this.metrics?.oauthClientFetchDuration.startTimer();
     try {
       fetched = await this.fetcher(clientId);
+      done?.({ outcome: 'ok' });
     } catch (err) {
+      done?.({ outcome: 'error' });
       // fail closed: a document that cannot be read now may have changed its redirect URIs
       this.logger.warn({ err: (err as Error).message, host: new URL(clientId).host }, 'oauth: client metadata document unavailable');
       throw new OAuthProtocolError('invalid_client', 'client_unavailable');

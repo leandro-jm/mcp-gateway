@@ -39,6 +39,8 @@ function noStore(reply: FastifyReply): FastifyReply {
   return reply.header('cache-control', 'no-store').header('pragma', 'no-cache');
 }
 
+type Endpoint = 'token' | 'revoke' | 'register';
+
 function sendError(reply: FastifyReply, err: OAuthProtocolError): FastifyReply {
   const description = translate(msg(`oauth.reason.${err.reason}`, err.param ? { param: err.param } : undefined));
   const status = err.reason === 'rate_limited' ? 429 : err.status;
@@ -65,12 +67,15 @@ export async function tokenRoutes(app: FastifyInstance, services: Services): Pro
 
   /** Wraps a handler: CORS, OAuth errors in the RFC 6749 format, nothing cached. */
   const endpoint =
-    (handler: (req: FastifyRequest, reply: FastifyReply) => Promise<unknown>) => async (req: FastifyRequest, reply: FastifyReply) => {
+    (name: Endpoint, handler: (req: FastifyRequest, reply: FastifyReply) => Promise<unknown>) => async (req: FastifyRequest, reply: FastifyReply) => {
       publicCors(reply, 'POST, OPTIONS');
       try {
         return await handler(req, reply);
       } catch (err) {
-        if (err instanceof OAuthProtocolError) return sendError(reply, err);
+        if (err instanceof OAuthProtocolError) {
+          services.metrics.oauthErrors.inc({ endpoint: name, reason: err.reason });
+          return sendError(reply, err);
+        }
         throw err;
       }
     };
@@ -109,6 +114,7 @@ export async function tokenRoutes(app: FastifyInstance, services: Services): Pro
   /** Issues the access token, and a refresh token when the grant has `offline_access`. */
   async function issueTokens(found: GrantWithClient, ttl: { accessMinutes: number; refreshDays: number }, rotatedRefresh?: string) {
     const { grant, client } = found;
+    services.metrics.oauthTokens.inc({ grant_type: rotatedRefresh ? 'refresh_token' : 'authorization_code' });
     const access = generateApiToken();
     await repos.auth.createToken(grant.userId, {
       name: oauthClientId({ clientId: client.clientId, clientKind: client.kind }),
@@ -137,7 +143,7 @@ export async function tokenRoutes(app: FastifyInstance, services: Services): Pro
   app.post(
     OAUTH_PATHS.token,
     opts,
-    endpoint(async (req, reply) => {
+    endpoint('token', async (req, reply) => {
       await limit('oauth-token', `oauth-token:${req.ip}`, TOKEN_RATE);
       const params = (req.body ?? {}) as OAuthParams;
       const request = parseTokenRequest(params, config.PUBLIC_URL);
@@ -184,7 +190,7 @@ export async function tokenRoutes(app: FastifyInstance, services: Services): Pro
   app.post(
     OAUTH_PATHS.revoke,
     opts,
-    endpoint(async (req, reply) => {
+    endpoint('revoke', async (req, reply) => {
       await limit('oauth-token', `oauth-token:${req.ip}`, TOKEN_RATE);
       const params = (req.body ?? {}) as OAuthParams;
       const token = single(params, 'token');
@@ -210,7 +216,7 @@ export async function tokenRoutes(app: FastifyInstance, services: Services): Pro
     app.post(
       OAUTH_PATHS.register,
       opts,
-      endpoint(async (req, reply) => {
+      endpoint('register', async (req, reply) => {
         await limit('oauth-register', `oauth-register:${req.ip}`, REGISTER_RATE);
         const registration = parseRegistrationRequest(req.body);
         const client = await repos.oauth.createDcrClient({
