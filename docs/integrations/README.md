@@ -1,11 +1,16 @@
 # Integração com consumidores (F11.4)
 
-O gateway fala **MCP sobre Streamable HTTP** (protocolo 2025-11-25, ADR-001). Todo cliente precisa de duas coisas:
+O gateway fala **MCP sobre Streamable HTTP** (protocolo 2026-07-28, atendendo também clientes 2025-11-25; ADR-021). Todo cliente precisa de duas coisas:
 
-1. **Um token de API do gateway** (ADR-011), enviado em `Authorization: Bearer <token>`:
-   - crie um usuário `service` para o agente em **Admin UI → Usuários** (tenant, roles e grupos usados nas políticas);
-   - gere o token na aba **Tokens** do usuário (o valor aparece uma única vez);
-   - o nome do token vira o `clientId`, usado em policies `client:<nome>` e no rate limit.
+1. **Uma credencial**, enviada em `Authorization: Bearer <token>`:
+   - **Token de API** (ADR-011), para agentes de máquina:
+     - crie um usuário `service` para o agente em **Admin UI → Usuários** (tenant, roles e grupos usados nas políticas);
+     - gere o token na aba **Tokens** do usuário (o valor aparece uma única vez);
+     - o nome do token vira o `clientId`, usado em policies `client:<nome>` e no rate limit.
+   - **OAuth 2.1** (ADR-030), para apps usados por pessoas (Claude.ai, ChatGPT, IDEs):
+     - o cliente descobre o servidor de autorização pelo `WWW-Authenticate` da resposta 401 e a pessoa entra com a própria conta;
+     - o token age com as permissões dessa pessoa; o `clientId` das policies é `oauth:<host>` (apps com documento de metadados) ou `oauth:dcr:<id>` (apps autorregistrados);
+     - exige `OAUTH_ENABLED=true` e a conexão de apps ligada no tenant. Detalhes em [Cliente genérico](./generico.md#oauth-21).
 2. **Um endpoint**:
 
 | Endpoint | Quando usar |

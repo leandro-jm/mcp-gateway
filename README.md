@@ -31,6 +31,7 @@ Connecting agents straight to internal APIs means leaking credentials into promp
 - **API import and crawling**: OpenAPI 3.x / Swagger 2.0, Postman, HAR and cURL; drift detection on re-crawl.
 - **Credential vault**: OAuth2 client credentials, password grant, API key and static bearer, injected per upstream.
 - **Authorization**: opaque API tokens and users in Postgres; policies by tenant, role, group, client and tool; rate limits.
+- **OAuth 2.1 for MCP clients** (opt-in): apps such as Claude.ai, ChatGPT and IDEs connect with the person's own account, with consent, PKCE, Client ID Metadata Documents or dynamic registration, and a Connected apps page to revoke them.
 - **PII redaction**: mask, hash, drop or tokenize, with detectors for Brazilian documents (CPF, CNPJ, PIS, CEP), email, phone, payment cards and IBAN, plus field-name rules (e.g. health, salary).
 - **Response projection**: include/exclude fields with JSONPath, cap arrays and bytes, and let agents ask for `_fields`.
 - **Composite tools**: orchestrate several endpoints in one tool (JSONata), or describe it in natural language and let the tenant's LLM draft it (Anthropic, OpenAI or any OpenAI-compatible server).

@@ -2,6 +2,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 const gateway = process.env.GATEWAY_URL ?? 'http://localhost:4000';
+const proxy = { '/admin': gateway, '/mcp': gateway, '/sdk': gateway, '/oauth': gateway, '/.well-known/oauth': gateway };
 
 export default defineConfig({
   plugins: [react()],
@@ -13,8 +14,8 @@ export default defineConfig({
   server: {
     port: 5180,
     strictPort: true,
-    // In dev, the UI talks to the gateway through the same origin (no CORS).
-    proxy: { '/admin': gateway, '/mcp': gateway, '/sdk': gateway },
+    // In dev, the UI talks to the gateway through the same origin (no CORS); OAuth pages and discovery too (ADR-030).
+    proxy,
   },
-  preview: { port: 5180, strictPort: true, proxy: { '/admin': gateway, '/mcp': gateway, '/sdk': gateway } },
+  preview: { port: 5180, strictPort: true, proxy },
 });
