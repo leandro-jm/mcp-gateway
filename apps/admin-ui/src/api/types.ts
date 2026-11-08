@@ -595,3 +595,54 @@ export interface OutcomesView {
   byVirtualServer: Array<{ virtualServer: string | null; successRate: number | null }>;
   recent: Array<{ ts: string; outcome: string; reasonCode: string | null; agentName: string | null; tools: string[]; source: string }>;
 }
+
+// ---------------------------------------------------------------- OAuth for MCP clients (F20, ADR-030)
+
+export type OAuthClientMode = 'any' | 'allowlist';
+
+export interface OAuthSettings {
+  enabled: boolean;
+  clients: OAuthClientMode;
+  allowlist: string[];
+  accessTtlMinutes: number | null;
+  refreshTtlDays: number | null;
+}
+
+export interface OAuthSettingsView {
+  platformEnabled: boolean;
+  dcrEnabled: boolean;
+  issuer: string;
+  platformAccessTtlMinutes: number;
+  platformRefreshTtlDays: number;
+  settings: OAuthSettings;
+}
+
+export interface OAuthGrant {
+  id: string;
+  userId: string;
+  username: string;
+  clientId: string;
+  clientName: string;
+  clientKind: 'cimd' | 'dcr';
+  policyClientId: string;
+  scopes: string[];
+  resource: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+}
+
+export interface OAuthClient {
+  id: string;
+  clientId: string;
+  kind: 'cimd' | 'dcr';
+  clientName: string;
+  clientUri: string | null;
+  redirectUris: string[];
+  applicationType: 'web' | 'native';
+  policyClientId: string;
+  activeGrants: number;
+  fetchedAt: string | null;
+  lastUsedAt: string | null;
+  disabledAt: string | null;
+  createdAt: string;
+}

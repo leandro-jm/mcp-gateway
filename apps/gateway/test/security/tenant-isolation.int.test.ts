@@ -3,6 +3,7 @@ import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { errorPayload } from '../../src/proxy/result';
 import { startHarness, startInfra, type Harness, type Infra } from '../harness';
+import { mintOAuthToken } from '../oauth-helpers';
 import { mcpClient, seedRhTenant, type SeededTenant } from '../seed';
 
 /** Tenant isolation on every surface (data plane, Admin API, vaults, artifacts). */
@@ -91,6 +92,18 @@ describe('security: tenant isolation', () => {
     expect((await adminApi(adminA, `/tools/${b.tools.rh_escalas_list}/enable`, 'tenant-a', 'POST')).statusCode).toBe(404);
     const auditA = (await adminApi(adminA, '/audit?limit=500', 'tenant-a')).json();
     expect(auditA.items.every((e: { toolId: string | null }) => !Object.values(b.tools).includes(e.toolId ?? ''))).toBe(true);
+  });
+
+  it('connected apps (F20.8) do not cross tenants', async () => {
+    const appA = await mintOAuthToken(h, { sub: 'oauth-a', tenant: 'tenant-a' });
+    const appB = await mintOAuthToken(h, { sub: 'oauth-b', tenant: 'tenant-b' });
+    const adminA = await h.adminToken('tenant-a');
+    const ids = (await adminApi(adminA, '/oauth/grants', 'tenant-a')).json().items.map((g: { id: string }) => g.id);
+    expect(ids).toContain(appA.grantId);
+    expect(ids).not.toContain(appB.grantId);
+    expect((await adminApi(adminA, `/oauth/grants/${appB.grantId}`, 'tenant-a', 'DELETE')).statusCode).toBe(404);
+    expect((await adminApi(adminA, '/oauth/grants', 'tenant-b')).statusCode).toBe(403);
+    expect((await h.services.repos.oauth.findGrant(appB.grantId))?.grant.revokedAt).toBeNull();
   });
 
   it('registry snapshots are separate per tenant', async () => {

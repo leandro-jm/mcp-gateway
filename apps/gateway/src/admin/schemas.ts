@@ -956,3 +956,71 @@ export const debugCaptureBody = z
     minutes: z.number().int().min(1).max(1440).default(15),
   })
   .meta({ id: 'DebugCaptureInput' });
+
+// ---------------------------------------------------------------- OAuth for MCP clients (F20, ADR-030)
+
+export const oauthSettingsBody = z
+  .object({
+    enabled: z.boolean(),
+    clients: z.enum(['any', 'allowlist']).describe('`allowlist`: only the listed apps connect; `any`: every app, always with consent'),
+    allowlist: z.array(z.string().trim().min(1).max(2048)).max(200).default([]).describe('Hosts (claude.ai), CIMD URLs or DCR client ids'),
+    accessTtlMinutes: z.number().int().min(1).max(1440).nullable().optional().describe('Only shortens OAUTH_ACCESS_TTL_MINUTES'),
+    refreshTtlDays: z.number().int().min(1).max(365).nullable().optional().describe('Only shortens OAUTH_REFRESH_TTL_DAYS'),
+  })
+  .meta({ id: 'OAuthSettings' });
+
+export const oauthSettingsViewSchema = z
+  .object({
+    platformEnabled: z.boolean().describe('OAUTH_ENABLED: when false no app can connect, whatever the tenant settings'),
+    dcrEnabled: z.boolean().describe('OAUTH_DCR_ENABLED: apps without a metadata document may register themselves'),
+    issuer: z.string().describe('Authorization server issuer (PUBLIC_URL)'),
+    platformAccessTtlMinutes: z.number().int(),
+    platformRefreshTtlDays: z.number().int(),
+    settings: z.object({
+      enabled: z.boolean(),
+      clients: z.enum(['any', 'allowlist']),
+      allowlist: z.array(z.string()),
+      accessTtlMinutes: z.number().int().nullable(),
+      refreshTtlDays: z.number().int().nullable(),
+    }),
+  })
+  .meta({ id: 'OAuthSettingsView' });
+
+export const oauthGrantSchema = z
+  .object({
+    id: z.uuid(),
+    userId: z.uuid(),
+    username: z.string(),
+    clientId: z.string().describe('CIMD URL or DCR client id'),
+    clientName: z.string().describe('Name declared by the app; verified only for CIMD apps through their host'),
+    clientKind: z.enum(['cimd', 'dcr']),
+    policyClientId: z.string().describe('Value matched by `client` policies: oauth:<host> or oauth:dcr:<id>'),
+    scopes: z.array(z.string()),
+    resource: z.string(),
+    createdAt: isoDate,
+    lastUsedAt: nullableIsoDate,
+  })
+  .meta({ id: 'OAuthGrant' });
+
+export const oauthGrantQuery = pageQuery.extend({ userId: z.uuid().optional() });
+
+export const oauthClientSchema = z
+  .object({
+    id: z.uuid(),
+    clientId: z.string(),
+    kind: z.enum(['cimd', 'dcr']),
+    clientName: z.string(),
+    clientUri: z.string().nullable(),
+    redirectUris: z.array(z.string()),
+    applicationType: z.enum(['web', 'native']),
+    policyClientId: z.string(),
+    activeGrants: z.number().int(),
+    fetchedAt: nullableIsoDate,
+    lastUsedAt: nullableIsoDate,
+    disabledAt: nullableIsoDate,
+    createdAt: isoDate,
+  })
+  .meta({ id: 'OAuthClient' });
+
+export const oauthClientQuery = pageQuery.extend({ kind: z.enum(['cimd', 'dcr']).optional() });
+export const oauthClientPatchSchema = z.object({ disabled: z.boolean().describe('Disabling revokes every grant of the app on all tenants') });

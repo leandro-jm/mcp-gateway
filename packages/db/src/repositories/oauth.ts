@@ -163,6 +163,17 @@ export class OAuthQueries {
     return { items: rows.map((r) => ({ ...r.client, activeGrants: Number(r.n ?? 0) })), total: c?.n ?? 0 };
   }
 
+  /** One client with its number of active grants. */
+  async getClientView(id: string): Promise<OAuthClientView> {
+    const [client] = await this.db.select().from(oauthClients).where(eq(oauthClients.id, id));
+    if (!client) throw new NotFound('oauthClient', id);
+    const [c] = await this.db
+      .select({ n: count() })
+      .from(oauthGrants)
+      .where(and(eq(oauthGrants.clientId, id), isNull(oauthGrants.revokedAt)));
+    return { ...client, activeGrants: c?.n ?? 0 };
+  }
+
   /** Removes DCR clients unused since `before` (with their grants). Returns how many were removed. */
   async deleteStaleDcrClients(before: Date): Promise<number> {
     const rows = await this.db

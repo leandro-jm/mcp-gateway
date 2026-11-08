@@ -73,6 +73,8 @@ export const oauth = defineMessages('oauth', {
     'oauth.consent.deny': 'Deny',
     'oauth.error.heading': 'Unable to connect the app',
     'oauth.error.close': 'You can close this window and try again from the app.',
+    'oauth.invalidSettings': 'invalid app connection settings: {reason}',
+    'oauth.invalidAllowlistEntry': 'invalid allowlist entry {entry}: use a host (claude.ai), a metadata document URL (https://…) or a registered client id (dcr_…)',
   },
   'pt-BR': {
     'oauth.reason.duplicate_parameter': 'o parâmetro {param} foi enviado mais de uma vez',
@@ -141,6 +143,8 @@ export const oauth = defineMessages('oauth', {
     'oauth.consent.deny': 'Negar',
     'oauth.error.heading': 'Não foi possível conectar o app',
     'oauth.error.close': 'Você pode fechar esta janela e tentar de novo pelo app.',
+    'oauth.invalidSettings': 'configuração inválida da conexão de apps: {reason}',
+    'oauth.invalidAllowlistEntry': 'entrada inválida na allowlist {entry}: use um host (claude.ai), a URL de um documento de metadados (https://…) ou o id de um cliente registrado (dcr_…)',
   },
   es: {
     'oauth.reason.duplicate_parameter': 'el parámetro {param} se envió más de una vez',
@@ -209,5 +213,7 @@ export const oauth = defineMessages('oauth', {
     'oauth.consent.deny': 'Denegar',
     'oauth.error.heading': 'No se pudo conectar la app',
     'oauth.error.close': 'Puede cerrar esta ventana e intentarlo de nuevo desde la app.',
+    'oauth.invalidSettings': 'configuración no válida de la conexión de apps: {reason}',
+    'oauth.invalidAllowlistEntry': 'entrada no válida en la allowlist {entry}: use un host (claude.ai), la URL de un documento de metadatos (https://…) o el id de un cliente registrado (dcr_…)',
   },
 });

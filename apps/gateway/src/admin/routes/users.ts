@@ -59,7 +59,10 @@ export const userRoutes: FastifyPluginAsyncZod<{ services: Services }> = async (
     config,
     schema: { tags, params: uuidParam, body: userPatchSchema, response: { 200: userSchema, ...errorResponses } },
     handler: async (req) => {
-      const user = await users.update(await resolveTenantId(services, req), req.params.id, req.body);
+      const tenantId = await resolveTenantId(services, req);
+      const user = await users.update(tenantId, req.params.id, req.body);
+      // a disabled person loses their connected apps (ADR-030); enabling again does not bring them back
+      if (req.body.status === 'disabled') await services.repos.oauthGrants.revokeAllForUser(tenantId, user.id);
       // Roles, groups, status and locale apply to tokens already issued.
       services.verifier.clear();
       return userDto(user);
@@ -86,8 +89,10 @@ export const userRoutes: FastifyPluginAsyncZod<{ services: Services }> = async (
       const user = await users.get(tenantId, req.params.id);
       if (user.kind !== 'human') throw new ValidationError(msg('auth.serviceUserNoPassword'));
       await users.setPasswordHash(tenantId, user.id, await hashPassword(req.body.password));
-      // a reset usually follows a suspected compromise: end the sessions and what they may have minted
+      // a reset usually follows a suspected compromise: end the sessions and what they may have minted,
+      // connected apps included (ADR-030)
       services.verifier.forget(...(await apiTokens.revokeUserIssued(tenantId, user.id)));
+      services.verifier.forget(...(await services.repos.oauthGrants.revokeAllForUser(tenantId, user.id)));
       return reply.code(204).send(null);
     },
   });
