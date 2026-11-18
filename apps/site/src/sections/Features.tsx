@@ -1,4 +1,4 @@
-import { Boxes, Building2, Check, FileStack, Filter, Languages, Rocket, Search, ShieldCheck, Vault, type LucideIcon } from 'lucide-react';
+import { Boxes, Building2, Check, FileStack, Languages, ListChecks, Rocket, ShieldCheck, Sparkles, Vault, type LucideIcon } from 'lucide-react';
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { Reveal } from '../components/Reveal';
 import type { SiteMessageKey } from '../i18n/catalog';
@@ -8,14 +8,16 @@ import { trackPointer, useReducedMotion } from '../lib/motion';
 import { useTheme } from '../theme/theme';
 import { SectionHead } from './SectionHead';
 
-type TabId = 'tools' | 'policies' | 'pii' | 'composer' | 'observability' | 'playground';
+type TabId = 'servers' | 'policies' | 'oauth' | 'pii' | 'views' | 'router' | 'observability' | 'playground';
 
 /** `screen` matches the files written by scripts/capture-screens.ts (`<screen>-<theme>.jpg`). */
 const TABS: Array<{ id: TabId; screen: string; path: string }> = [
-  { id: 'tools', screen: 'tools', path: '/tools' },
+  { id: 'servers', screen: 'servers', path: '/servers' },
   { id: 'policies', screen: 'policies', path: '/policies' },
+  { id: 'oauth', screen: 'oauth', path: '/settings' },
   { id: 'pii', screen: 'pii', path: '/pii' },
-  { id: 'composer', screen: 'composer', path: '/composer' },
+  { id: 'views', screen: 'views', path: '/tools' },
+  { id: 'router', screen: 'router', path: '/settings' },
   { id: 'observability', screen: 'observability', path: '/observability' },
   { id: 'playground', screen: 'playground', path: '/playground' },
 ];
@@ -25,9 +27,9 @@ const key = <S extends string>(id: TabId, suffix: S) => `features.${id}${suffix}
 const MORE: Array<{ title: SiteMessageKey; body: SiteMessageKey; icon: LucideIcon }> = [
   { title: 'features.vaultTitle', body: 'features.vaultBody', icon: Vault },
   { title: 'features.tenantTitle', body: 'features.tenantBody', icon: Building2 },
-  { title: 'features.omniTitle', body: 'features.omniBody', icon: Search },
+  { title: 'features.specTitle', body: 'features.specBody', icon: Sparkles },
   { title: 'features.artifactsTitle', body: 'features.artifactsBody', icon: FileStack },
-  { title: 'features.projectionTitle', body: 'features.projectionBody', icon: Filter },
+  { title: 'features.setupTitle', body: 'features.setupBody', icon: ListChecks },
   { title: 'features.securityTitle', body: 'features.securityBody', icon: ShieldCheck },
   { title: 'features.i18nTitle', body: 'features.i18nBody', icon: Languages },
   { title: 'features.deployTitle', body: 'features.deployBody', icon: Rocket },
@@ -81,7 +83,7 @@ function Screenshot({ tab }: { tab: (typeof TABS)[number] }) {
 
 export function Features() {
   const t = useT();
-  const [active, setActive] = useState<TabId>('tools');
+  const [active, setActive] = useState<TabId>('servers');
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const tab = TABS.find((x) => x.id === active)!;
 
@@ -97,9 +99,9 @@ export function Features() {
   };
 
   return (
-    <section className="section" id="features">
+    <section className="section section-alt" id="console">
       <div className="container">
-        <SectionHead index="03" label={t('features.label')} title={t('features.title')} lead={t('features.lead')} />
+        <SectionHead index="07" label={t('features.label')} title={t('features.title')} lead={t('features.lead')} />
         <Reveal>
           <div className="tabs" role="tablist" aria-label={t('features.label')} onKeyDown={onKey}>
             {TABS.map((x) => (

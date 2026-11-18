@@ -5,6 +5,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+- Landing page repositioned around governing every MCP server in the company (control plane): new hero diagram, problem, pillars, servers, sources and generative UI sections, agent benchmark numbers, OAuth and setup-screen quickstart, and recaptured Admin UI screenshots (ADR-020).
+
+### Fixed
+- Single-file landing page build now embeds the Geist Sans font.
+
 ### Added
 - Landing page (`apps/site`) in English, Portuguese and Spanish, published to GitHub Pages (ADR-020).
 - MCP protocol revision 2026-07-28 (stateless, per-request envelope) on every MCP endpoint, served next to 2025-era clients (ADR-021). Client name, version and capabilities from the envelope feed the call identity.

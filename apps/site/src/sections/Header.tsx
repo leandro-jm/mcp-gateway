@@ -9,10 +9,12 @@ import { REPO_URL } from '../lib/links';
 import { useTheme, type ThemePref } from '../theme/theme';
 
 const LINKS: Array<{ href: string; label: SiteMessageKey }> = [
-  { href: '#why', label: 'nav.why' },
+  { href: '#govern', label: 'nav.govern' },
+  { href: '#servers', label: 'nav.servers' },
+  { href: '#genui', label: 'nav.genui' },
   { href: '#how', label: 'nav.how' },
-  { href: '#features', label: 'nav.features' },
-  { href: '#endpoints', label: 'nav.endpoints' },
+  { href: '#console', label: 'nav.console' },
+  { href: '#numbers', label: 'nav.numbers' },
   { href: '#quickstart', label: 'nav.quickstart' },
 ];
 
@@ -25,6 +27,7 @@ export function Header() {
   const { pref, setPref } = useTheme();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [current, setCurrent] = useState('');
 
   useEffect(() => {
     let raf = 0;
@@ -34,6 +37,13 @@ export function Header() {
         const max = document.documentElement.scrollHeight - window.innerHeight;
         document.documentElement.style.setProperty('--scroll', String(max > 0 ? window.scrollY / max : 0));
         setScrolled(window.scrollY > 8);
+        // Scrollspy: the last linked section whose top has passed the upper third of the viewport.
+        let active = '';
+        for (const l of LINKS) {
+          const el = document.getElementById(l.href.slice(1));
+          if (el && el.getBoundingClientRect().top < window.innerHeight * 0.35) active = l.href;
+        }
+        setCurrent(active);
       });
     };
     onScroll();
@@ -63,7 +73,7 @@ export function Header() {
         </a>
         <nav className="header-nav" id="site-nav" aria-label={t('nav.primary')}>
           {LINKS.map((l) => (
-            <a key={l.href} href={l.href} onClick={() => setOpen(false)}>
+            <a key={l.href} href={l.href} className={l.href === current ? 'is-current' : ''} aria-current={l.href === current ? 'true' : undefined} onClick={() => setOpen(false)}>
               {t(l.label)}
             </a>
           ))}

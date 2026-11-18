@@ -8,6 +8,8 @@
  * the Admin UI on :5180. For pages that are not empty, crawl the `rh` source, enable a few tools with
  * a policy and make some calls first (e.g. `pnpm tsx examples/mcp-client.ts "..."`).
  *
+ * The oauth and router screens need OAUTH_ENABLED=true and TOOL_ROUTER_ENABLED=true on the gateway.
+ *
  * Usage: pnpm --filter @mcp-gateway/site screens
  * Env: ADMIN_UI_URL (default http://localhost:5180), SITE_URL (e.g. http://localhost:5190), ADMIN_USER/ADMIN_PASSWORD.
  */
@@ -33,32 +35,45 @@ interface Screen {
   prepare?: (page: Page) => Promise<void>;
 }
 
+const tab = (page: Page, name: string) => page.getByText(name, { exact: true }).first().click();
+
 const SCREENS: Screen[] = [
+  { name: 'servers', path: '/servers' },
+  { name: 'policies', path: '/policies' },
   {
-    name: 'tools',
-    path: '/tools',
-    // Hide leftovers from E2E runs (e2e_* sources): show only the seeded HR tools.
+    name: 'oauth',
+    path: '/settings',
     prepare: async (page) => {
-      await page.getByPlaceholder('Search by name').fill('rh_');
+      await tab(page, 'App connections');
       await page.waitForTimeout(800);
     },
   },
-  { name: 'policies', path: '/policies' },
   {
     name: 'pii',
     path: '/pii',
     prepare: async (page) => {
-      await page.getByText('Preview', { exact: true }).click();
+      await tab(page, 'Preview');
       await page.getByRole('button', { name: 'Apply rules' }).click();
       await page.getByText(/redactions?/i).first().waitFor();
     },
   },
   {
-    name: 'composer',
-    path: '/composer',
+    name: 'views',
+    path: '/tools',
+    // The View tab of a tool drawer: suggested view, activation and live preview (ADR-022).
     prepare: async (page) => {
-      await page.getByRole('button', { name: /^rh_resumo_colaborador\b/ }).first().click();
+      await page.getByPlaceholder('Search by name').fill('rh_colaboradores_list');
+      await page.getByTestId('tools-table').getByRole('row', { name: /rh_colaboradores_list/ }).first().click();
+      await tab(page, 'View');
       await page.waitForTimeout(1500);
+    },
+  },
+  {
+    name: 'router',
+    path: '/settings',
+    prepare: async (page) => {
+      await tab(page, 'Tool router');
+      await page.waitForTimeout(800);
     },
   },
   { name: 'observability', path: '/observability' },
@@ -96,6 +111,12 @@ async function captureAdmin(): Promise<void> {
         localStorage.setItem('mcp-gw:theme', t);
         localStorage.setItem('mcp-gw:locale', 'en');
       }, theme);
+      // The screenshots are in English whatever the user's profile language is (the profile wins in the UI).
+      await context.route('**/admin/v1/me', async (route) => {
+        const response = await route.fetch();
+        const me = (await response.json()) as Record<string, unknown>;
+        await route.fulfill({ response, json: { ...me, locale: 'en' } });
+      });
       const page = await context.newPage();
       await login(page);
       for (const screen of SCREENS) {
