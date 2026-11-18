@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Docker Hub image tag (published from v* tags), e.g. 0.1.0'
+        description: 'Docker Hub image tag (published from v* tags), e.g. 0.2.0'
         required: true
       environment:
         description: Environment
