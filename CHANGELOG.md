@@ -5,11 +5,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
-### Changed
-- Landing page repositioned around governing every MCP server in the company (control plane): new hero diagram, problem, pillars, servers, sources and generative UI sections, agent benchmark numbers, OAuth and setup-screen quickstart, and recaptured Admin UI screenshots (ADR-020).
-
-### Fixed
-- Single-file landing page build now embeds the Geist Sans font.
+## [0.2.0] - 2026-11-18
 
 ### Added
 - Landing page (`apps/site`) in English, Portuguese and Spanish, published to GitHub Pages (ADR-020).
@@ -29,6 +25,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   - Tenants choose between an allowlist (default, empty admits no app) and any app, and may shorten the token lifetimes. People see and disconnect their apps in **Tokens → Connected apps**; tenant admins see everyone's; platform admins can disable an app everywhere. Disabling a person or resetting their password disconnects their apps.
   - New `@mcp-gateway/oauth` pure package, migration `0026_oauth`, `mcp_oauth_*` metrics and the `McpOAuthSecretReuse` alert. The Admin UI nginx forwards `/oauth/` and `/.well-known/oauth-` without its own CSP.
 - Admin UI **Getting started** guide (ADR-023): what the gateway is, an eight-step checklist up to the first agent call with auto-detected progress, how-to and examples for each step, optional next steps and a glossary. The home page opens it while essential steps are pending. `GET /admin/v1/me` now returns `publicUrl`.
+- Agent benchmark harness (ADR-027) in `apps/bench` (`@mcp-gateway/bench`). It measures task success, latency and cost when an agent uses a large catalog directly or through the gateway's discovery modes (Omni, Omni with rerank and intent shortlist). It talks to any installation over HTTP only, with an 80-task answer key and Wilson 95% intervals. The first run, on a 162-tool API with Claude Haiku 5.5, is in [`docs/perf/agent-bench-2026-11-04.md`](docs/perf/agent-bench-2026-11-04.md): Omni cut tool-definition tokens from 108k to 1.5k per call and cost per task by 12.9×, while task success went from 99% to 91%.
 
 ### Changed
 - Runtime moved from Node 22 to Node 26 LTS (ADR-028): `engines.node >= 26`, `.nvmrc`, `node:26-alpine` images, CI and the `tsup` target. CI actions bumped to their Node 24 runtime majors (`actions/checkout@v7`, `actions/setup-node@v7`, `pnpm/action-setup@v6`, Docker actions), removing the Node 20 deprecation warnings.
@@ -53,9 +50,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Admin UI tables are paginated (ADR-029): a shared pager with range, page size (remembered per browser) and numbered pages. Audit pages on the server (it no longer stops at 200 events), Calls pages over its cursor instead of "Load more", and the other lists page in the browser. Projections only loads the projections of the visible page.
 - Admin UI shows skeletons while data loads (tables, dashboards, drawers, settings and the page itself) instead of blank areas, and "no items" messages only appear once loading is done.
 - New visual language for the Admin UI and the landing page (ADR-026, replacing the look of ADR-005): neutral zinc palette with a monochrome accent (color only for state), Geist and Geist Mono fonts, rounded cards with a soft shadow, sentence-case headings and status pills with a dot. The Admin UI shell now has a full-height sidebar with the brand and labeled groups (Operate, Configure, Manage), a top bar with `tenant / current page` breadcrumb and an account menu, and a horizontal nav under 960px. Light and dark themes keep the same selector, with dark as the default.
+- Landing page repositioned around governing every MCP server in the company (control plane): new hero diagram, problem, pillars, servers, sources and generative UI sections, agent benchmark numbers, OAuth and setup-screen quickstart, and recaptured Admin UI screenshots (ADR-020).
 
 ### Fixed
 - FinOps view: the token savings of the tool router shortlist (ADR-025) now count in the hourly rollups (new mechanism `shortlist`, metric `tokens_saved_shortlist`, "Without the gateway" total and per-mechanism chart), and the per-client, per-agent and per-subject "Saved" column includes the Omni and shortlist savings of `tools/list`, matching the cards. Migration `0025_shortlist_savings` adds the column and recomputes the rollups that still have raw call events.
+- Single-file landing page build now embeds the Geist Sans font.
 
 ## [0.1.0] - 2026-10-04
 
@@ -75,5 +74,6 @@ First public release.
 - React Admin UI with i18n (`en`, `pt-BR`, `es`).
 - Docker images for gateway, crawler and Admin UI; production compose file and deployment guide.
 
-[Unreleased]: https://github.com/leandro-jm/mcp-gateway/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/leandro-jm/mcp-gateway/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/leandro-jm/mcp-gateway/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/leandro-jm/mcp-gateway/releases/tag/v0.1.0

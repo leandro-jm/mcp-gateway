@@ -1,6 +1,6 @@
 {
   "name": "mcp-gateway",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Multi-tenant MCP gateway that exposes REST/OpenAPI APIs as governed MCP tools.",
   "keywords": [
     "mcp",

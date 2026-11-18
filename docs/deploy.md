@@ -35,7 +35,7 @@ Copie [`docker/prod.env.example`](../docker/prod.env.example) para `.env` (ou ca
 
 | Variável | Obrigatória | Descrição |
 |---|---|---|
-| `TAG` | sim | Versão das imagens. Fixe uma release (ex.: `0.1.0`) em vez de `latest`, para um redeploy não trocar a versão sem você saber. |
+| `TAG` | sim | Versão das imagens. Fixe uma release (ex.: `0.2.0`) em vez de `latest`, para um redeploy não trocar a versão sem você saber. |
 | `IMAGE_NAMESPACE` | não | Namespace das imagens. Padrão `leandrojm` (Docker Hub); `ghcr.io/leandro-jm` para o GHCR ou o seu namespace, se publicar as suas imagens. Substitui o antigo `IMAGE_PREFIX`. |
 | `PUBLIC_URL` | sim | URL pública do gateway (ex.: `https://mcp.empresa.com`). Aparece na documentação da API e nos snippets de conexão. |
 | `POSTGRES_PASSWORD` | sim | Senha do Postgres. |
@@ -80,7 +80,7 @@ docker compose -f docker-compose.prod.yml --env-file .env up -d --wait
   3. Clique em *Deploy the stack*.
 - **Repository** (o repositório é público, então não precisa de credencial):
   - *Repository URL*: `https://github.com/leandro-jm/mcp-gateway`
-  - *Repository reference*: `refs/heads/main` ou a tag da versão, por exemplo `refs/tags/v0.1.0`
+  - *Repository reference*: `refs/heads/main` ou a tag da versão, por exemplo `refs/tags/v0.2.0`
   - *Compose path*: `docker/docker-compose.prod.yml`
   - Cadastre as variáveis em *Environment variables*.
   - *GitOps updates* (polling ou webhook) é opcional: redeploya a stack quando o compose muda no repositório.
@@ -218,7 +218,7 @@ docker login -u leandrojm                    # Personal Access Token como senha
 pnpm docker:build                            # imagens :local na arquitetura da máquina, para testar a stack
 IMAGE_NAMESPACE=leandrojm TAG=local docker compose -f docker/docker-compose.prod.yml --env-file .env up -d
 pnpm docker:publish                          # build multi-arch e push: X.Y.Z, X.Y, latest e sha-<commit>
-docker buildx imagetools inspect leandrojm/mcp-gateway:0.1.0
+docker buildx imagetools inspect leandrojm/mcp-gateway:0.2.0
 ```
 - A versão vem do `package.json` raiz (`VERSION=` sobrescreve).
 - O script recusa uma árvore git suja (`--allow-dirty` libera) e um `pnpm-lock.yaml` com pacotes linkados de fora do repositório.
