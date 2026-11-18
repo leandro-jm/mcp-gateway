@@ -1,8 +1,13 @@
 # mcp-gateway
 
 [![CI](https://github.com/leandro-jm/mcp-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/leandro-jm/mcp-gateway/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/leandro-jm/mcp-gateway)](https://github.com/leandro-jm/mcp-gateway/releases/latest)
+[![Docker pulls](https://img.shields.io/docker/pulls/leandrojm/mcp-gateway)](https://hub.docker.com/r/leandrojm/mcp-gateway)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-![Node ≥ 22.12](https://img.shields.io/badge/node-%E2%89%A522.12-339933)
+[![MCP 2026-07-28](https://img.shields.io/badge/MCP-2026--07--28-black)](docs/decisions/ADR-021-spec-mcp-2026-07-28.md)
+[![OAuth 2.1](https://img.shields.io/badge/OAuth-2.1-black)](docs/decisions/ADR-030-oauth-clientes-mcp.md)
+![Node ≥ 26](https://img.shields.io/badge/node-%E2%89%A526-339933)
+[![Good first issues](https://img.shields.io/github/issues/leandro-jm/mcp-gateway/good%20first%20issue?label=good%20first%20issues)](https://github.com/leandro-jm/mcp-gateway/labels/good%20first%20issue)
 
 [English](README.md) · **Português** · **Site:** [leandro-jm.github.io/mcp-gateway](https://leandro-jm.github.io/mcp-gateway/?lang=pt-BR)
 
