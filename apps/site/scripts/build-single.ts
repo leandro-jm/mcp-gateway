@@ -38,8 +38,8 @@ async function inlineFonts(css: string, assetsDir: string): Promise<string> {
       out = out.replace(rule, () => '');
       continue;
     }
-    const src = `src:url(${await dataUri(join(assetsDir, woff2[1]!))})format("woff2");`;
-    out = out.replace(rule, () => rule.replace(/src:[^;]*;/, () => src));
+    const src = `src:url(${await dataUri(join(assetsDir, woff2[1]!))})format("woff2")`;
+    out = out.replace(rule, () => rule.replace(/src:[^;}]*/, () => src));
   }
   return out;
 }

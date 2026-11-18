@@ -7,16 +7,19 @@ const ROWS: Array<{ method: string; path: string; desc: SiteMessageKey }> = [
   { method: 'POST', path: '/mcp', desc: 'endpoints.mcp' },
   { method: 'POST', path: '/mcp/omni', desc: 'endpoints.omni' },
   { method: 'POST', path: '/mcp/s/:slug', desc: 'endpoints.servers' },
+  { method: 'POST', path: '/mcp/s/:slug/omni', desc: 'endpoints.serversOmni' },
   { method: 'POST', path: '/mcp/observability', desc: 'endpoints.observability' },
   { method: 'GET', path: '/sdk/:tenant.ts', desc: 'endpoints.sdk' },
+  { method: 'GET', path: '/.well-known/oauth-protected-resource', desc: 'endpoints.oauth' },
+  { method: 'RES', path: 'ui://mcp-gateway/view', desc: 'endpoints.ui' },
 ];
 
 export function Endpoints() {
   const t = useT();
   return (
-    <section className="section section-alt" id="endpoints">
+    <section className="section" id="endpoints">
       <div className="container">
-        <SectionHead index="04" label={t('endpoints.label')} title={t('endpoints.title')} lead={t('endpoints.lead')} />
+        <SectionHead index="08" label={t('endpoints.label')} title={t('endpoints.title')} lead={t('endpoints.lead')} />
         <Reveal>
           <table className="endpoints">
             <thead>

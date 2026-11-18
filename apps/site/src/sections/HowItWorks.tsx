@@ -8,7 +8,7 @@ export function HowItWorks() {
   return (
     <section className="section section-alt" id="how">
       <div className="container">
-        <SectionHead index="02" label={t('pipeline.label')} title={t('pipeline.title')} lead={t('pipeline.lead')} />
+        <SectionHead index="05" label={t('pipeline.label')} title={t('pipeline.title')} lead={t('pipeline.lead')} />
         <Reveal>
           <Pipeline />
         </Reveal>

@@ -15,8 +15,18 @@ interface Step {
 const RAW = 'https://raw.githubusercontent.com/leandro-jm/mcp-gateway/main/docker';
 const DEV_TOKEN = 'mgw_dev-agent-token-somente-para-desenvolvimento';
 
-/** Commands from README.md (Quickstart), docs/deploy.md §4 and docs/integrations. */
-const TABS: Record<'local' | 'docker' | 'connect', { label: SiteMessageKey; steps: Step[] }> = {
+/** Commands from docs/deploy.md (§4 and §7), README.md (Quickstart) and docs/integrations/claude-code.md. */
+const TABS: Record<'docker' | 'local' | 'connect', { label: SiteMessageKey; steps: Step[] }> = {
+  docker: {
+    label: 'quickstart.tabDocker',
+    steps: [
+      { label: 'quickstart.dockerGet', code: `curl -fsSLO ${RAW}/docker-compose.prod.yml\ncurl -fsSL ${RAW}/prod.env.example -o .env` },
+      { label: 'quickstart.dockerSecrets', code: 'openssl rand -hex 16   # paste it as SETUP_TOKEN in .env\nvi .env' },
+      { label: 'quickstart.dockerUp', code: 'docker compose -f docker-compose.prod.yml --env-file .env up -d --wait' },
+      { label: 'quickstart.dockerSetup' },
+      { label: 'quickstart.dockerNote' },
+    ],
+  },
   local: {
     label: 'quickstart.tabLocal',
     steps: [
@@ -39,19 +49,12 @@ const TABS: Record<'local' | 'docker' | 'connect', { label: SiteMessageKey; step
       { label: 'quickstart.localOpen' },
     ],
   },
-  docker: {
-    label: 'quickstart.tabDocker',
-    steps: [
-      { label: 'quickstart.dockerGet', code: `curl -fsSLO ${RAW}/docker-compose.prod.yml\ncurl -fsSLO ${RAW}/prod.env.example\ncp prod.env.example .env` },
-      { label: 'quickstart.dockerUp', code: 'docker compose -f docker-compose.prod.yml --env-file .env up -d --wait' },
-      { label: 'quickstart.dockerAdmin', code: 'docker compose -f docker-compose.prod.yml --env-file .env \\\n  run --rm migrate node dist/migrate.js create-admin admin' },
-      { label: 'quickstart.dockerNote' },
-    ],
-  },
   connect: {
     label: 'quickstart.tabConnect',
     steps: [
-      { label: 'quickstart.connectClaude', code: `claude mcp add --transport http mcp-gateway http://localhost:4000/mcp/omni \\\n  --header "Authorization: Bearer ${DEV_TOKEN}"` },
+      { label: 'quickstart.connectOauth', code: 'claude mcp add --transport http mcp-gateway https://mcp.example.com/mcp/omni' },
+      { label: 'quickstart.connectOauthNote' },
+      { label: 'quickstart.connectToken', code: `claude mcp add --transport http mcp-gateway http://localhost:4000/mcp/omni \\\n  --header "Authorization: Bearer ${DEV_TOKEN}"` },
       {
         label: 'quickstart.connectSdk',
         lang: 'ts',
@@ -74,11 +77,11 @@ type TabId = keyof typeof TABS;
 
 export function Quickstart() {
   const t = useT();
-  const [active, setActive] = useState<TabId>('local');
+  const [active, setActive] = useState<TabId>('docker');
   return (
-    <section className="section section-alt" id="quickstart">
+    <section className="section" id="quickstart">
       <div className="container">
-        <SectionHead index="06" label={t('quickstart.label')} title={t('quickstart.title')} lead={t('quickstart.lead')} />
+        <SectionHead index="10" label={t('quickstart.label')} title={t('quickstart.title')} lead={t('quickstart.lead')} />
         <Reveal>
           <div className="tabs" role="tablist" aria-label={t('quickstart.label')}>
             {(Object.keys(TABS) as TabId[]).map((id) => (

@@ -7,6 +7,12 @@
 Com a publicação como open source (ADR-019), o projeto precisa de uma página pública que explique o que ele faz e ajude a divulgá-lo. Hoje só existem os READMEs. O roadmap não prevê um site.
 
 ## Decisão
+**Posicionamento** (revisado em 2026-11-12)
+- A mensagem central é "governe todos os MCPs da sua empresa": o gateway como plano de controle dos servidores MCP que a empresa oferece a agentes (acesso, dados, contexto e custo, visibilidade).
+- Converter APIs REST em tools deixa de ser a manchete e passa a ser o "como" (seção "De onde vêm os MCPs").
+- A página não promete governar servidores MCP de terceiros: a federação de servidores MCP nativos está fora da v1 (roadmap §8). Toda afirmação precisa bater com o CHANGELOG, os ADRs e `docs/perf`.
+- Recursos opcionais (OAuth 2.1, roteador de tools) aparecem marcados como opcionais. Os números do benchmark de agentes (ADR-027) vêm sempre com a contrapartida de acerto.
+
 **App `apps/site`**
 - React 19 + Vite, o mesmo stack do Admin UI (ADR-005). O build é estático e não tem router: uma única página com âncoras.
 - O app entra no `pnpm check` (lint e typecheck) como os outros apps. Não tem backend nem chamadas de rede em tempo de execução.
@@ -20,7 +26,8 @@ Com a publicação como open source (ADR-019), o projeto precisa de uma página 
 - O idioma vem de `?lang=`, depois de `localStorage` (`mcp-gw-site:locale`), depois de `navigator.languages` e por fim `en`.
 
 **Efeitos**
-- Feitos só com CSS, SVG e `IntersectionObserver`, sem bibliotecas de animação.
+- Feitos só com CSS, SVG (incluindo SMIL no diagrama do hero) e `IntersectionObserver`, sem bibliotecas de animação.
+- Loops param quando a seção sai da tela. Dados dos mocks animados (feed de eventos, catálogo, chat) são ilustrativos e vêm rotulados assim.
 - Com `prefers-reduced-motion: reduce`, os loops, a digitação do terminal e os contadores são desligados e o estado final aparece direto.
 
 **Screenshots**

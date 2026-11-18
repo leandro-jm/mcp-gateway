@@ -3,11 +3,12 @@ import { useId, type CSSProperties, type ReactElement } from 'react';
 const vars = (v: Record<string, string | number>) => v as CSSProperties;
 
 /**
- * The dithered isometric cube of the Admin UI empty state (apps/admin-ui/src/components/CubeArt.tsx),
- * animated: hatch lines draw in one after another, the edges light up in the accent color and a scan
- * band sweeps the faces. CSS handles the motion, so `prefers-reduced-motion` shows the final drawing.
+ * The dithered isometric cube of the Admin UI empty state, animated: hatch lines draw in one after
+ * another, the edges are traced and a scan band sweeps the faces. Drawn in a 200×175 box so it can
+ * sit inside a larger SVG (the hero diagram). CSS handles the motion, so `prefers-reduced-motion`
+ * shows the final drawing.
  */
-export function CubeArt({ size = 360 }: { size?: number }) {
+export function CubeBody() {
   const id = useId().replace(/:/g, '');
   const lines: ReactElement[] = [];
   let i = 0;
@@ -26,7 +27,7 @@ export function CubeArt({ size = 360 }: { size?: number }) {
   }
   const silhouette = '100,0 200,25 200,150 100,175 0,150 0,25';
   return (
-    <svg className="cube" width={size} height={(size * 180) / 200} viewBox="-2 -2 204 182" aria-hidden="true" style={vars({ '--n': i })}>
+    <g style={vars({ '--n': i })}>
       <defs>
         <clipPath id={`clip${id}`}>
           <polygon points={silhouette} />
@@ -45,6 +46,14 @@ export function CubeArt({ size = 360 }: { size?: number }) {
       <polyline className="cube-edge" points="100,50 100,175" pathLength={1} />
       <polygon className="cube-edge" points={silhouette} pathLength={1} />
       <polyline points="0,150 100,175 200,150" fill="none" stroke="var(--art-2)" strokeOpacity={0.5} strokeDasharray="1.2 2.2" strokeWidth={0.8} transform="translate(0 6)" />
+    </g>
+  );
+}
+
+export function CubeArt({ size = 360 }: { size?: number }) {
+  return (
+    <svg className="cube" width={size} height={(size * 180) / 200} viewBox="-2 -2 204 182" aria-hidden="true">
+      <CubeBody />
     </svg>
   );
 }

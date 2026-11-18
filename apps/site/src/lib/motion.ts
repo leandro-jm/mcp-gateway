@@ -41,8 +41,27 @@ export function useInView<E extends Element>(threshold = 0.2): [RefObject<E | nu
   return [ref, seen];
 }
 
+/** True while the element is on screen. Loops run only then, so off-screen sections cost nothing. */
+export function useOnScreen<E extends Element>(): [RefObject<E | null>, boolean] {
+  const ref = useRef<E>(null);
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (!('IntersectionObserver' in window)) {
+      setOn(true);
+      return;
+    }
+    const io = new IntersectionObserver((entries) => setOn(entries.some((e) => e.isIntersecting)), { threshold: 0.05 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return [ref, on];
+}
+
 /** Tracks the pointer inside an element as `--mx`/`--my` CSS variables (spotlight and glow effects). */
 export function trackPointer(e: PointerEvent<HTMLElement>): void {
+  if (window.matchMedia?.(REDUCE).matches) return;
   const el = e.currentTarget;
   const r = el.getBoundingClientRect();
   el.style.setProperty('--mx', `${e.clientX - r.left}px`);

@@ -1,0 +1,58 @@
+import { defineMessages } from '@mcp-gateway/i18n';
+
+export const servers = defineMessages('servers', {
+  en: {
+    'servers.label': 'MCP servers',
+    'servers.title': 'One catalog. An MCP server for each team.',
+    'servers.lead':
+      'Group tools into curated virtual servers, each with its own catalog, instructions and endpoint. Agents connect to the server made for them, not to everything.',
+    'servers.catalog': 'Tool catalog',
+    'servers.example': 'Example data',
+    'servers.hr': 'HR',
+    'servers.finance': 'Finance',
+    'servers.support': 'Support',
+    'servers.tools': '{count, plural, one {# tool} other {# tools}}',
+    'servers.curatedTitle': 'Curated per audience',
+    'servers.curatedBody': 'Pick the tools and write the instructions each server gives the model, in the Admin UI and without code.',
+    'servers.omniTitle': 'Small or huge catalogs',
+    'servers.omniBody': 'Every server also answers at /omni, where agents search for tools instead of loading all of them.',
+    'servers.tenantTitle': 'Isolated tenants',
+    'servers.tenantBody': 'Sources, servers, tools, credentials and policies belong to one tenant. Business units or customers never see each other.',
+  },
+  'pt-BR': {
+    'servers.label': 'Servidores MCP',
+    'servers.title': 'Um catálogo. Um servidor MCP para cada time.',
+    'servers.lead':
+      'Agrupe tools em servidores virtuais curados, cada um com seu catálogo, suas instruções e seu endpoint. Os agentes se conectam ao servidor feito para eles, e não a tudo.',
+    'servers.catalog': 'Catálogo de tools',
+    'servers.example': 'Dados de exemplo',
+    'servers.hr': 'RH',
+    'servers.finance': 'Financeiro',
+    'servers.support': 'Suporte',
+    'servers.tools': '{count, plural, one {# tool} other {# tools}}',
+    'servers.curatedTitle': 'Curado por público',
+    'servers.curatedBody': 'Escolha as tools e escreva as instruções que cada servidor passa ao modelo, pela Admin UI e sem código.',
+    'servers.omniTitle': 'Catálogos pequenos ou enormes',
+    'servers.omniBody': 'Todo servidor também responde em /omni, onde os agentes buscam tools em vez de carregar todas.',
+    'servers.tenantTitle': 'Tenants isolados',
+    'servers.tenantBody': 'Fontes, servidores, tools, credenciais e políticas pertencem a um tenant. Unidades de negócio ou clientes nunca se enxergam.',
+  },
+  es: {
+    'servers.label': 'Servidores MCP',
+    'servers.title': 'Un catálogo. Un servidor MCP para cada equipo.',
+    'servers.lead':
+      'Agrupa tools en servidores virtuales curados, cada uno con su catálogo, sus instrucciones y su endpoint. Los agentes se conectan al servidor hecho para ellos, y no a todo.',
+    'servers.catalog': 'Catálogo de tools',
+    'servers.example': 'Datos de ejemplo',
+    'servers.hr': 'RR. HH.',
+    'servers.finance': 'Finanzas',
+    'servers.support': 'Soporte',
+    'servers.tools': '{count, plural, one {# tool} other {# tools}}',
+    'servers.curatedTitle': 'Curado por audiencia',
+    'servers.curatedBody': 'Elige las tools y escribe las instrucciones que cada servidor le da al modelo, desde la Admin UI y sin código.',
+    'servers.omniTitle': 'Catálogos pequeños o enormes',
+    'servers.omniBody': 'Cada servidor también responde en /omni, donde los agentes buscan tools en vez de cargarlas todas.',
+    'servers.tenantTitle': 'Tenants aislados',
+    'servers.tenantBody': 'Fuentes, servidores, tools, credenciales y políticas pertenecen a un tenant. Las unidades de negocio o los clientes nunca se ven entre sí.',
+  },
+});

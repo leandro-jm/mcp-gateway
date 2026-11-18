@@ -2,7 +2,7 @@ import { defineMessages } from '@mcp-gateway/i18n';
 
 export const footer = defineMessages('footer', {
   en: {
-    'footer.ctaTitle': 'Give your agents a gateway.',
+    'footer.ctaTitle': 'One place to govern your MCPs.',
     'footer.ctaLead': 'Open source under Apache-2.0. Stars, issues and pull requests are welcome.',
     'footer.ctaStar': 'Star on GitHub',
     'footer.ctaDocs': 'Read the docs',
@@ -17,12 +17,12 @@ export const footer = defineMessages('footer', {
     'footer.security': 'Security policy',
     'footer.issues': 'Issues',
     'footer.license': 'Licensed under Apache-2.0.',
-    'footer.fonts': 'IBM Plex fonts under the SIL Open Font License.',
+    'footer.fonts': 'Geist fonts under the SIL Open Font License.',
     'footer.by': 'Created by {name}.',
     'footer.top': 'Back to top',
   },
   'pt-BR': {
-    'footer.ctaTitle': 'Dê um gateway aos seus agentes.',
+    'footer.ctaTitle': 'Um só lugar para governar seus MCPs.',
     'footer.ctaLead': 'Open source sob Apache-2.0. Estrelas, issues e pull requests são bem-vindos.',
     'footer.ctaStar': 'Estrela no GitHub',
     'footer.ctaDocs': 'Ler a documentação',
@@ -37,12 +37,12 @@ export const footer = defineMessages('footer', {
     'footer.security': 'Política de segurança',
     'footer.issues': 'Issues',
     'footer.license': 'Licenciado sob Apache-2.0.',
-    'footer.fonts': 'Fontes IBM Plex sob a SIL Open Font License.',
+    'footer.fonts': 'Fontes Geist sob a SIL Open Font License.',
     'footer.by': 'Criado por {name}.',
     'footer.top': 'Voltar ao topo',
   },
   es: {
-    'footer.ctaTitle': 'Dale un gateway a tus agentes.',
+    'footer.ctaTitle': 'Un solo lugar para gobernar tus MCP.',
     'footer.ctaLead': 'Open source bajo Apache-2.0. Estrellas, issues y pull requests son bienvenidos.',
     'footer.ctaStar': 'Estrella en GitHub',
     'footer.ctaDocs': 'Leer la documentación',
@@ -57,7 +57,7 @@ export const footer = defineMessages('footer', {
     'footer.security': 'Política de seguridad',
     'footer.issues': 'Issues',
     'footer.license': 'Licenciado bajo Apache-2.0.',
-    'footer.fonts': 'Fuentes IBM Plex bajo la SIL Open Font License.',
+    'footer.fonts': 'Fuentes Geist bajo la SIL Open Font License.',
     'footer.by': 'Creado por {name}.',
     'footer.top': 'Volver arriba',
   },

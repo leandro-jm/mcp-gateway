@@ -1,21 +1,25 @@
 import { ArrowRight } from 'lucide-react';
 import { GithubIcon } from '../components/GithubIcon';
-import { CubeArt } from '../components/CubeArt';
+import { ControlPlaneArt } from '../components/ControlPlaneArt';
 import { DecodeText } from '../components/DecodeText';
 import { Terminal } from '../components/Terminal';
 import { useT } from '../i18n/I18nProvider';
 import { REPO_URL, VERSION } from '../lib/links';
 import { trackPointer } from '../lib/motion';
 
-const INPUTS = ['openapi.yaml', 'swagger.json', 'postman.json', 'session.har', 'curl -X GET …'];
-const OUTPUTS = ['rh_colaborador_get', 'rh_escalas_list', 'search_tools', 'call_tool'];
-const SPEAKS = ['OpenAPI 3.x', 'Swagger 2.0', 'Postman', 'HAR', 'cURL', 'MCP 2025-11-25', 'Claude Code', 'OpenAI-compatible', 'OAuth2', 'JSONata', 'OpenTelemetry', 'Prometheus', 'Grafana', 'Postgres', 'Redis', 'S3 / MinIO', 'Docker'];
+const SPEAKS = ['MCP 2026-07-28', 'MCP 2025-11-25', 'OAuth 2.1 + PKCE', 'Claude', 'ChatGPT', 'VS Code', 'MCP Apps', 'OpenAPI 3.x', 'Postman', 'HAR', 'cURL', 'JSONata', 'OpenTelemetry', 'Prometheus', 'Grafana', 'Postgres', 'Redis', 'S3 / MinIO', 'Docker'];
 
 export function Hero() {
   const t = useT();
   return (
     <section className="hero" id="top" onPointerMove={trackPointer}>
       <div className="hero-grid" aria-hidden="true" />
+      <div className="hero-beams" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+        <i />
+      </div>
       <div className="hero-glow" aria-hidden="true" />
       <div className="container hero-inner">
         <div className="hero-copy">
@@ -45,24 +49,8 @@ export function Hero() {
             </a>
           </div>
         </div>
-        <div className="hero-art" aria-hidden="true">
-          <div className="chips chips-in">
-            <span className="mono-label">{t('hero.inputs')}</span>
-            {INPUTS.map((c, i) => (
-              <span key={c} className="chip" style={{ animationDelay: `${i * 0.6}s` }}>
-                {c}
-              </span>
-            ))}
-          </div>
-          <CubeArt size={340} />
-          <div className="chips chips-out">
-            <span className="mono-label">{t('hero.outputs')}</span>
-            {OUTPUTS.map((c, i) => (
-              <span key={c} className="chip chip-accent" style={{ animationDelay: `${0.3 + i * 0.6}s` }}>
-                {c}
-              </span>
-            ))}
-          </div>
+        <div className="hero-art">
+          <ControlPlaneArt />
         </div>
       </div>
       <div className="container hero-terminal">
