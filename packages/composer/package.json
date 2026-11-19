@@ -21,6 +21,6 @@
     "@mcp-gateway/core": "workspace:*",
     "@mcp-gateway/i18n": "workspace:*",
     "yaml": "^2.9.1",
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   }
 }
